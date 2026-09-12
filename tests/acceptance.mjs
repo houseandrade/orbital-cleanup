@@ -161,8 +161,24 @@ assert.equal(qa.state.integrity, 100, "new run resets integrity");
 
 const manifest = JSON.parse(fs.readFileSync(new URL("../manifest.webmanifest", import.meta.url), "utf8"));
 assert.equal(manifest.display, "standalone");
+assert.equal(manifest.start_url, "./", "manifest starts inside the Pages project path");
+assert.equal(manifest.scope, "./", "manifest scope stays inside the Pages project path");
 assert.equal(manifest.icons.some((icon) => icon.sizes === "192x192"), true);
 assert.equal(manifest.icons.some((icon) => icon.sizes === "512x512" && icon.purpose === "maskable"), true);
 for (const icon of manifest.icons) assert.ok(fs.existsSync(new URL(`../${icon.src}`, import.meta.url)), `${icon.src} exists`);
+
+const indexHtml = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const browserAssetPaths = [...indexHtml.matchAll(/(?:href|src)="([^"]+)"/g)].map((match) => match[1]);
+for (const assetPath of browserAssetPaths) {
+  const deployedUrl = new URL(assetPath, "https://houseandrade.github.io/orbital-cleanup/");
+  assert.ok(deployedUrl.pathname.startsWith("/orbital-cleanup/"), `${assetPath} remains under the Pages project path`);
+}
+
+const serviceWorkerSource = fs.readFileSync(new URL("../service-worker.js", import.meta.url), "utf8");
+const cachedPaths = [...serviceWorkerSource.matchAll(/^\s+"(\.\/.+?)",?$/gm)].map((match) => match[1]);
+assert.ok(cachedPaths.includes("./index.html"), "offline cache includes the root entry point");
+assert.ok(cachedPaths.every((assetPath) => assetPath.startsWith("./")), "offline assets resolve inside the Pages project path");
+const gameSource = fs.readFileSync(new URL("../src/game.js", import.meta.url), "utf8");
+assert.match(gameSource, /serviceWorker\.register\("\.\/service-worker\.js"\)/, "service worker registration is project-relative");
 
 console.log("Orbital Cleanup v0.6 acceptance checks passed.");

@@ -2,6 +2,23 @@
 
 A mobile-first, standalone PWA build of the v0.532 canvas prototype. Collect debris, manage the added cargo mass, and bank the haul at the cleanup station before the run ends.
 
+## Production deployment
+
+Production URL:
+
+**https://houseandrade.github.io/orbital-cleanup/**
+
+GitHub Pages deploys automatically through `.github/workflows/deploy-pages.yml` whenever a commit reaches `main`. Feature branches do not deploy to the production Pages URL. The workflow validates the game and assembles a production-only artifact, keeping `index.html` at the artifact root alongside the manifest, service worker, icons, styles, and game code.
+
+To release an iteration:
+
+1. Complete and validate the work on a feature branch.
+2. Open a pull request targeting `main`.
+3. Merge only after the playtest build is explicitly approved.
+4. Monitor the **Deploy production PWA to GitHub Pages** workflow in GitHub Actions. A successful run updates the production URL above.
+
+All browser-facing paths are relative, so the PWA operates under the `/orbital-cleanup/` GitHub Pages project path. The service worker scope and offline cache remain within that project path.
+
 ## Run locally
 
 The service worker requires HTTP rather than a `file://` URL. From this directory, run:
