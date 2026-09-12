@@ -76,3 +76,7 @@ Implemented for review: configuration-driven Levels 1–3, bank-value objectives
 Next: playtest First Haul, Junkyard, and High Roller for understandable goals and worthwhile additional trips. Levels 4–10 remain future experiments in geometry, rewards, objectives, movement, and constraints. Campaign, Contracts, and Endless should eventually share the configuration-driven engine; neither future mode is implemented.
 
 Playtest follow-up: protect against accidental campaign exits with header navigation and a paused leave confirmation. Implemented for review.
+
+## v0.8 — Endless Orbit follow-up
+
+Implemented for review: Endless Orbit is available from the start, with no campaign unlock. It restores the original MVP debris/values and station cadence through a shared-engine configuration with no completion objective. Separate local best banked score, same-mode replay, protected exit, and a Level 3 completion shortcut are included. No fuel, difficulty ramp, Contracts, or additional campaign levels. Prior notes deferring Endless are superseded by this player-requested scope.

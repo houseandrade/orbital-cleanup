@@ -1,4 +1,4 @@
-const CACHE_NAME = "orbital-cleanup-v0.7.1";
+const CACHE_NAME = "orbital-cleanup-v0.8";
 const APP_SHELL = [
   "./",
   "./index.html",

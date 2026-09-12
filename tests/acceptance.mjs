@@ -42,7 +42,7 @@ const drawingContext = new Proxy({
 });
 
 const ids = [
-  "exit-confirm", "keep-playing", "leave-run", "mission", "level-result", "result-title", "result-stats", "finish-level", "continue-level", "next-level", "replay-level", "campaign", "level-1", "level-2", "level-3", "level-description", "game", "canvas", "status", "restart", "tether", "deposit", "thrust",
+  "endless", "result-endless", "start-score-label", "over-score-label", "exit-confirm", "keep-playing", "leave-run", "mission", "level-result", "result-title", "result-stats", "finish-level", "continue-level", "next-level", "replay-level", "campaign", "level-1", "level-2", "level-3", "level-description", "game", "canvas", "status", "restart", "tether", "deposit", "thrust",
   "start-screen", "start", "game-over", "play-again", "death", "detail",
   "bank", "lost", "summary", "start-high-score", "game-over-high-score"
 ];
@@ -96,6 +96,8 @@ vm.runInContext(fs.readFileSync(new URL('../src/levels.js', import.meta.url), 'u
 vm.runInContext(source, sandbox, { filename: "src/game.js" });
 
 const qa = sandbox.__qa;
+assert.equal(elements.get('endless').disabled, false, 'endless is available on a fresh save');
+assert.equal(elements.get('level-2').disabled, true, 'campaign unlocks remain separate');
 const pointerEvent = { preventDefault() {}, pointerId: 1 };
 
 assert.equal(qa.thrustEffectiveness(0), 1, "empty thrust is 100%");
@@ -279,4 +281,30 @@ assert.equal(qa.state.pendingResult, true, 'cancel returns to objective choice')
 assert.equal(qa.state.running, false);
 qa.finishLevel();
 assert.equal(elements.get('result-title').textContent, 'LEVEL COMPLETE');
-console.log("Orbital Cleanup v0.7 acceptance checks passed.");
+const previousProgress = JSON.stringify(qa.state.progress);
+const campaignBest = storage.get('orbital-cleanup-high-score');
+elements.get('campaign').listeners.click();
+elements.get('endless').listeners.click();
+qa.start();
+assert.equal(qa.state.level.id, 'endless');
+assert.equal(qa.state.junk.length, 8);
+assert.equal(elements.get('start-score-label').textContent, 'ENDLESS BEST');
+assert.equal(elements.get('start-high-score').textContent, '0', 'campaign score is not imported');
+deposit(900);
+assert.equal(qa.state.running, true, 'endless deposits never complete a level');
+assert.equal(qa.state.pendingResult, false);
+assert.equal(storage.get('orbital-cleanup-endless-best-v1'), '900');
+assert.equal(storage.get('orbital-cleanup-high-score'), campaignBest);
+assert.equal(JSON.stringify(qa.state.progress), previousProgress);
+qa.scenario = { haul: 70 };
+qa.end('SUIT');
+assert.equal(elements.get('lost').textContent, '70');
+assert.equal(elements.get('game-over-high-score').textContent, '900');
+qa.start();
+assert.equal(qa.state.level.id, 'endless', 'replay stays in endless');
+assert.equal(qa.state.bank, 0);
+assert.equal(elements.get('start-high-score').textContent, '900');
+elements.get('campaign').listeners.click();
+elements.get('keep-playing').listeners.click();
+assert.equal(qa.state.running, true, 'safe exit works in endless');
+console.log("Orbital Cleanup v0.8 acceptance checks passed.");
