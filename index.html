@@ -22,6 +22,7 @@
         <div class="title">ORBITAL CLEANUP // v0.7</div>
         <div id="status" class="status" aria-live="polite">Collect debris. Bank your haul. Stay alive.</div>
       </div>
+      <button id="campaign" type="button" class="button button--small">MENU</button>
       <button id="restart" class="button button--small button--primary" type="button">START</button>
     </header>
 
@@ -60,6 +61,15 @@
           <button id="play-again" type="button" class="button button--cta">▶ PLAY AGAIN</button>
         </div>
       </div>
+      <div id="exit-confirm" class="overlay" role="dialog" aria-modal="true" aria-labelledby="exit-title" aria-hidden="true">
+        <div class="panel">
+          <div class="kicker">RUN PAUSED</div>
+          <h2 id="exit-title">Leave this run?</h2>
+          <p class="tutorial">This run’s banked score and carried haul will be discarded. Previously completed levels and best stars stay saved.</p>
+          <button id="keep-playing" type="button" class="button button--cta">KEEP PLAYING</button>
+          <button id="leave-run" type="button" class="button result-action">LEAVE TO CAMPAIGN</button>
+        </div>
+      </div>
       <div id="level-result" class="overlay" aria-hidden="true">
         <div class="panel">
           <div class="kicker">CAMPAIGN</div>
@@ -72,7 +82,6 @@
         </div>
       </div>
     </section>
-    <button id="campaign" type="button" class="button campaign-button">CAMPAIGN / LEAVE RUN</button>
 
     <section class="controls" aria-label="Game controls">
       <button id="tether" type="button" class="button">◎ TETHER</button>

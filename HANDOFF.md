@@ -84,3 +84,7 @@ The `codex/v0.7-level-system` branch introduces three configured campaign levels
 - Counts, bands, and station timing above intentionally replace single-run v0.6 tuning to serve the requested three-level prototype. These are initial playtest values, not validated balance conclusions.
 
 Validation: `node tests/acceptance.mjs` now also covers objectives, ratings, completion choices, progression, replay bests, save reload/corruption/unavailable storage, special-target return, failure/deposit ordering, and offline level data.
+
+## Safe campaign exit follow-up
+
+Menu navigation now sits in the header, away from flight controls. During an active run or objective choice, Menu pauses and requires an explicit Leave to Campaign action; Keep Playing restores the prior state without discarding score or cargo. The offline cache advances to v0.7.1. Regression checks cover pause, cancel, confirmed exit, and objective-choice restoration.

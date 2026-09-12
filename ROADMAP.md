@@ -74,3 +74,5 @@ Each new iteration starts on a feature branch. When it is ready for testing, com
 Implemented for review: configuration-driven Levels 1–3, bank-value objectives, optional three-star goals, safe-deposit completion choice, local progression, and replay. No fuel.
 
 Next: playtest First Haul, Junkyard, and High Roller for understandable goals and worthwhile additional trips. Levels 4–10 remain future experiments in geometry, rewards, objectives, movement, and constraints. Campaign, Contracts, and Endless should eventually share the configuration-driven engine; neither future mode is implemented.
+
+Playtest follow-up: protect against accidental campaign exits with header navigation and a paused leave confirmation. Implemented for review.

@@ -154,7 +154,6 @@ h1 { margin: 8px 0 14px; font-size: 26px; line-height: 1.05; }
 
 [hidden] { display: none !important; }
 .mission { min-height: 28px; font-size: 11px; color: #a7f3b5; padding: 3px 4px 7px; }
-.campaign-button { width: 100%; min-height: 44px; margin-top: 6px; font-size: 11px; }
 .campaign-levels { display: grid; gap: 5px; }
 .campaign-levels .button { min-height: 44px; font-size: 12px; }
 .campaign-levels [aria-pressed="true"] { border-color: #a7f3b5; color: #a7f3b5; }
@@ -164,3 +163,9 @@ h1 { margin: 8px 0 14px; font-size: 26px; line-height: 1.05; }
 .panel h1 { font-size: 22px; margin: 4px 0 8px; }
 .panel .button--cta { margin-top: 10px; min-height: 44px; }
 .panel .high-score { margin-top: 6px; }
+
+/* Navigation stays above the playfield, away from flight controls. */
+.topbar > div { flex: 1; min-width: 0; }
+.topbar .title { font-size: 11px; }
+.topbar .button--small { min-width: 48px; padding: 0 8px; font-size: 11px; }
+#exit-confirm { z-index: 2; }

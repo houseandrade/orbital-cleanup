@@ -18,6 +18,7 @@ function makeElement(id) {
       remove: (...names) => names.forEach((name) => classes.delete(name)),
       contains: (name) => classes.has(name)
     },
+    focus() {},
     setAttribute() {},
     addEventListener(name, callback) { this.listeners[name] = callback; },
     setPointerCapture() {},
@@ -41,7 +42,7 @@ const drawingContext = new Proxy({
 });
 
 const ids = [
-  "mission", "level-result", "result-title", "result-stats", "finish-level", "continue-level", "next-level", "replay-level", "campaign", "level-1", "level-2", "level-3", "level-description", "game", "canvas", "status", "restart", "tether", "deposit", "thrust",
+  "exit-confirm", "keep-playing", "leave-run", "mission", "level-result", "result-title", "result-stats", "finish-level", "continue-level", "next-level", "replay-level", "campaign", "level-1", "level-2", "level-3", "level-description", "game", "canvas", "status", "restart", "tether", "deposit", "thrust",
   "start-screen", "start", "game-over", "play-again", "death", "detail",
   "bank", "lost", "summary", "start-high-score", "game-over-high-score"
 ];
@@ -253,4 +254,29 @@ sandbox.localStorage.getItem = () => { throw new Error('unavailable'); };
 assert.equal(vm.runInContext('LevelSystem.readProgress().currentLevel', sandbox), 1);
 sandbox.localStorage.getItem = originalGet;
 assert.ok(cachedPaths.includes('./src/levels.js'), 'levels available offline');
+qa.start();
+qa.scenario = { bank: 30, haul: 40, mass: 5 };
+elements.get('campaign').listeners.click();
+assert.equal(qa.state.running, false, 'menu pauses instead of abandoning');
+qa.update(1);
+assert.equal(qa.state.bank, 30);
+assert.equal(qa.state.haul, 40);
+qa.start();
+assert.equal(qa.state.haul, 40, 'restart cannot bypass exit dialog');
+elements.get('keep-playing').listeners.click();
+assert.equal(qa.state.running, true);
+assert.equal(qa.state.haul, 40, 'cancel preserves cargo');
+elements.get('campaign').listeners.click();
+elements.get('leave-run').listeners.click();
+assert.equal(qa.state.running, false);
+assert.equal(qa.state.haul, 0, 'explicit leave discards run');
+assert.equal(elements.get('start-screen').classList.contains('overlay--visible'), true);
+qa.start();
+deposit(600);
+elements.get('campaign').listeners.click();
+elements.get('keep-playing').listeners.click();
+assert.equal(qa.state.pendingResult, true, 'cancel returns to objective choice');
+assert.equal(qa.state.running, false);
+qa.finishLevel();
+assert.equal(elements.get('result-title').textContent, 'LEVEL COMPLETE');
 console.log("Orbital Cleanup v0.7 acceptance checks passed.");
