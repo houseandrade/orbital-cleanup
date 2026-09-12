@@ -19,7 +19,7 @@
   <main id="game" class="game" aria-label="Orbital Cleanup">
     <header class="topbar">
       <div>
-        <div class="title">ORBITAL CLEANUP // v0.7</div>
+        <div class="title">ORBITAL CLEANUP // v0.8</div>
         <div id="status" class="status" aria-live="polite">Collect debris. Bank your haul. Stay alive.</div>
       </div>
       <button id="campaign" type="button" class="button button--small">MENU</button>
@@ -34,7 +34,8 @@
         <div class="panel">
           <div class="kicker">ORBITAL CLEANUP</div>
           <h1>Choose your haul.</h1>
-          <div class="campaign-levels" aria-label="Campaign levels">
+          <div class="campaign-levels" aria-label="Choose campaign or endless">
+            <button id="endless" class="button" type="button">∞ ENDLESS ORBIT</button>
             <button id="level-1" class="button" type="button"></button>
             <button id="level-2" class="button" type="button"></button>
             <button id="level-3" class="button" type="button"></button>
@@ -42,7 +43,7 @@
           <p id="level-description" class="risk"></p>
           <p class="tutorial"><strong>Hold THRUST</strong> to climb. Release to fall.<br><strong>TETHER</strong> debris. Hold <strong>DEPOSIT</strong> at the station.</p>
           <p class="risk">A failed run loses your unbanked haul.</p>
-          <div class="high-score">HIGH SCORE <span id="start-high-score">0</span></div>
+          <div class="high-score"><span id="start-score-label">CAMPAIGN HIGH SCORE</span> <span id="start-high-score">0</span></div>
           <button id="start" type="button" class="button button--cta">▶ START MISSION</button>
         </div>
       </div>
@@ -57,7 +58,7 @@
             <div class="stat"><div class="stat-label">HAUL LOST</div><div id="lost" class="stat-value">0</div></div>
           </div>
           <div id="summary" class="game-over-summary">0 banked • 0 lost</div>
-          <div class="game-over-summary">HIGH SCORE <span id="game-over-high-score">0</span></div>
+          <div class="game-over-summary"><span id="over-score-label">CAMPAIGN HIGH SCORE</span> <span id="game-over-high-score">0</span></div>
           <button id="play-again" type="button" class="button button--cta">▶ PLAY AGAIN</button>
         </div>
       </div>
@@ -65,9 +66,9 @@
         <div class="panel">
           <div class="kicker">RUN PAUSED</div>
           <h2 id="exit-title">Leave this run?</h2>
-          <p class="tutorial">This run’s banked score and carried haul will be discarded. Previously completed levels and best stars stay saved.</p>
+          <p class="tutorial">This attempt ends and its carried haul is lost. Unfinished campaign progress is discarded. Saved best scores, completed levels, and stars remain.</p>
           <button id="keep-playing" type="button" class="button button--cta">KEEP PLAYING</button>
-          <button id="leave-run" type="button" class="button result-action">LEAVE TO CAMPAIGN</button>
+          <button id="leave-run" type="button" class="button result-action">LEAVE TO MENU</button>
         </div>
       </div>
       <div id="level-result" class="overlay" aria-hidden="true">
@@ -78,6 +79,7 @@
           <button id="finish-level" type="button" class="button button--cta">FINISH LEVEL</button>
           <button id="continue-level" type="button" class="button result-action">KEEP SALVAGING</button>
           <button id="next-level" type="button" class="button button--cta" hidden>NEXT LEVEL</button>
+          <button id="result-endless" type="button" class="button result-action" hidden>PLAY ENDLESS ORBIT</button>
           <button id="replay-level" type="button" class="button result-action" hidden>REPLAY LEVEL</button>
         </div>
       </div>

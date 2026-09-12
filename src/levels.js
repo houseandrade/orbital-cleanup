@@ -30,7 +30,18 @@ const LevelSystem = (() => {
       special: { x: 780, y: 112, speed: 28, value: 300, mass: 18, size: 14, type: 'SAT' }
     })
   ];
+  const endless = {
+    ...defaults, id: 'endless', name: 'Endless Orbit',
+    description: 'Keep collecting and banking. Beat your best before your run ends.',
+    objective: null, stars: [],
+    debris: { count: 8, spacing: 85, bands: [
+      band(0.2, [110, 165], [22, 34], [70, 70], 10, 14, 'SAT'),
+      band(0.42, [180, 260], [38, 54], [30, 30], 5, 10, 'PANEL'),
+      band(0.38, [282, 342], [76, 112], [30, 30], 2, 7, 'SCRAP')
+    ] }
+  };
   function meets(criterion, stats, objective) {
+    if (!criterion) return false;
     switch (criterion.type) {
       case 'bank_value': return stats.bank >= criterion.target;
       case 'complete_objective': return meets(objective, stats);
@@ -55,5 +66,5 @@ const LevelSystem = (() => {
   function saveProgress(progress) {
     try { localStorage.setItem(key, JSON.stringify(progress)); } catch (_) {}
   }
-  return { campaign, meets, rating, readProgress, saveProgress };
+  return { campaign, endless, meets, rating, readProgress, saveProgress };
 })();

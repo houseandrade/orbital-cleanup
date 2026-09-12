@@ -70,18 +70,21 @@
   const orbitZone = (y) => y < 170 ? "HIGH" : y < 270 ? "MID" : "LOW";
   const thrustEffectiveness = (cargoMass) => Math.max(0.75, 1 - Math.min(cargoMass / 100, 1) * 0.25);
 
+  const sessionBests = {};
+  const scoreKey = () => level.id === 'endless' ? 'orbital-cleanup-endless-best-v1' : HIGH_SCORE_KEY;
   function getHighScore() {
     try {
-      const value = Number.parseInt(localStorage.getItem(HIGH_SCORE_KEY) || "0", 10);
-      return Number.isFinite(value) && value > 0 ? value : 0;
+      const value = Number.parseInt(localStorage.getItem(scoreKey()) || "0", 10);
+      return Math.max(sessionBests[scoreKey()] || 0, Number.isFinite(value) && value > 0 ? value : 0);
     } catch (_) {
-      return 0;
+      return sessionBests[scoreKey()] || 0;
     }
   }
 
   function setHighScore(score) {
     const highScore = Math.max(getHighScore(), score);
-    try { localStorage.setItem(HIGH_SCORE_KEY, String(highScore)); } catch (_) {}
+    sessionBests[scoreKey()] = highScore;
+    try { localStorage.setItem(scoreKey(), String(highScore)); } catch (_) {}
     startHighScore.textContent = String(highScore);
     gameOverHighScore.textContent = String(highScore);
   }
@@ -102,7 +105,13 @@
       button.textContent = `${config.id}. ${config.name} • ${progress.best[config.id] ? '★'.repeat(progress.best[config.id]) : button.disabled ? 'LOCKED' : 'NEW'}`;
       button.setAttribute('aria-pressed', String(config.id === level.id));
     });
-    document.getElementById('level-description').textContent = `${level.description} Goal: $${level.objective.target}. Stars: $${level.objective.target} / $${level.stars[1].target} / $${level.stars[2].target}.`;
+    const isEndless = level.id === 'endless';
+    document.getElementById('endless').setAttribute('aria-pressed', String(isEndless));
+    document.getElementById('start-score-label').textContent = isEndless ? 'ENDLESS BEST' : 'CAMPAIGN HIGH SCORE';
+    document.getElementById('over-score-label').textContent = isEndless ? 'ENDLESS BEST' : 'CAMPAIGN HIGH SCORE';
+    startButton.textContent = isEndless ? '▶ START ENDLESS ORBIT' : '▶ START MISSION';
+    setHighScore(getHighScore());
+    document.getElementById('level-description').textContent = isEndless ? level.description : `${level.description} Goal: $${level.objective.target}. Stars: $${level.objective.target} / $${level.stars[1].target} / $${level.stars[2].target}.`;
   }
 
   function showResult() {
@@ -118,6 +127,7 @@
     continueButton.hidden = stars === 3;
     continueButton.textContent = `KEEP SALVAGING → $${level.stars[stars]?.target || bank}`;
     replayButton.hidden = nextButton.hidden = true;
+    document.getElementById('result-endless').hidden = true;
     resultScreen.classList.add('overlay--visible');
     resultScreen.setAttribute('aria-hidden', 'false');
   }
@@ -134,7 +144,8 @@
     finishButton.hidden = continueButton.hidden = true;
     replayButton.hidden = false;
     nextButton.hidden = level.id === LevelSystem.campaign.length;
-    status.textContent = nextButton.hidden ? 'Campaign prototype complete. Replay for more stars.' : 'Level complete. Next level unlocked.';
+    document.getElementById('result-endless').hidden = !nextButton.hidden;
+    status.textContent = nextButton.hidden ? 'Campaign complete. Try Endless Orbit or replay for stars.' : 'Level complete. Next level unlocked.';
     refreshCampaign();
   }
 
@@ -194,8 +205,11 @@
     lastFrame = performance.now();
     restartButton.textContent = "RESTART";
     status.textContent = level.description;
-    progress.currentLevel = level.id;
-    LevelSystem.saveProgress(progress);
+    if (level.objective) {
+      progress.currentLevel = level.id;
+      LevelSystem.saveProgress(progress);
+    }
+    refreshCampaign();
     animationFrame = requestAnimationFrame(loop);
   }
 
@@ -489,7 +503,7 @@
 
   function draw() {
     const stars = LevelSystem.rating(level, { bank });
-    missionDisplay.textContent = `${level.id}. ${level.name} • Bank $${bank} / $${level.objective.target} • ${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}`;
+    missionDisplay.textContent = level.id === 'endless' ? `Endless Orbit • Bank $${bank} • Best $${getHighScore()}` : `${level.id}. ${level.name} • Bank $${bank} / $${level.objective.target} • ${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}`;
     context.save();
     if (shake > 0) context.translate(random(-4, 4), random(-4, 4));
     context.clearRect(-10, -10, WIDTH + 20, HEIGHT + 20);
@@ -588,6 +602,15 @@
     depositProgress = 0;
   });
 
+  document.getElementById('endless').addEventListener('click', () => {
+    level = LevelSystem.endless;
+    refreshCampaign();
+    draw();
+  });
+  document.getElementById('result-endless').addEventListener('click', () => {
+    level = LevelSystem.endless;
+    start();
+  });
   finishButton.addEventListener('click', finishLevel);
   continueButton.addEventListener('click', resumeLevel);
   replayButton.addEventListener('click', start);

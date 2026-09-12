@@ -88,3 +88,7 @@ Validation: `node tests/acceptance.mjs` now also covers objectives, ratings, com
 ## Safe campaign exit follow-up
 
 Menu navigation now sits in the header, away from flight controls. During an active run or objective choice, Menu pauses and requires an explicit Leave to Campaign action; Keep Playing restores the prior state without discarding score or cargo. The offline cache advances to v0.7.1. Regression checks cover pause, cancel, confirmed exit, and objective-choice restoration.
+
+## v0.8 — Endless Orbit follow-up
+
+Implemented for review: Endless Orbit is available from the start, with no campaign unlock. It restores the original MVP debris/values and station cadence through a shared-engine configuration with no completion objective. Separate local best banked score, same-mode replay, protected exit, and a Level 3 completion shortcut are included. No fuel, difficulty ramp, Contracts, or additional campaign levels. Prior notes deferring Endless are superseded by this player-requested scope.
