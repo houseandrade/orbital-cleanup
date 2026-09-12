@@ -84,3 +84,7 @@ Implemented for review: Endless Orbit is available from the start, with no campa
 ## v0.8.1 — UI and art polish
 
 Ready for review: approved menu/flight layout, pixel art, clear star thresholds, truthful station status, and protected Restart. Next: hands-on phone playtesting for readability, targeting clarity, and whether players voluntarily risk another trip. No new mechanics or difficulty changes in this pass.
+
+## v0.8.2 — Mobile input safety
+
+Restore WebKit-prefixed selection protection and suppress native touch/double-tap gestures on the flight controls and canvas. Hold controls track one pointer each, release on capture loss, cancellation, outside release, page hiding, or window blur, and clear ownership on gameplay transitions. Independent thrust/deposit fingers remain supported. Menu scrolling and browser zoom outside flight surfaces remain available. Acceptance checks include multi-pointer ownership, interruption recovery, and gesture cancellation. Real iOS Safari/PWA retesting is needed to confirm the reported device-specific failures.

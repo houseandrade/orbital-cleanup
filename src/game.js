@@ -120,6 +120,7 @@
   }
 
   function showResult() {
+    releaseControls();
     running = false;
     pendingResult = true;
     thrusting = depositing = false;
@@ -167,6 +168,7 @@
   }
 
   function reset() {
+    releaseControls();
     cancelAnimationFrame(animationFrame);
     running = false;
     exitPaused = false;
@@ -222,6 +224,7 @@
 
   function end(kind) {
     if (!running) return;
+    releaseControls();
     const finalBank = Math.round(bank);
     const lostHaul = Math.round(haul);
     running = false;
@@ -604,23 +607,14 @@
     }, { passive: false });
   });
 
-  function addHoldControl(button, onPress, onRelease) {
-    button.addEventListener("pointerdown", (event) => {
-      event.preventDefault();
-      try { button.setPointerCapture(event.pointerId); } catch (_) {}
-      onPress();
-    });
-    const stop = (event) => {
-      event.preventDefault();
-      onRelease();
-      try { if (button.hasPointerCapture(event.pointerId)) button.releasePointerCapture(event.pointerId); } catch (_) {}
-    };
-    button.addEventListener("pointerup", stop);
-    button.addEventListener("pointercancel", stop);
-  }
+  const releaseThrust = GameInput.hold(thrustButton, () => running,
+    () => { thrusting = true; }, () => { thrusting = false; });
+  const releaseDeposit = GameInput.hold(depositButton, () => running,
+    () => { depositing = true; }, () => { depositing = false; depositProgress = 0; });
+  function releaseControls() { releaseThrust(); releaseDeposit(); }
+  GameInput.protect(document.getElementById('flight-controls'));
+  GameInput.protect(canvas);
 
-  addHoldControl(thrustButton, () => { if (running) thrusting = true; }, () => { thrusting = false; });
-  addHoldControl(depositButton, () => { if (running && !depositButton.disabled) depositing = true; }, () => { depositing = false; depositProgress = 0; });
   tetherButton.addEventListener("pointerdown", (event) => { event.preventDefault(); fireTether(); });
   restartButton.addEventListener('click', () => {
     if (!exitPaused) return;
@@ -680,6 +674,7 @@
     document.getElementById('exit-title').textContent = 'Run paused';
     document.getElementById('leave-run').textContent = 'LEAVE TO MENU';
     restartButton.hidden = false;
+    releaseControls();
     resumeAfterExit = running;
     exitPaused = true;
     running = false;
