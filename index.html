@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=0.9-levels1">
+  <link rel="stylesheet" href="styles.css?v=0.10-encounters1">
   <title>Orbital Cleanup</title>
 </head>
 <body>
@@ -45,7 +45,7 @@
 
       <div id="start-screen" class="overlay overlay--visible">
         <div class="panel menu-panel">
-          <div class="kicker">ORBITAL CLEANUP // v0.9</div>
+          <div class="kicker">ORBITAL CLEANUP // v0.10</div>
           <h1>ORBITAL<br>CLEANUP</h1>
           <p class="tagline">Collect. Risk. Return.</p>
           <div id="mode-menu">
@@ -98,9 +98,10 @@
       </div>
       <div id="level-result" class="overlay" aria-hidden="true">
         <div class="panel">
-          <div class="kicker">CAMPAIGN</div>
+          <div id="result-mode" class="kicker">CAMPAIGN</div>
           <h2 id="result-title">OBJECTIVE MET</h2>
           <p id="result-stats" class="tutorial"></p>
+          <p id="phase-preview" class="tutorial" hidden></p>
           <button id="finish-level" type="button" class="button button--cta">FINISH LEVEL</button>
           <button id="continue-level" type="button" class="button result-action">KEEP SALVAGING</button>
           <button id="next-level" type="button" class="button button--cta" hidden>NEXT LEVEL</button>
@@ -115,9 +116,9 @@
       <button id="thrust" type="button" class="button button--primary">▲ HOLD<br>THRUST</button>
     </section>
   </main>
-  <script src="src/levels.js?v=0.9-levels1" defer></script>
-  <script src="src/art.js?v=0.9-levels1" defer></script>
-  <script src="src/input.js?v=0.9-levels1" defer></script>
-  <script src="src/game.js?v=0.9-levels1" defer></script>
+  <script src="src/levels.js?v=0.10-encounters1" defer></script>
+  <script src="src/art.js?v=0.10-encounters1" defer></script>
+  <script src="src/input.js?v=0.10-encounters1" defer></script>
+  <script src="src/game.js?v=0.10-encounters1" defer></script>
 </body>
 </html>

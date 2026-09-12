@@ -42,9 +42,21 @@ const LevelSystem = (() => {
       ]
     })
   ];
+  const scrapPocket = {
+    count: 3, spacing: 32, ySpread: 12,
+    band: band(1, [205, 250], [38, 44], [15, 25], 2, 7, 'SCRAP')
+  };
+  const valuablePass = {
+    leadSeconds: 4,
+    band: band(1, [108, 135], [22, 34], [150, 200], 10, 14, 'SAT')
+  };
+  campaign[3].debris.pocket = scrapPocket;
+  // Reserve one of the eight slots for a target timed to each station pass.
+  campaign[4].debris.bands[1].weight = 0;
+  campaign[4].debris.encounter = valuablePass;
   const endless = {
     ...defaults, id: 'endless', name: 'Endless Orbit',
-    description: 'Keep collecting and banking. Beat your best before your run ends.',
+    description: 'Bank $150 for your first milestone. Explore changing fields; finish safely after any deposit or keep going.',
     objective: null, stars: [],
     debris: { count: 8, spacing: 85, bands: [
       band(0.2, [110, 165], [22, 34], [70, 70], 10, 14, 'SAT'),
@@ -52,6 +64,27 @@ const LevelSystem = (() => {
       band(0.38, [282, 342], [76, 112], [30, 30], 2, 7, 'SCRAP')
     ] }
   };
+  endless.milestones = [150, 300, 500, 750, 1000];
+  endless.milestoneStep = 250;
+  endless.phases = [
+    { name: 'Open field', at: 0, description: 'Room to choose your haul.', debris: endless.debris },
+    { name: 'Scrap pockets', at: 150, description: 'Light scraps arrive in clusters.',
+      debris: { ...endless.debris, pocket: scrapPocket } },
+    { name: 'High-value passes', at: 300, description: 'Valuable satellites arrive just before the station.',
+      debris: { ...endless.debris, encounter: valuablePass } },
+    { name: 'Recovery stretch', at: 500, description: 'A quieter mid-orbit field for lighter trips.',
+      debris: { count: 5, spacing: 110, bands: [band(1, [195, 260], [38, 44], [30, 40], 2, 7, 'SCRAP')] } }
+  ];
+  endless.phaseCycleValue = 750;
+  function phaseFor(config, bank) {
+    if (!config.phases) return null;
+    const value = bank % config.phaseCycleValue;
+    return config.phases.filter(phase => phase.at <= value).at(-1);
+  }
+  function nextMilestone(config, bank) {
+    return config.milestones.find(value => value > bank) ||
+      config.milestones.at(-1) + (Math.floor((bank - config.milestones.at(-1)) / config.milestoneStep) + 1) * config.milestoneStep;
+  }
   function meets(criterion, stats, objective) {
     if (!criterion) return false;
     switch (criterion.type) {
@@ -83,5 +116,5 @@ const LevelSystem = (() => {
   function saveProgress(progress) {
     try { localStorage.setItem(key, JSON.stringify(progress)); } catch (_) {}
   }
-  return { campaign, endless, criterionLabel, meets, rating, readProgress, saveProgress };
+  return { campaign, endless, phaseFor, nextMilestone, criterionLabel, meets, rating, readProgress, saveProgress };
 })();
