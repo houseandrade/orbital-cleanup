@@ -34,7 +34,7 @@ jobs:
       - name: Assemble production artifact
         run: |
           mkdir _site
-          cp index.html styles.css manifest.webmanifest service-worker.js .nojekyll _site/
+          cp index.html update.html styles.css manifest.webmanifest service-worker.js .nojekyll _site/
           cp -R src icons _site/
           test -f _site/index.html
           test -f _site/manifest.webmanifest

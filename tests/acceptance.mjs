@@ -1,3 +1,4 @@
+import './updates.mjs';
 import './input.mjs';
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -187,7 +188,7 @@ const cachedPaths = [...serviceWorkerSource.matchAll(/^\s+"(\.\/.+?)",?$/gm)].ma
 assert.ok(cachedPaths.includes("./index.html"), "offline cache includes the root entry point");
 assert.ok(cachedPaths.every((assetPath) => assetPath.startsWith("./")), "offline assets resolve inside the Pages project path");
 const gameSource = fs.readFileSync(new URL("../src/game.js", import.meta.url), "utf8");
-assert.match(gameSource, /serviceWorker\.register\("\.\/service-worker\.js"\)/, "service worker registration is project-relative");
+assert.match(gameSource, /serviceWorker\.register\("\.\/service-worker\.js"/, "service worker registration is project-relative");
 
 // Qualifying carried value cannot complete a mission; only a safe deposit can.
 qa.start();

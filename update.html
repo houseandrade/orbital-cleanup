@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#02050a">
+  <title>Refresh Orbital Cleanup</title>
+  <style>
+    body { margin:0; min-height:100svh; display:grid; place-items:center; background:#02050a; color:#edf3f8; font:16px/1.5 system-ui,sans-serif; }
+    main { max-width:360px; padding:28px; }
+    h1 { font-size:26px; } p { color:#b3bfcc; }
+    button,a { display:block; box-sizing:border-box; width:100%; padding:14px; border-radius:8px; text-align:center; font:700 16px system-ui,sans-serif; }
+    button { border:0; background:#a7f3b5; color:#082012; cursor:pointer; } a { color:#a7f3b5; margin-top:12px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Refresh your game</h1>
+  <p>Close any other Orbital Cleanup tabs first. This replaces downloaded game files. Your saved levels, stars, and best scores stay on this device.</p>
+  <button id="refresh" type="button">REFRESH GAME FILES</button>
+  <p id="message" role="status" aria-live="polite"></p>
+  <a href="./">Back to game</a>
+</main>
+<script>
+  document.getElementById('refresh').addEventListener('click', async () => {
+    const button = document.getElementById('refresh');
+    const message = document.getElementById('message');
+    button.disabled = true;
+    message.textContent = 'Downloading the latest game files…';
+    try {
+      // Check connectivity before retiring a working offline copy.
+      const base = new URL('./', location.href);
+      const fresh = new URL('index.html', base);
+      fresh.searchParams.set('refresh', Date.now());
+      const response = await fetch(fresh, { cache: 'reload' });
+      if (!response.ok) throw new Error('offline');
+      if ('serviceWorker' in navigator) {
+        for (const registration of await navigator.serviceWorker.getRegistrations()) {
+          if (registration.scope === base.href) await registration.unregister();
+        }
+      }
+      for (const key of await caches.keys()) {
+        if (key.startsWith('orbital-cleanup-')) await caches.delete(key);
+      }
+      // Intentionally never touch localStorage, where player progress lives.
+      location.replace(fresh.href);
+    } catch (_) {
+      message.textContent = 'Could not refresh. Check your connection and try again. Saved progress has not been changed.';
+      button.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

@@ -78,3 +78,5 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
 
 /* WebKit requires the prefixed rule, including on nested button labels. */
 .controls, .controls * { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; touch-action:none; }
+
+.refresh-link { display:inline-block; padding:12px; min-height:44px; font-size:11px; color:var(--muted); }
