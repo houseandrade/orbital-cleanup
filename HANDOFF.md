@@ -92,3 +92,7 @@ Menu navigation now sits in the header, away from flight controls. During an act
 ## v0.8 — Endless Orbit follow-up
 
 Implemented for review: Endless Orbit is available from the start, with no campaign unlock. It restores the original MVP debris/values and station cadence through a shared-engine configuration with no completion objective. Separate local best banked score, same-mode replay, protected exit, and a Level 3 completion shortcut are included. No fuel, difficulty ramp, Contracts, or additional campaign levels. Prior notes deferring Endless are superseded by this player-requested scope.
+
+## v0.8.1 — Approved layout and pixel-art pass
+
+Implemented for review: separate Campaign/Endless menu cards, persistent campaign star targets and bank progress, banked/carried dashboard, integrity/cargo, generated Earth and sprite artwork, restart confirmation inside paused Menu, and result-screen menu navigation. Station labels now depend on visible station bounds, approach direction, and deposit range. The artwork atlas is opaque, so draw-only silhouette masks exclude its background. Physics and collision parameters remain untouched. Canvas presentation crops unused world margins (y=60 through 460); it does not change simulation bounds. Acceptance checks cover station states, bank-only stars, HUD values, restart confirmation/cancel, and offline art assets. Browser QA covered 375×667 and 320×568 layouts and menu/flight/pause navigation.

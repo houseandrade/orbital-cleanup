@@ -16,35 +16,54 @@
   <title>Orbital Cleanup</title>
 </head>
 <body>
-  <main id="game" class="game" aria-label="Orbital Cleanup">
+  <main id="game" class="game menu-open" aria-label="Orbital Cleanup">
     <header class="topbar">
       <div>
-        <div class="title">ORBITAL CLEANUP // v0.8</div>
+        <div id="flight-title" class="title">ORBITAL CLEANUP</div>
         <div id="status" class="status" aria-live="polite">Collect debris. Bank your haul. Stay alive.</div>
       </div>
       <button id="campaign" type="button" class="button button--small">MENU</button>
-      <button id="restart" class="button button--small button--primary" type="button">START</button>
     </header>
 
-    <div id="mission" class="mission" aria-live="polite"></div>
+    <section class="flight-hud" aria-label="Flight dashboard">
+      <div id="mission" class="mission"></div>
+      <progress id="goal-progress" max="100" value="0" aria-label="Banked mission progress"></progress>
+      <div id="star-goals" class="star-goals" aria-label="Star targets">
+        <span id="star-1"></span><span id="star-2"></span><span id="star-3"></span>
+      </div>
+      <div class="flight-stats">
+        <div><span class="stat-label">BANKED</span><strong id="hud-bank" class="mint">$0</strong></div>
+        <div><span class="stat-label">CARRYING</span><strong id="hud-haul">$0</strong></div>
+      </div>
+      <div class="suit-row"><div><span class="stat-label">INTEGRITY</span> <span id="hud-integrity">100%</span><progress id="integrity-progress" max="100" value="100" aria-label="Suit integrity"></progress></div><div><span class="stat-label">CARGO</span><strong id="hud-mass">0kg</strong></div></div>
+    </section>
     <section class="gamezone" aria-label="Game area">
-      <canvas id="canvas" width="360" height="520" aria-label="Orbital Cleanup game"></canvas>
+      <canvas id="canvas" width="360" height="400" aria-label="Orbital Cleanup game"></canvas>
+      <div id="station-status" class="station-status" aria-live="polite"></div>
+    </section>
 
       <div id="start-screen" class="overlay overlay--visible">
-        <div class="panel">
-          <div class="kicker">ORBITAL CLEANUP</div>
-          <h1>Choose your haul.</h1>
-          <div class="campaign-levels" aria-label="Choose campaign or endless">
-            <button id="endless" class="button" type="button">∞ ENDLESS ORBIT</button>
-            <button id="level-1" class="button" type="button"></button>
-            <button id="level-2" class="button" type="button"></button>
-            <button id="level-3" class="button" type="button"></button>
+        <div class="panel menu-panel">
+          <div class="kicker">ORBITAL CLEANUP // v0.8.1</div>
+          <h1>ORBITAL<br>CLEANUP</h1>
+          <p class="tagline">Collect. Risk. Return.</p>
+          <div id="mode-menu">
+            <article class="mode-card"><span class="menu-sprite astronaut" aria-hidden="true"></span><div><h2>CAMPAIGN</h2><p>3 missions · Chase the stars</p><button id="choose-campaign" class="button button--cta" type="button">CHOOSE LEVEL</button></div></article>
+            <article class="mode-card"><span class="menu-sprite satellite" aria-hidden="true"></span><div><h2>ENDLESS ORBIT</h2><p>Bank more. Beat your best.</p><p class="high-score">BEST <span id="endless-menu-best" class="mint">$0</span></p><button id="endless" class="button button--cta" type="button">PLAY ENDLESS</button></div></article>
           </div>
-          <p id="level-description" class="risk"></p>
-          <p class="tutorial"><strong>Hold THRUST</strong> to climb. Release to fall.<br><strong>TETHER</strong> debris. Hold <strong>DEPOSIT</strong> at the station.</p>
-          <p class="risk">A failed run loses your unbanked haul.</p>
-          <div class="high-score"><span id="start-score-label">CAMPAIGN HIGH SCORE</span> <span id="start-high-score">0</span></div>
-          <button id="start" type="button" class="button button--cta">▶ START MISSION</button>
+          <div id="campaign-picker" hidden>
+            <h2>CHOOSE YOUR MISSION</h2>
+            <div class="campaign-levels" aria-label="Campaign levels">
+              <button id="level-1" class="button" type="button"></button>
+              <button id="level-2" class="button" type="button"></button>
+              <button id="level-3" class="button" type="button"></button>
+            </div>
+            <p id="level-description" class="risk"></p>
+            <div class="high-score"><span id="start-score-label">CAMPAIGN HIGH SCORE</span> <span id="start-high-score">0</span></div>
+            <button id="start" type="button" class="button button--cta">▶ START MISSION</button>
+            <button id="back-modes" type="button" class="button result-action">BACK TO MODES</button>
+          </div>
+          <p class="tutorial menu-tutorial">Hold <strong>THRUST</strong> to climb. <strong>TETHER</strong> debris.<br>Hold <strong>DEPOSIT</strong> at the station to bank it.</p>
         </div>
       </div>
 
@@ -60,6 +79,7 @@
           <div id="summary" class="game-over-summary">0 banked • 0 lost</div>
           <div class="game-over-summary"><span id="over-score-label">CAMPAIGN HIGH SCORE</span> <span id="game-over-high-score">0</span></div>
           <button id="play-again" type="button" class="button button--cta">▶ PLAY AGAIN</button>
+          <button id="over-menu" type="button" class="button result-action">MAIN MENU</button>
         </div>
       </div>
       <div id="exit-confirm" class="overlay" role="dialog" aria-modal="true" aria-labelledby="exit-title" aria-hidden="true">
@@ -68,6 +88,7 @@
           <h2 id="exit-title">Leave this run?</h2>
           <p class="tutorial">This attempt ends and its carried haul is lost. Unfinished campaign progress is discarded. Saved best scores, completed levels, and stars remain.</p>
           <button id="keep-playing" type="button" class="button button--cta">KEEP PLAYING</button>
+          <button id="restart" class="button result-action" type="button">RESTART RUN…</button>
           <button id="leave-run" type="button" class="button result-action">LEAVE TO MENU</button>
         </div>
       </div>
@@ -81,10 +102,9 @@
           <button id="next-level" type="button" class="button button--cta" hidden>NEXT LEVEL</button>
           <button id="result-endless" type="button" class="button result-action" hidden>PLAY ENDLESS ORBIT</button>
           <button id="replay-level" type="button" class="button result-action" hidden>REPLAY LEVEL</button>
+          <button id="result-menu" type="button" class="button result-action" hidden>MAIN MENU</button>
         </div>
       </div>
-    </section>
-
     <section class="controls" aria-label="Game controls">
       <button id="tether" type="button" class="button">◎ TETHER</button>
       <button id="deposit" type="button" class="button">▣ HOLD<br>DEPOSIT</button>
@@ -92,6 +112,7 @@
     </section>
   </main>
   <script src="src/levels.js" defer></script>
+  <script src="src/art.js" defer></script>
   <script src="src/game.js" defer></script>
 </body>
 </html>

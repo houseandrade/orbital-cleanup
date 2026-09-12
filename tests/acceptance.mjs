@@ -11,7 +11,7 @@ function makeElement(id) {
     textContent: "",
     disabled: false,
     hidden: false,
-    style: {},
+    style: { setProperty() {} },
     listeners: {},
     classList: {
       add: (...names) => names.forEach((name) => classes.add(name)),
@@ -42,7 +42,7 @@ const drawingContext = new Proxy({
 });
 
 const ids = [
-  "endless", "result-endless", "start-score-label", "over-score-label", "exit-confirm", "keep-playing", "leave-run", "mission", "level-result", "result-title", "result-stats", "finish-level", "continue-level", "next-level", "replay-level", "campaign", "level-1", "level-2", "level-3", "level-description", "game", "canvas", "status", "restart", "tether", "deposit", "thrust",
+  "over-menu", "result-menu", "mode-menu", "campaign-picker", "choose-campaign", "back-modes", "flight-title", "goal-progress", "star-goals", "star-1", "star-2", "star-3", "hud-bank", "hud-haul", "hud-integrity", "hud-mass", "integrity-progress", "station-status", "endless-menu-best", "exit-title", "endless", "result-endless", "start-score-label", "over-score-label", "exit-confirm", "keep-playing", "leave-run", "mission", "level-result", "result-title", "result-stats", "finish-level", "continue-level", "next-level", "replay-level", "campaign", "level-1", "level-2", "level-3", "level-description", "game", "canvas", "status", "restart", "tether", "deposit", "thrust",
   "start-screen", "start", "game-over", "play-again", "death", "detail",
   "bank", "lost", "summary", "start-high-score", "game-over-high-score"
 ];
@@ -51,6 +51,7 @@ elements.get("canvas").getContext = () => drawingContext;
 
 const storage = new Map();
 const sandbox = {
+  GameArt: { sprite: () => false, backdrop: () => false },
   console,
   Math,
   Number,
@@ -75,7 +76,7 @@ sandbox.globalThis = sandbox;
 let source = fs.readFileSync(new URL("../src/game.js", import.meta.url), "utf8");
 source = source.replace(/\}\)\(\);\s*$/, `
   globalThis.__qa = {
-    start, end, finishLevel, resumeLevel, update, fireTether, collide, thrustEffectiveness,
+    draw, stationMessage, start, end, finishLevel, resumeLevel, update, fireTether, collide, thrustEffectiveness,
     get state() { return { level, progress, pendingResult, running, haul, bank, mass, integrity, tether, junk, player, station, depositing, cargo }; },
     set scenario(value) {
       if (value.running !== undefined) running = value.running;
@@ -307,4 +308,42 @@ assert.equal(elements.get('start-high-score').textContent, '900');
 elements.get('campaign').listeners.click();
 elements.get('keep-playing').listeners.click();
 assert.equal(qa.state.running, true, 'safe exit works in endless');
-console.log("Orbital Cleanup v0.8 acceptance checks passed.");
+qa.start();
+qa.scenario = { player: { y: 225, velocityY: 0, flash: 0 }, station: { x: 660, y: 225, speed: 25 } };
+assert.equal(qa.stationMessage(), '', 'offscreen station has no label');
+qa.scenario = { station: { x: 390, y: 225, speed: 25 } };
+assert.equal(qa.stationMessage(), 'STATION APPROACHING', 'visible approaching wing counts');
+qa.scenario = { station: { x: 180, y: 225, speed: 25 } };
+assert.equal(qa.stationMessage(), 'STATION IN RANGE');
+qa.scenario = { station: { x: 40, y: 225, speed: 25 } };
+assert.equal(qa.stationMessage(), '', 'departed station is not approaching');
+qa.scenario = { station: { x: -47, y: 225, speed: 25 } };
+assert.equal(qa.stationMessage(), '');
+elements.get('campaign').listeners.click();
+elements.get('restart').listeners.click();
+assert.equal(elements.get('leave-run').textContent, 'CONFIRM RESTART');
+assert.equal(qa.state.running, false, 'restart asks while paused');
+elements.get('keep-playing').listeners.click();
+assert.equal(qa.state.running, true, 'restart can be canceled');
+elements.get('campaign').listeners.click();
+elements.get('restart').listeners.click();
+elements.get('leave-run').listeners.click();
+assert.equal(qa.state.running, true, 'confirmed restart resumes a fresh run');
+elements.get('campaign').listeners.click();
+elements.get('leave-run').listeners.click();
+elements.get('choose-campaign').listeners.click();
+elements.get('level-1').listeners.click();
+qa.start();
+qa.scenario = { bank: 60, haul: 200 };
+qa.draw();
+assert.equal(elements.get('hud-bank').textContent, '$60');
+assert.equal(elements.get('hud-haul').textContent, '$200');
+assert.equal(elements.get('star-1').classList.contains('earned'), true);
+assert.equal(elements.get('star-2').classList.contains('earned'), false, 'carried value does not earn stars');
+assert.equal(elements.get('star-2').textContent, '★★ $120');
+assert.equal(elements.get('star-3').textContent, '★★★ $200');
+for (const asset of ['./src/art.js', './src/art/earth.png', './src/art/sprites.png']) {
+  assert.ok(cachedPaths.includes(asset), `${asset} cached offline`);
+  assert.ok(fs.existsSync(new URL(`../${asset}`, import.meta.url)));
+}
+console.log("Orbital Cleanup v0.8.1 acceptance checks passed.");

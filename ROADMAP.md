@@ -80,3 +80,7 @@ Playtest follow-up: protect against accidental campaign exits with header naviga
 ## v0.8 — Endless Orbit follow-up
 
 Implemented for review: Endless Orbit is available from the start, with no campaign unlock. It restores the original MVP debris/values and station cadence through a shared-engine configuration with no completion objective. Separate local best banked score, same-mode replay, protected exit, and a Level 3 completion shortcut are included. No fuel, difficulty ramp, Contracts, or additional campaign levels. Prior notes deferring Endless are superseded by this player-requested scope.
+
+## v0.8.1 — UI and art polish
+
+Ready for review: approved menu/flight layout, pixel art, clear star thresholds, truthful station status, and protected Restart. Next: hands-on phone playtesting for readability, targeting clarity, and whether players voluntarily risk another trip. No new mechanics or difficulty changes in this pass.

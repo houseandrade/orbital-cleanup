@@ -1,9 +1,12 @@
-const CACHE_NAME = "orbital-cleanup-v0.8";
+const CACHE_NAME = "orbital-cleanup-v0.8.1-art3";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./src/game.js",
+  "./src/art.js",
+  "./src/art/sprites.png",
+  "./src/art/earth.png",
   "./src/levels.js",
   "./manifest.webmanifest",
   "./icons/icon.svg",
