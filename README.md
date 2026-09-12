@@ -1,4 +1,4 @@
-# Orbital Cleanup v0.9
+# Orbital Cleanup v0.10
 
 A mobile-first, standalone PWA build of the v0.532 canvas prototype. Collect debris, manage the added cargo mass, and bank the haul at the cleanup station before the run ends.
 
@@ -93,3 +93,15 @@ Campaign now has five sequential levels. Existing saves that completed High Roll
 - **5 — Temptation:** bank $350 / $650 / $1,000 for one / two / three stars. Common mid-orbit panels pay $40–$60; recurring satellites near the upper boundary pay $150–$200 and display their value. These replenish normally rather than acting as a single special target.
 
 The new `bank_objects` criterion uses a dedicated deposited-object counter, independent of visual cargo pieces. All star criteria remain ordered behind objective completion. Both levels retain Junkyard station cadence, standard player integrity/movement, and eight debris slots. No fuel or additional mechanics. These reward distributions and thresholds are initial playtest settings.
+
+## v0.10 — Encounters and Endless progression
+
+Ready for review. Station status counts down to the horizontal deposit window; players must still align altitude. The next return is sampled in advance from the existing ranges so the departure countdown is accurate. Station speed, opening coordinates, return ranges, campaign targets, physics, and mobile input protections are unchanged.
+
+Recovery Detail reserves three of its eight slots for lightweight scrap pockets: 32px spacing, shared speed, and a compact altitude spread. A cleared or missed pocket returns as a group. Temptation reserves one slot for a $150–$200 high-orbit satellite that crosses the player four seconds before station range on every pass. Both patterns are data in `src/levels.js`, consumed by the shared engine. No new drift behavior.
+
+Endless phases use banked value within a repeating $750 cycle: Open field at $0, Scrap pockets at $150, High-value passes at $300, Recovery stretch at $500. Recovery uses five light mid-orbit objects. A deposit previews the resulting phase; Keep Salvaging applies it to future spawns, preserving debris and tethers already in flight. Large deposits select the phase for the resulting bank total. Timed encounters begin with the next station return after entering that phase.
+
+Score milestones are $150, $300, $500, $750, $1,000, then every $250 indefinitely. Banking across a milestone announces it. Every successful Endless deposit pauses for Keep Salvaging or Finish Run Successfully, including deposits below $150. Finishing shows Run Complete without campaign stars or unlocks; continuing retains normal failure outcomes. The existing separate Endless best and campaign save keys are retained; no save migration or new persistent fields.
+
+Validation: `node tests/acceptance.mjs` covers countdown/queued returns/pause, pocket recurrence and capacity, encounter alignment, bank-only phase transitions and previews, multi-threshold deposits, repeated cycles, finish/replay/failure, existing saves, mobile pointer ownership, and offline update isolation. Browser QA verified flight, banking preview, and successful finish at 320×568 and 375×667 with no console errors. Real iOS gesture behavior and initial balance settings still need hands-on playtesting. Fuel, upgrades, drifting debris, and new campaign levels remain deferred. Do not merge or deploy without approval.

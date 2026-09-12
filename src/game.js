@@ -37,6 +37,9 @@
   const exitScreen = document.getElementById('exit-confirm');
   let specialCollected = false;
   let exitAction = 'leave';
+  let phase = null;
+  let queuedPhase = null;
+  let nextStation = null;
 
   const WIDTH = 360;
   const HEIGHT = 520;
@@ -96,13 +99,53 @@
     gameOverHighScore.textContent = String(highScore);
   }
 
-  function makeJunk(offset = 0) {
-    const bands = level.debris.bands;
+  const debrisConfig = () => phase?.debris || level.debris;
+
+  function makeJunk(offset = 0, chosenBand = null) {
+    const bands = debrisConfig().bands;
     let roll = Math.random() * bands.reduce((sum, band) => sum + band.weight, 0);
-    const band = bands.find(band => (roll -= band.weight) < 0) || bands[bands.length - 1];
+    const band = chosenBand || bands.find(band => (roll -= band.weight) < 0) || bands[bands.length - 1];
     junk.push({ x: WIDTH + offset, y: random(...band.y), speed: random(...band.speed),
       value: Math.round(random(...band.value)), mass: band.mass, size: band.size,
       type: band.type, wobble: random(0, 6.28), hit: false });
+  }
+
+  function fillDebris(initial = false) {
+    const config = debrisConfig();
+    const limit = config.count - (config.encounter ? 1 : 0);
+    const missing = limit - junk.filter(object => !object.special && !object.encounter).length;
+    const pocket = config.pocket;
+    const livePockets = junk.filter(object => object.pocket).length;
+    const pocketCount = pocket && !livePockets && missing >= pocket.count ? pocket.count : 0;
+    const normalCount = pocket ? Math.max(0, missing - Math.max(0, pocket.count - livePockets)) : missing;
+    for (let i = 0; i < normalCount; i++) {
+      makeJunk(initial ? i * config.spacing + random(0, 30) : random(140, 320));
+    }
+    if (pocketCount) {
+      const offset = initial ? normalCount * config.spacing + random(0, 30) : random(140, 320);
+      const y = random(...pocket.band.y);
+      const speed = random(...pocket.band.speed);
+      for (let i = 0; i < pocketCount; i++) {
+        makeJunk(offset + i * pocket.spacing, pocket.band);
+        Object.assign(junk.at(-1), { y: y + random(-pocket.ySpread, pocket.ySpread), speed, pocket: true });
+      }
+    }
+  }
+
+  function planNextStation() {
+    nextStation = { x: WIDTH + random(...level.station.returnOffset), y: random(...level.station.returnY) };
+  }
+
+  function scheduleEncounter() {
+    const encounter = debrisConfig().encounter;
+    if (!encounter) return;
+    // Reserve a slot without removing a target that the player is reeling in.
+    junk = junk.filter(object => !object.encounter || tether?.object === object);
+    if (junk.some(object => object.encounter)) return;
+    makeJunk(0, encounter.band);
+    const object = junk.at(-1);
+    object.x = PLAYER_X + object.speed * ((station.x - (PLAYER_X + 90)) / station.speed - encounter.leadSeconds);
+    object.encounter = object.valuable = true;
   }
 
   function refreshCampaign() {
@@ -121,19 +164,34 @@
     document.getElementById('level-description').textContent = isEndless ? level.description : `${level.description} Goal: ${LevelSystem.criterionLabel(level.objective)}. Stars: ${level.stars.map(criterion => LevelSystem.criterionLabel(criterion, level.objective)).join(" / ")}.${level.objective.type === "bank_objects" ? " Higher stars also require all 10 objects banked." : ""}`;
   }
 
-  function showResult() {
+  function showResult(previousBank = bank) {
     releaseControls();
     running = false;
     pendingResult = true;
     thrusting = depositing = false;
     depositProgress = 0;
     cancelAnimationFrame(animationFrame);
+    const isEndless = !level.objective;
+    document.getElementById('result-mode').textContent = isEndless ? 'ENDLESS ORBIT' : 'CAMPAIGN';
+    document.getElementById('phase-preview').hidden = !isEndless;
+    finishButton.textContent = isEndless ? 'FINISH RUN SUCCESSFULLY' : 'FINISH LEVEL';
+    replayButton.textContent = isEndless ? 'PLAY ENDLESS AGAIN' : 'REPLAY LEVEL';
     const stars = LevelSystem.rating(level, { bank, bankedObjects });
     resultTitle.textContent = 'OBJECTIVE MET';
-    resultStats.textContent = `${level.id}. ${level.name} • $${bank} banked${level.objective.type === "bank_objects" ? ` • ${bankedObjects} objects banked` : ""} • ${'★'.repeat(stars)}${'☆'.repeat(3 - stars)} • Previous best: ${progress.best[level.id] || 0}/3`;
+    resultStats.textContent = `${level.id}. ${level.name} • $${bank} banked${level.objective?.type === "bank_objects" ? ` • ${bankedObjects} objects banked` : ""} • ${'★'.repeat(stars)}${'☆'.repeat(3 - stars)} • Previous best: ${progress.best[level.id] || 0}/3`;
     finishButton.hidden = false;
     continueButton.hidden = stars === 3;
     continueButton.textContent = `KEEP SALVAGING → $${level.stars[stars]?.target || bank}`;
+    if (isEndless) {
+      queuedPhase = LevelSystem.phaseFor(level, bank);
+      const next = LevelSystem.nextMilestone(level, bank);
+      const reachedMilestone = bank >= LevelSystem.nextMilestone(level, previousBank);
+      resultTitle.textContent = reachedMilestone ? 'MILESTONE REACHED' : 'HAUL SAFELY BANKED';
+      resultStats.textContent = `$${bank} banked • Best $${getHighScore()} • Next milestone $${next}`;
+      document.getElementById('phase-preview').textContent = `${queuedPhase !== phase ? 'Next phase' : 'Continue in'}: ${queuedPhase.name}. ${queuedPhase.description}`;
+      continueButton.hidden = false;
+      continueButton.textContent = `KEEP SALVAGING → $${next}`;
+    }
     replayButton.hidden = nextButton.hidden = true;
     document.getElementById('result-endless').hidden = true;
     document.getElementById('result-menu').hidden = true;
@@ -144,6 +202,16 @@
   function finishLevel() {
     if (!pendingResult) return;
     pendingResult = false;
+    if (!level.objective) {
+      resultTitle.textContent = 'RUN COMPLETE';
+      resultStats.textContent = `$${bank} safely banked • Best $${getHighScore()} • No haul lost`;
+      document.getElementById('phase-preview').hidden = true;
+      finishButton.hidden = continueButton.hidden = nextButton.hidden = true;
+      replayButton.hidden = false;
+      document.getElementById('result-menu').hidden = false;
+      status.textContent = `Run complete • $${bank} banked`;
+      return;
+    }
     const stars = LevelSystem.rating(level, { bank, bankedObjects });
     progress.best[level.id] = Math.max(progress.best[level.id] || 0, stars);
     progress.currentLevel = Math.min(level.id + 1, LevelSystem.campaign.length);
@@ -162,6 +230,7 @@
   function resumeLevel() {
     if (!pendingResult) return;
     pendingResult = false;
+    if (queuedPhase) { phase = queuedPhase; queuedPhase = null; }
     resultScreen.classList.remove('overlay--visible');
     resultScreen.setAttribute('aria-hidden', 'true');
     running = true;
@@ -202,8 +271,12 @@
     elapsed = 0;
     thrusting = false;
     depositing = false;
+    phase = LevelSystem.phaseFor(level, 0);
+    queuedPhase = null;
     station = { x: level.station.startX, y: level.station.startY, speed: level.station.speed };
-    for (let index = 0; index < level.debris.count; index += 1) makeJunk(index * level.debris.spacing + random(0, 30));
+    fillDebris(true);
+    scheduleEncounter();
+    planNextStation();
     if (level.debris.special) junk.push({ ...level.debris.special, special: true, wobble: 0, hit: false });
     depositButton.disabled = true;
     tetherButton.textContent = "◎ TETHER";
@@ -261,10 +334,11 @@
   }
 
   function stationMessage() {
-    // Station wings extend 46px to either side of its center.
-    if (station.x + 46 <= 0 || station.x - 46 >= WIDTH) return '';
     if (isNearStation()) return depositing ? 'TRANSFERRING SALVAGE…' : 'STATION IN RANGE';
-    return station.x > PLAYER_X && station.speed > 0 ? 'STATION APPROACHING' : '';
+    if (station.x >= PLAYER_X + 90) return `STATION PASS IN ${Math.ceil((station.x - PLAYER_X - 90) / station.speed)}s`;
+    if (station.x > PLAYER_X - 90) return 'STATION PASS NOW • ALIGN ALTITUDE';
+    const seconds = (station.x + 70 + nextStation.x - PLAYER_X - 90) / station.speed;
+    return `NEXT STATION PASS IN ${Math.ceil(Math.max(0, seconds))}s`;
   }
 
   function updateHud() {
@@ -272,8 +346,10 @@
     document.getElementById('flight-title').textContent = level.objective ? `${level.id}. ${level.name}` : level.name;
     missionDisplay.textContent = level.objective ? `BANK ${LevelSystem.criterionLabel(level.objective).toUpperCase()}` : `PERSONAL BEST $${sessionBests[scoreKey()] || 0}`;
     const goal = document.getElementById('goal-progress');
-    goal.hidden = !level.objective;
-    goal.max = level.objective?.target || 1;
+    const endlessTarget = level.milestones ? LevelSystem.nextMilestone(level, bank) : null;
+    if (endlessTarget) missionDisplay.textContent = `${phase.name} · NEXT $${endlessTarget} · BEST $${sessionBests[scoreKey()] || 0}`;
+    goal.hidden = false;
+    goal.max = level.objective?.target || endlessTarget || 1;
     goal.value = Math.min(level.objective?.type === 'bank_objects' ? bankedObjects : bank, goal.max);
     const objectProgress = document.getElementById('object-progress');
     objectProgress.hidden = level.objective?.type !== 'bank_objects';
@@ -346,6 +422,7 @@
     tether = null;
     tetherButton.textContent = "◎ TETHER";
     if (object.special) specialCollected = true;
+    else if (debrisConfig().pocket || debrisConfig().encounter || level.phases) fillDebris();
     else makeJunk(random(150, 320));
     status.textContent = `+${object.value} • ${orbitZone(player.y)} ORBIT • ${mass}kg`;
   }
@@ -397,12 +474,14 @@
       if (object.special && object.x <= -40 && !specialCollected) { object.x = WIDTH + 300; object.hit = false; }
     });
     junk = junk.filter((object) => object.x > -40 || (tether && tether.object === object));
-    while (junk.filter(object => !object.special).length < level.debris.count) makeJunk(random(140, 320));
+    fillDebris();
 
     station.x -= station.speed * deltaTime;
     if (station.x < -70) {
-      station.x = WIDTH + random(...level.station.returnOffset);
-      station.y = random(...level.station.returnY);
+      station.x = nextStation.x;
+      station.y = nextStation.y;
+      planNextStation();
+      scheduleEncounter();
     }
     depositButton.disabled = !isNearStation() || mass <= 0;
 
@@ -429,6 +508,7 @@
       mass -= transfer;
       if (cargo.length && Math.random() < deltaTime * 18) cargo.pop();
       if (depositProgress >= 1.25 || mass <= 0.2) {
+        const previousBank = bank;
         bank += haul;
         bankedObjects += carriedObjects;
         carriedObjects = 0;
@@ -440,7 +520,7 @@
         depositing = false;
         status.textContent = `TRANSFER COMPLETE • integrity ${Math.round(integrity)}%`;
         setHighScore(bank);
-        if (LevelSystem.meets(level.objective, { bank, bankedObjects })) showResult();
+        if (!level.objective || LevelSystem.meets(level.objective, { bank, bankedObjects })) showResult(previousBank);
       }
     } else if (!depositing) {
       depositProgress = 0;
@@ -490,7 +570,7 @@
     } else {
       context.fillStyle = "#d0d4d7"; context.fillRect(-7, -8, 14, 16); context.fillStyle = "#52799f"; context.fillRect(-25, -5, 18, 10); context.fillRect(7, -5, 18, 10);
     }
-    if (object.special || (level.id === 5 && object.type === 'SAT')) {
+    if (object.special || object.valuable) {
       context.strokeStyle = '#f1c76b'; context.strokeRect(-29, -14, 58, 28);
       context.fillStyle = '#f1c76b'; context.font = 'bold 10px monospace'; context.textAlign = 'center';
       context.fillText(`$${object.value}`, 0, -20);
