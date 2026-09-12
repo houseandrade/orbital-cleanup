@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#02050a">
+  <meta name="color-scheme" content="dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Orbital Cleanup">
+  <meta name="description" content="Collect orbital debris, bank your haul, and stay alive.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <title>Orbital Cleanup</title>
+</head>
+<body>
+  <main id="game" class="game" aria-label="Orbital Cleanup">
+    <header class="topbar">
+      <div>
+        <div class="title">ORBITAL CLEANUP // v0.6</div>
+        <div id="status" class="status" aria-live="polite">Collect debris. Bank your haul. Stay alive.</div>
+      </div>
+      <button id="restart" class="button button--small button--primary" type="button">START</button>
+    </header>
+
+    <section class="gamezone" aria-label="Game area">
+      <canvas id="canvas" width="360" height="520" aria-label="Orbital Cleanup game"></canvas>
+
+      <div id="start-screen" class="overlay overlay--visible">
+        <div class="panel">
+          <div class="kicker">ORBITAL CLEANUP</div>
+          <h1>Clear the orbit.<br>Make it home.</h1>
+          <p class="tutorial"><strong>Hold THRUST</strong> to climb. Release to fall.<br><strong>TETHER</strong> debris. Hold <strong>DEPOSIT</strong> at the station.</p>
+          <p class="risk">Your unbanked haul is lost when the mission ends.</p>
+          <div class="high-score">HIGH SCORE <span id="start-high-score">0</span></div>
+          <button id="start" type="button" class="button button--cta">▶ START MISSION</button>
+        </div>
+      </div>
+
+      <div id="game-over" class="overlay" aria-hidden="true">
+        <div class="panel">
+          <div class="kicker">MISSION ENDED</div>
+          <div id="death" class="game-over-title">REENTRY</div>
+          <div id="detail" class="game-over-detail">Orbit could not be recovered.</div>
+          <div class="stats">
+            <div class="stat"><div class="stat-label">BANKED SCORE</div><div id="bank" class="stat-value">0</div></div>
+            <div class="stat"><div class="stat-label">HAUL LOST</div><div id="lost" class="stat-value">0</div></div>
+          </div>
+          <div id="summary" class="game-over-summary">0 banked • 0 lost</div>
+          <div class="game-over-summary">HIGH SCORE <span id="game-over-high-score">0</span></div>
+          <button id="play-again" type="button" class="button button--cta">▶ PLAY AGAIN</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="controls" aria-label="Game controls">
+      <button id="tether" type="button" class="button">◎ TETHER</button>
+      <button id="deposit" type="button" class="button">▣ HOLD<br>DEPOSIT</button>
+      <button id="thrust" type="button" class="button button--primary">▲ HOLD<br>THRUST</button>
+    </section>
+  </main>
+  <script src="src/game.js" defer></script>
+</body>
+</html>
