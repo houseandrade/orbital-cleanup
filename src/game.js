@@ -32,6 +32,9 @@
   const progress = LevelSystem.readProgress();
   let level = LevelSystem.campaign.find(config => config.id === progress.currentLevel);
   let pendingResult = false;
+  let exitPaused = false;
+  let resumeAfterExit = false;
+  const exitScreen = document.getElementById('exit-confirm');
   let specialCollected = false;
 
   const WIDTH = 360;
@@ -148,6 +151,10 @@
   function reset() {
     cancelAnimationFrame(animationFrame);
     running = false;
+    exitPaused = false;
+    exitScreen.classList.remove('overlay--visible');
+    exitScreen.setAttribute('aria-hidden', 'true');
+    restartButton.disabled = false;
     pendingResult = false;
     specialCollected = false;
     ESCAPE_Y = level.field.escapeY;
@@ -180,6 +187,7 @@
   }
 
   function start() {
+    if (exitPaused) return;
     reset();
     startScreen.classList.remove("overlay--visible");
     running = true;
@@ -586,10 +594,38 @@
   nextButton.addEventListener('click', () => {
     if (level.id < LevelSystem.campaign.length && progress.best[level.id]) { level = LevelSystem.campaign[level.id]; start(); }
   });
-  document.getElementById('campaign').addEventListener('click', () => {
+  function openCampaign() {
     reset();
     startScreen.classList.add('overlay--visible');
     refreshCampaign();
+  }
+  document.getElementById('campaign').addEventListener('click', () => {
+    if (exitPaused) return;
+    if (!running && !pendingResult) { openCampaign(); return; }
+    resumeAfterExit = running;
+    exitPaused = true;
+    running = false;
+    thrusting = depositing = false;
+    depositProgress = 0;
+    cancelAnimationFrame(animationFrame);
+    restartButton.disabled = true;
+    exitScreen.classList.add('overlay--visible');
+    exitScreen.setAttribute('aria-hidden', 'false');
+    document.getElementById('keep-playing').focus();
+  });
+  document.getElementById('keep-playing').addEventListener('click', () => {
+    if (!exitPaused) return;
+    exitPaused = false;
+    exitScreen.classList.remove('overlay--visible');
+    exitScreen.setAttribute('aria-hidden', 'true');
+    restartButton.disabled = false;
+    running = resumeAfterExit;
+    lastFrame = performance.now();
+    if (running) animationFrame = requestAnimationFrame(loop);
+    document.getElementById('campaign').focus();
+  });
+  document.getElementById('leave-run').addEventListener('click', () => {
+    if (exitPaused) openCampaign();
   });
   LevelSystem.campaign.forEach(config => {
     document.getElementById(`level-${config.id}`).addEventListener('click', () => {
