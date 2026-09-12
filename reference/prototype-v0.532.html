@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#02050a">
+<title>Orbital Cleanup v0.532</title>
+<style>
+  :root{
+    --bg:#02050a; --panel:#0b0f14; --card:#161d26; --text:#ffffff; --muted:#aeb8c4;
+    --border:#44505e; --accent:#f3f4f6; --accentText:#111827;
+  }
+  *{box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:#0a0d12;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+  body{padding:16px;display:flex;justify-content:center}
+  #oc0532{width:min(100%,420px)}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 4px 12px}
+  .title{font-size:14px;font-weight:700}.status{font-size:12px;color:#9aa5b1}
+  .gamezone,.gamebtn,canvas{touch-action:none;overscroll-behavior:contain}
+  .gamezone{position:relative;overflow:hidden;border:1px solid #313844;border-radius:14px;background:black}
+  canvas{display:block;width:100%;aspect-ratio:360/520;image-rendering:pixelated}
+  .controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding-top:8px;padding-bottom:max(16px, env(safe-area-inset-bottom))}
+  .gamebtn{min-height:80px;border-radius:14px;border:1px solid #39414d;background:#121821;color:white;font-weight:800;font-size:14px}
+  .gamebtn.primary{background:#e9edf2;color:#111827;border-color:#fff}
+  .gamebtn.small{min-height:44px;padding:0 16px}
+  .gamebtn:disabled{opacity:.4}.gamebtn:active{transform:scale(.98)}
+  #gameover0532{display:none;position:absolute;inset:0;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.88)}
+  .gameover-panel{width:100%;max-width:300px;background:#0b0f14;border:2px solid #d8dee9;border-radius:18px;padding:20px;text-align:center;box-shadow:0 0 0 3px rgba(0,0,0,.45)}
+  .gameover-kicker{color:#aeb8c4;font-size:11px;font-weight:800;letter-spacing:.22em}
+  .gameover-title{color:#fff;font-size:26px;line-height:1.1;font-weight:900;margin-top:8px}
+  .gameover-detail{color:#d0d7df;font-size:14px;line-height:1.35;margin-top:4px}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+  .gameover-stat{background:#161d26;border:1px solid #44505e;border-radius:12px;padding:12px}
+  .gameover-label{color:#aeb8c4;font-size:10px;font-weight:800;letter-spacing:.08em}
+  .gameover-value{color:#fff;font-size:26px;line-height:1;font-weight:900;margin-top:4px}
+  .gameover-summary{color:#d0d7df;font-size:12px;margin-top:12px}
+  .again{width:100%;min-height:56px;margin-top:20px;background:#f3f4f6;color:#111827;border:2px solid #fff}
+</style>
+</head>
+<body>
+<div id="oc0532">
+  <div class="top">
+    <div>
+      <div class="title">ORBITAL CLEANUP // v0.532</div>
+      <div id="status0532" class="status">Collect debris. Bank your haul. Stay alive.</div>
+    </div>
+    <button id="start0532" class="gamebtn small primary" type="button">START</button>
+  </div>
+
+  <div class="gamezone">
+    <canvas id="canvas0532" width="360" height="520" aria-label="Orbital Cleanup game"></canvas>
+    <div id="gameover0532">
+      <div class="gameover-panel">
+        <div class="gameover-kicker">MISSION ENDED</div>
+        <div id="death0532" class="gameover-title">REENTRY</div>
+        <div id="detail0532" class="gameover-detail">Orbit could not be recovered.</div>
+        <div class="stats">
+          <div class="gameover-stat"><div class="gameover-label">BANKED SCORE</div><div id="bank0532" class="gameover-value">0</div></div>
+          <div class="gameover-stat"><div class="gameover-label">HAUL LOST</div><div id="lost0532" class="gameover-value">0</div></div>
+        </div>
+        <div id="summary0532" class="gameover-summary">0 banked • 0 lost</div>
+        <button id="again0532" type="button" class="gamebtn again">▶ PLAY AGAIN</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="tether0532" type="button" class="gamebtn">◎ TETHER</button>
+    <button id="deposit0532" type="button" class="gamebtn">▣ HOLD<br>DEPOSIT</button>
+    <button id="thrust0532" type="button" class="gamebtn primary">▲ HOLD<br>THRUST</button>
+  </div>
+</div>
+
+<script>
+(()=> {
+  const R=document.getElementById('oc0532');
+  const C=document.getElementById('canvas0532'),x=C.getContext('2d'),S=document.getElementById('status0532');
+  const B=document.getElementById('start0532'),T=document.getElementById('tether0532'),D=document.getElementById('deposit0532'),U=document.getElementById('thrust0532');
+  const GO=document.getElementById('gameover0532'),AGAIN=document.getElementById('again0532'),DEATH=document.getElementById('death0532'),DETAIL=document.getElementById('detail0532');
+  const BANK=document.getElementById('bank0532'),LOST=document.getElementById('lost0532'),SUMMARY=document.getElementById('summary0532');
+  const W=360,H=520,PX=180,ESC=75,RE=360;
+  let p,junk,cargo,parts,tether,station,run=false,thrust=false,deposit=false,haul=0,bank=0,mass=0,integrity=100,last=0,raf=0,depProg=0,shake=0,impactText=0,time=0;
+  const rnd=(a,b)=>a+Math.random()*(b-a),cl=(v,a,b)=>Math.max(a,Math.min(b,v)),ease=t=>1-Math.pow(1-t,3);
+  function zone(y){return y<170?'HIGH':y<270?'MID':'LOW'}
+  function makeJunk(off=0){let z=Math.random(),y,speed,val,m,sz,type;if(z<.2){y=rnd(110,165);speed=rnd(22,34);val=70;m=10;sz=14;type='SAT'}else if(z<.62){y=rnd(180,260);speed=rnd(38,54);val=30;m=5;sz=10;type='PANEL'}else{y=rnd(282,342);speed=rnd(76,112);val=30;m=2;sz=7;type='SCRAP'}junk.push({x:W+off,y,speed,val,m,sz,type,w:rnd(0,6.28),hit:false})}
+  function reset(){cancelAnimationFrame(raf);GO.style.display='none';p={y:225,vy:0,flash:0};junk=[];cargo=[];parts=[];tether=null;haul=0;bank=0;mass=0;depProg=0;integrity=100;shake=0;impactText=0;time=0;thrust=false;deposit=false;station={x:W+300,y:225,speed:25};for(let i=0;i<8;i++)makeJunk(i*85+rnd(0,30));D.disabled=true;T.textContent='◎ TETHER';draw()}
+  function start(){reset();run=true;last=performance.now();B.textContent='RESTART';S.textContent='Dive low for fast money. Watch your boundaries.';raf=requestAnimationFrame(loop)}
+  function end(kind){if(!run)return;const finalBank=Math.round(bank),lostHaul=Math.round(haul);run=false;thrust=false;deposit=false;tether=null;D.disabled=true;cancelAnimationFrame(raf);let title='MISSION ENDED',detail='Your run is over.';if(kind==='REENTRY'){title='REENTRY';detail='You dropped below the recoverable orbit.'}if(kind==='ESCAPE'){title='LOST IN SPACE';detail='You drifted beyond the recoverable orbit.'}if(kind==='SUIT'){title='SUIT FAILURE';detail='Your suit integrity reached zero.'}DEATH.textContent=title;DETAIL.textContent=detail;BANK.textContent=String(finalBank);LOST.textContent=String(lostHaul);SUMMARY.textContent=finalBank+' banked • '+lostHaul+' lost';S.textContent=title+' • '+finalBank+' banked • '+lostHaul+' lost';GO.style.display='flex';draw()}
+  function nearStation(){return Math.abs(station.x-PX)<90&&Math.abs(station.y-p.y)<85}
+  function fire(){if(!run)return;if(tether){tether=null;T.textContent='◎ TETHER';return}let q=null,b=82;junk.forEach(o=>{let yy=o.y+Math.sin(o.w)*4,d=Math.hypot(o.x-PX,yy-p.y);if(d<b){b=d;q=o}});if(!q){S.textContent='Nothing in tether range.';return}tether={o:q,sx:q.x,sy:q.y,t:0,dur:.55+q.m*.025,cx:q.x,cy:q.y};T.textContent='✕ RELEASE'}
+  function collect(o){let i=junk.indexOf(o);if(i>=0)junk.splice(i,1);haul+=o.val;mass+=o.m;cargo.push({a:rnd(0,6.28),r:16+Math.min(cargo.length*2,22),s:Math.max(3,o.sz*.4)});for(let k=0;k<10;k++)parts.push({x:PX,y:p.y,vx:rnd(-50,50),vy:rnd(-50,50),life:rnd(.2,.6)});tether=null;T.textContent='◎ TETHER';makeJunk(rnd(150,320));S.textContent='+'+o.val+' • '+zone(p.y)+' ORBIT • '+mass+'kg'}
+  function collision(o){if(o.hit)return;o.hit=true;let rel=Math.max(1,o.speed/40),damage=Math.round((o.type==='SAT'?18:o.type==='PANEL'?11:7)*rel*.55);integrity=cl(integrity-damage,0,100);p.vy+=(o.y-p.y)*.18+rnd(-20,20);p.flash=.25;shake=.3;impactText=.6;S.textContent='IMPACT! -'+damage+' integrity';for(let k=0;k<20;k++)parts.push({x:PX,y:p.y,vx:rnd(-110,110),vy:rnd(-110,110),life:rnd(.2,.55)});if(integrity<=0)end('SUIT')}
+  function update(dt){time+=dt;let mr=Math.min(mass/100,1),g=26+mr*5,eff=Math.max(.75,1-mr*.25),power=72*eff,damp=.968+mr*.014;p.vy+=g*dt;if(thrust)p.vy-=power*dt;p.vy*=Math.pow(damp,dt*30);p.y+=p.vy*dt;p.flash=Math.max(0,p.flash-dt);shake=Math.max(0,shake-dt);impactText=Math.max(0,impactText-dt);junk.forEach(o=>{if(tether&&tether.o===o)return;o.x-=o.speed*dt;o.w+=dt*1.5;let oy=o.y+Math.sin(o.w)*4;if(Math.abs(o.x-PX)<12+o.sz&&Math.abs(oy-p.y)<16+o.sz)collision(o)});junk=junk.filter(o=>o.x>-40||(tether&&tether.o===o));while(junk.length<8)makeJunk(rnd(140,320));station.x-=station.speed*dt;if(station.x<-70){station.x=W+rnd(420,620);station.y=rnd(190,255)}D.disabled=!nearStation()||mass<=0;if(tether){let o=tether.o;if(!junk.includes(o)){tether=null;T.textContent='◎ TETHER'}else{tether.t+=dt/tether.dur;let a=cl(tether.t,0,1),e=ease(a);tether.cx=tether.sx+(PX-tether.sx)*e;tether.cy=tether.sy+(p.y-tether.sy)*e;o.x=tether.cx;o.y=tether.cy;if(a>=1)collect(o)}}if(deposit&&nearStation()&&mass>0){depProg+=dt;let transfer=Math.min(mass,dt*18);mass-=transfer;if(cargo.length&&Math.random()<dt*18)cargo.pop();if(depProg>=1.25||mass<=.2){bank+=haul;haul=0;mass=0;cargo=[];integrity=cl(integrity+12,0,100);depProg=0;deposit=false;S.textContent='TRANSFER COMPLETE • integrity '+Math.round(integrity)+'%'}}else if(!deposit)depProg=0;parts.forEach(q=>{q.x+=q.vx*dt;q.y+=q.vy*dt;q.life-=dt});parts=parts.filter(q=>q.life>0);if(run&&p.y<ESC)end('ESCAPE');else if(run&&p.y>RE)end('REENTRY')}
+  function earth(){x.beginPath();x.arc(180,H+48,180,Math.PI,Math.PI*2);x.lineTo(W,H);x.lineTo(0,H);x.closePath();x.fillStyle='#195985';x.fill();x.strokeStyle='#8bcbe7';x.lineWidth=6;x.beginPath();x.arc(180,H+48,177,Math.PI,Math.PI*2);x.stroke();x.fillStyle='#397557';x.beginPath();x.ellipse(120,443,58,16,.1,0,6.28);x.fill();x.beginPath();x.ellipse(250,465,65,17,-.1,0,6.28);x.fill()}
+  function dj(o){let yy=(tether&&tether.o===o)?o.y:o.y+Math.sin(o.w)*4;x.save();x.translate(o.x,yy);if(o.type==='SCRAP'){x.fillStyle='#c7cbce';x.fillRect(-5,-3,10,6);x.fillRect(-2,-6,4,12)}else if(o.type==='PANEL'){x.fillStyle='#52799f';x.fillRect(-13,-6,26,12);x.strokeStyle='#ccd5dc';x.strokeRect(-13,-6,26,12)}else{x.fillStyle='#d0d4d7';x.fillRect(-7,-8,14,16);x.fillStyle='#52799f';x.fillRect(-25,-5,18,10);x.fillRect(7,-5,18,10)}x.restore()}
+  function ds(){x.save();x.translate(station.x,station.y);x.fillStyle='#929da5';x.fillRect(-22,-12,44,24);x.fillStyle='#52799f';x.fillRect(-46,-7,24,14);x.fillRect(22,-7,24,14);x.strokeStyle=nearStation()?'#a7f3b5':'#d7dde2';x.lineWidth=2;x.beginPath();x.arc(0,0,32,0,6.28);x.stroke();x.fillStyle='#fff';x.font='bold 8px monospace';x.textAlign='center';x.fillText('CLEANUP',0,3);x.restore();x.textAlign='left'}
+  function player(){x.save();x.translate(PX,p.y);if(thrust&&run){let f=12+Math.random()*8;x.fillStyle='#f5a947';x.fillRect(-4,13,8,f);x.fillStyle='#fff0a1';x.fillRect(-2,13,4,f*.55)}cargo.forEach((a,i)=>{let an=a.a+i*.8;x.fillStyle='#9da7ad';x.fillRect(Math.cos(an)*a.r-a.s/2,Math.sin(an)*a.r-a.s/2,a.s,a.s)});x.fillStyle=p.flash>0?'#ff6f61':'#eef1f3';x.fillRect(-8,-10,16,22);x.fillRect(-13,-3,5,10);x.fillRect(8,-3,5,10);x.fillRect(-7,12,5,8);x.fillRect(2,12,5,8);x.fillStyle='#6c94a8';x.fillRect(-6,-8,12,7);x.fillStyle='#202c38';x.fillRect(-4,-6,8,4);x.restore()}
+  function warnings(){let top=cl((135-p.y)/60,0,1),bottom=cl((p.y-300)/60,0,1),pulse=.55+.25*Math.sin(time*7);if(top>0){let g=x.createLinearGradient(0,0,0,150);g.addColorStop(0,'rgba(90,90,255,'+(top*.5)+')');g.addColorStop(1,'rgba(90,90,255,0)');x.fillStyle=g;x.fillRect(0,0,W,160);x.strokeStyle='rgba(140,140,255,'+(top*pulse)+')';x.lineWidth=3;x.beginPath();x.moveTo(0,ESC);x.lineTo(W,ESC);x.stroke();if(p.y<115){x.fillStyle='rgba(180,180,255,'+pulse+')';x.font='bold 14px monospace';x.textAlign='center';x.fillText('⚠ ESCAPE RISK',180,100);x.textAlign='left'}}if(bottom>0){let g=x.createLinearGradient(0,270,0,H);g.addColorStop(0,'rgba(255,80,50,0)');g.addColorStop(1,'rgba(255,65,35,'+(bottom*.42)+')');x.fillStyle=g;x.fillRect(0,270,W,H-270);x.strokeStyle='rgba(255,95,65,'+(bottom*pulse)+')';x.lineWidth=3;x.beginPath();x.moveTo(0,RE);x.lineTo(W,RE);x.stroke();if(p.y>325){x.fillStyle='rgba(255,135,95,'+pulse+')';x.font='bold 14px monospace';x.textAlign='center';x.fillText('⚠ REENTRY RISK',180,340);x.textAlign='left'}}}
+  function draw(){x.save();if(shake>0)x.translate(rnd(-4,4),rnd(-4,4));x.clearRect(-10,-10,W+20,H+20);x.fillStyle='#02050a';x.fillRect(-10,-10,W+20,H+20);for(let i=0;i<55;i++){x.globalAlpha=.35+(i%5)*.1;x.fillStyle='#fff';x.fillRect((i*67)%W,(i*41)%350,1,1)}x.globalAlpha=1;junk.forEach(dj);ds();earth();warnings();if(tether){x.beginPath();x.moveTo(PX,p.y);x.lineTo(tether.cx,tether.cy);x.strokeStyle='#fff';x.lineWidth=2;x.stroke()}if(nearStation()&&mass>0){x.strokeStyle='rgba(170,255,190,.65)';x.beginPath();x.arc(PX,p.y,40,0,6.28);x.stroke()}player();parts.forEach(q=>{x.globalAlpha=cl(q.life*3,0,1);x.fillStyle='#fff';x.fillRect(q.x,q.y,3,3)});x.globalAlpha=1;x.restore();x.fillStyle='rgba(0,0,0,.72)';x.fillRect(7,7,346,72);x.fillStyle='#fff';x.font='bold 12px monospace';x.fillText('BANK '+Math.round(bank),14,24);x.fillText('HAUL '+haul,126,24);x.fillText('MASS '+Math.round(mass)+'kg',244,24);let eff=Math.round(Math.max(.75,1-Math.min(mass/100,1)*.25)*100);x.fillStyle='#adb8c2';x.font='10px monospace';x.fillText(zone(p.y)+' ORBIT • THRUST '+eff+'%',14,42);x.fillText('INTEGRITY',14,59);x.fillStyle='#333';x.fillRect(78,51,120,9);x.fillStyle=integrity>60?'#8ee59b':integrity>30?'#f1c76b':'#ff7167';x.fillRect(78,51,120*(integrity/100),9);x.fillStyle='#fff';x.fillText(Math.round(integrity)+'%',205,59);if(deposit&&nearStation()){x.fillStyle='#a7f3b5';x.fillText('TRANSFER',248,59);x.fillStyle='#36454f';x.fillRect(248,64,94,7);x.fillStyle='#a7f3b5';x.fillRect(248,64,94*cl(depProg/1.25,0,1),7)}else{x.fillStyle='#adb8c2';x.fillText(nearStation()?'STATION IN RANGE':'STATION APPROACHING',225,59)}if(impactText>0){x.fillStyle='rgba(255,70,60,'+cl(impactText*1.4,0,1)+')';x.textAlign='center';x.font='bold 20px monospace';x.fillText('IMPACT!',180,110);x.textAlign='left'}}
+  function loop(n){if(!run)return;let dt=Math.min((n-last)/1000,.034);last=n;update(dt);draw();if(run)raf=requestAnimationFrame(loop)}
+  function prevent(e){e.preventDefault()}['contextmenu','selectstart','dragstart','touchmove'].forEach(ev=>R.addEventListener(ev,prevent,{passive:false}));
+  function hold(btn,on,off){btn.addEventListener('pointerdown',e=>{e.preventDefault();try{btn.setPointerCapture(e.pointerId)}catch(_){}on()});const stop=e=>{e.preventDefault();off();try{if(btn.hasPointerCapture(e.pointerId))btn.releasePointerCapture(e.pointerId)}catch(_){}};btn.addEventListener('pointerup',stop);btn.addEventListener('pointercancel',stop)}
+  hold(U,()=>{if(run)thrust=true},()=>{thrust=false});hold(D,()=>{if(run&&!D.disabled)deposit=true},()=>{deposit=false;depProg=0});
+  T.addEventListener('pointerdown',e=>{e.preventDefault();fire()});B.addEventListener('pointerdown',e=>{e.preventDefault();start()});AGAIN.addEventListener('pointerdown',e=>{e.preventDefault();start()});
+  reset();
+})();
+</script>
+</body>
+</html>
