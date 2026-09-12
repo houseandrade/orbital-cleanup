@@ -1,4 +1,4 @@
-# Orbital Cleanup v0.6
+# Orbital Cleanup v0.7
 
 A mobile-first, standalone PWA build of the v0.532 canvas prototype. Collect debris, manage the added cargo mass, and bank the haul at the cleanup station before the run ends.
 
@@ -45,6 +45,7 @@ node tests/acceptance.mjs
 
 - `index.html` — accessible application shell and overlays
 - `styles.css` — mobile layout, safe areas, and input protections
+- `src/levels.js` — campaign configurations, criteria evaluation, and local progress
 - `src/game.js` — game state, simulation, rendering, and controls
 - `manifest.webmanifest` — install metadata
 - `service-worker.js` — offline app-shell cache
@@ -53,3 +54,11 @@ node tests/acceptance.mjs
 - `tests/acceptance.mjs` — deterministic checks for core mechanics and PWA assets
 
 No build step or framework is required.
+
+## v0.7 campaign
+
+Choose one of three sequentially unlocked levels. Bank the mission target, then choose **Finish Level** or **Keep Salvaging** at the paused deposit screen. Every subsequent qualifying deposit offers that choice again. Finishing saves completion and the best star rating; failing keeps the existing Game Over outcome and loses unbanked cargo. A qualifying deposit alone does not save campaign completion. Replay completed levels from Campaign; leaving an active run discards that run. Progress is local to the browser, with an in-memory fallback when storage is unavailable.
+
+`src/levels.js` defines field boundaries, player starting altitude/integrity, station cadence, weighted debris bands (altitude, speed, value, mass, size, and existing visual type), an optional single special target, an objective, and ordered star criteria. The engine reads these on reset and spawn. Normal debris replenishes as in v0.6; a missed special satellite returns, but a collected one does not respawn during that run. Bank targets use the original game's value scale.
+
+Add future criterion types to `meets`; add future content as configurations. Only bank-value objectives and objective-completion/bank-value stars exist today. Field dimensions and artwork remain the original canvas geometry. Contracts, Endless, other objectives, and fuel are outside this release.

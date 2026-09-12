@@ -54,7 +54,7 @@ Do not change tuning without documenting the evidence and decision in `HANDOFF.m
 
 ## Phase 4 — Progression and replayability
 
-Do not begin until core-loop playtesting is positive.
+v0.7 level-system foundation implemented for review at Brian’s request. Playtest balance before expanding.
 
 Possible later backlog includes combos, additional debris classes, rare or dangerous objects, missions, upgrades, stronger suits, and difficulty escalation. None are committed features.
 
@@ -68,3 +68,9 @@ Possible later backlog includes combos, additional debris classes, rare or dange
 ## Delivery workflow
 
 Each new iteration starts on a feature branch. When it is ready for testing, commit it clearly and open a pull request against `main`. Keep `main` on the latest explicitly approved stable playtest build; do not merge without explicit approval.
+
+## v0.7 — Level System
+
+Implemented for review: configuration-driven Levels 1–3, bank-value objectives, optional three-star goals, safe-deposit completion choice, local progression, and replay. No fuel.
+
+Next: playtest First Haul, Junkyard, and High Roller for understandable goals and worthwhile additional trips. Levels 4–10 remain future experiments in geometry, rewards, objectives, movement, and constraints. Campaign, Contracts, and Endless should eventually share the configuration-driven engine; neither future mode is implemented.
