@@ -1,4 +1,4 @@
-# Orbital Cleanup v0.8
+# Orbital Cleanup v0.8.1
 
 A mobile-first, standalone PWA build of the v0.532 canvas prototype. Collect debris, manage the added cargo mass, and bank the haul at the cleanup station before the run ends.
 
@@ -68,3 +68,11 @@ Add future criterion types to `meets`; add future content as configurations. Onl
 Endless Orbit is available immediately in the main menu, independent of campaign completion. It uses the original MVP debris bands, fixed values, eight replenishing objects, and recurring station passes. Safe deposits keep the run going; boundary or suit failure ends it. No fuel or difficulty ramp is added.
 
 The endless configuration uses the same engine with no objective and no stars. Its best banked score is stored separately under `orbital-cleanup-endless-best-v1`, updated at deposits and preserved across replay. Existing combined legacy/campaign scores are not imported because their source cannot be distinguished. Completing Level 3 also offers a direct Endless Orbit launch. Safe Menu exit applies to both modes.
+
+## v0.8.1 — Flight UI and artwork
+
+The main menu separates Campaign and Endless. During flight, the dashboard shows the bank target, all three star thresholds, banked versus carried value, integrity, and cargo. Endless shows its personal best instead of stars. Restart lives in the paused Menu and requires confirmation. Results include a Main Menu action.
+
+Station status is blank while offscreen or departing outside deposit range, “Station approaching” only when visible and moving toward the player, and “Station in range” when a deposit is possible. Transfer feedback remains visible while depositing.
+
+`src/art.js` draws generated pixel artwork from `src/art/` with silhouette masks to exclude the atlas background. The original drawing code remains a fallback if artwork fails to load. Art changes do not alter physics, hitboxes, tether range, or rewards. The canvas displays a 360×400 crop starting at world y=60; simulation coordinates remain 360×520, with both failure boundaries visible. Assets are cached offline and included by the existing recursive `src` deployment copy.

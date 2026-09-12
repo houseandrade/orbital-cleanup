@@ -36,6 +36,7 @@
   let resumeAfterExit = false;
   const exitScreen = document.getElementById('exit-confirm');
   let specialCollected = false;
+  let exitAction = 'leave';
 
   const WIDTH = 360;
   const HEIGHT = 520;
@@ -72,6 +73,10 @@
 
   const sessionBests = {};
   const scoreKey = () => level.id === 'endless' ? 'orbital-cleanup-endless-best-v1' : HIGH_SCORE_KEY;
+  function readEndlessBest() {
+    try { return Math.max(sessionBests['orbital-cleanup-endless-best-v1'] || 0, Number.parseInt(localStorage.getItem('orbital-cleanup-endless-best-v1'), 10) || 0); }
+    catch (_) { return sessionBests['orbital-cleanup-endless-best-v1'] || 0; }
+  }
   function getHighScore() {
     try {
       const value = Number.parseInt(localStorage.getItem(scoreKey()) || "0", 10);
@@ -105,8 +110,8 @@
       button.textContent = `${config.id}. ${config.name} • ${progress.best[config.id] ? '★'.repeat(progress.best[config.id]) : button.disabled ? 'LOCKED' : 'NEW'}`;
       button.setAttribute('aria-pressed', String(config.id === level.id));
     });
+    document.getElementById('endless-menu-best').textContent = `$${readEndlessBest()}`;
     const isEndless = level.id === 'endless';
-    document.getElementById('endless').setAttribute('aria-pressed', String(isEndless));
     document.getElementById('start-score-label').textContent = isEndless ? 'ENDLESS BEST' : 'CAMPAIGN HIGH SCORE';
     document.getElementById('over-score-label').textContent = isEndless ? 'ENDLESS BEST' : 'CAMPAIGN HIGH SCORE';
     startButton.textContent = isEndless ? '▶ START ENDLESS ORBIT' : '▶ START MISSION';
@@ -128,6 +133,7 @@
     continueButton.textContent = `KEEP SALVAGING → $${level.stars[stars]?.target || bank}`;
     replayButton.hidden = nextButton.hidden = true;
     document.getElementById('result-endless').hidden = true;
+    document.getElementById('result-menu').hidden = true;
     resultScreen.classList.add('overlay--visible');
     resultScreen.setAttribute('aria-hidden', 'false');
   }
@@ -143,6 +149,7 @@
     resultTitle.textContent = 'LEVEL COMPLETE';
     finishButton.hidden = continueButton.hidden = true;
     replayButton.hidden = false;
+    document.getElementById('result-menu').hidden = false;
     nextButton.hidden = level.id === LevelSystem.campaign.length;
     document.getElementById('result-endless').hidden = !nextButton.hidden;
     status.textContent = nextButton.hidden ? 'Campaign complete. Try Endless Orbit or replay for stars.' : 'Level complete. Next level unlocked.';
@@ -203,7 +210,7 @@
     startScreen.classList.remove("overlay--visible");
     running = true;
     lastFrame = performance.now();
-    restartButton.textContent = "RESTART";
+    root.classList.remove('menu-open');
     status.textContent = level.description;
     if (level.objective) {
       progress.currentLevel = level.id;
@@ -244,6 +251,40 @@
 
   function isNearStation() {
     return Math.abs(station.x - PLAYER_X) < 90 && Math.abs(station.y - player.y) < 85;
+  }
+
+  function stationMessage() {
+    // Station wings extend 46px to either side of its center.
+    if (station.x + 46 <= 0 || station.x - 46 >= WIDTH) return '';
+    if (isNearStation()) return depositing ? 'TRANSFERRING SALVAGE…' : 'STATION IN RANGE';
+    return station.x > PLAYER_X && station.speed > 0 ? 'STATION APPROACHING' : '';
+  }
+
+  function updateHud() {
+    const stars = LevelSystem.rating(level, { bank });
+    document.getElementById('flight-title').textContent = level.objective ? `${level.id}. ${level.name}` : level.name;
+    missionDisplay.textContent = level.objective ? `BANK $${level.objective.target}` : `PERSONAL BEST $${sessionBests[scoreKey()] || 0}`;
+    const goal = document.getElementById('goal-progress');
+    goal.hidden = !level.objective;
+    goal.max = level.objective?.target || 1;
+    goal.value = Math.min(bank, goal.max);
+    document.getElementById('star-goals').hidden = !level.objective;
+    if (level.objective) level.stars.forEach((criterion, index) => {
+      const star = document.getElementById(`star-${index + 1}`);
+      star.textContent = `${'★'.repeat(index + 1)} $${criterion.target || level.objective.target}`;
+      star.classList.remove('earned');
+      if (stars > index) star.classList.add('earned');
+    });
+    document.getElementById('hud-bank').textContent = `$${Math.round(bank)}`;
+    document.getElementById('hud-haul').textContent = `$${haul}`;
+    document.getElementById('hud-mass').textContent = `${Math.round(mass)}kg`;
+    document.getElementById('hud-integrity').textContent = `${Math.round(integrity)}%`;
+    const suit = document.getElementById('integrity-progress');
+    suit.value = integrity;
+    suit.style.setProperty('--accent', integrity > 60 ? '#a7f3b5' : integrity > 30 ? '#f1c76b' : '#ff7167');
+    document.getElementById('station-status').textContent = running ? stationMessage() : '';
+    depositButton.disabled = !running || !isNearStation() || mass <= 0;
+    thrustButton.disabled = tetherButton.disabled = !running;
   }
 
   function fireTether() {
@@ -404,6 +445,7 @@
   }
 
   function drawEarth() {
+    if (GameArt.backdrop(context)) return;
     context.beginPath();
     context.arc(180, HEIGHT + 48, 180, Math.PI, Math.PI * 2);
     context.lineTo(WIDTH, HEIGHT);
@@ -425,7 +467,10 @@
     const objectY = tether && tether.object === object ? object.y : object.y + Math.sin(object.wobble) * 4;
     context.save();
     context.translate(object.x, objectY);
-    if (object.type === "SCRAP") {
+    const dimensions = object.type === 'SCRAP' ? [14, 14] : object.type === 'PANEL' ? [28, 14] : [50, 28];
+    if (GameArt.sprite(context, object.type, 0, 0, ...dimensions)) {
+      // The configured collision size remains unchanged.
+    } else if (object.type === "SCRAP") {
       context.fillStyle = "#c7cbce"; context.fillRect(-5, -3, 10, 6); context.fillRect(-2, -6, 4, 12);
     } else if (object.type === "PANEL") {
       context.fillStyle = "#52799f"; context.fillRect(-13, -6, 26, 12); context.strokeStyle = "#ccd5dc"; context.strokeRect(-13, -6, 26, 12);
@@ -443,11 +488,13 @@
   function drawStation() {
     context.save();
     context.translate(station.x, station.y);
+    if (!GameArt.sprite(context, 'station', 0, 0, 92, 48)) {
     context.fillStyle = "#929da5"; context.fillRect(-22, -12, 44, 24);
     context.fillStyle = "#52799f"; context.fillRect(-46, -7, 24, 14); context.fillRect(22, -7, 24, 14);
+    }
     context.strokeStyle = isNearStation() ? "#a7f3b5" : "#d7dde2";
     context.lineWidth = 2; context.beginPath(); context.arc(0, 0, 32, 0, 6.28); context.stroke();
-    context.fillStyle = "#fff"; context.font = "bold 8px monospace"; context.textAlign = "center"; context.fillText("CLEANUP", 0, 3);
+    context.fillStyle = "#fff"; context.font = "bold 8px monospace"; context.textAlign = "center"; context.fillText("CLEANUP", 0, 38);
     context.restore();
     context.textAlign = "left";
   }
@@ -465,11 +512,13 @@
       context.fillStyle = "#9da7ad";
       context.fillRect(Math.cos(angle) * item.radius - item.size / 2, Math.sin(angle) * item.radius - item.size / 2, item.size, item.size);
     });
+    if (!GameArt.sprite(context, 'astronaut', 0, 3, 26, 34) || player.flash > 0) {
     context.fillStyle = player.flash > 0 ? "#ff6f61" : "#eef1f3";
     context.fillRect(-8, -10, 16, 22); context.fillRect(-13, -3, 5, 10); context.fillRect(8, -3, 5, 10);
     context.fillRect(-7, 12, 5, 8); context.fillRect(2, 12, 5, 8);
     context.fillStyle = "#6c94a8"; context.fillRect(-6, -8, 12, 7);
     context.fillStyle = "#202c38"; context.fillRect(-4, -6, 8, 4);
+    }
     context.restore();
   }
 
@@ -502,9 +551,10 @@
   }
 
   function draw() {
-    const stars = LevelSystem.rating(level, { bank });
-    missionDisplay.textContent = level.id === 'endless' ? `Endless Orbit • Bank $${bank} • Best $${getHighScore()}` : `${level.id}. ${level.name} • Bank $${bank} / $${level.objective.target} • ${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}`;
+    updateHud();
     context.save();
+    // Crop only unused space above/below the orbit; world physics stay 360 × 520.
+    context.translate(0, -60);
     if (shake > 0) context.translate(random(-4, 4), random(-4, 4));
     context.clearRect(-10, -10, WIDTH + 20, HEIGHT + 20);
     context.fillStyle = "#02050a"; context.fillRect(-10, -10, WIDTH + 20, HEIGHT + 20);
@@ -531,22 +581,6 @@
     context.globalAlpha = 1;
     context.restore();
 
-    context.fillStyle = "rgba(0,0,0,.72)"; context.fillRect(7, 7, 346, 72);
-    context.fillStyle = "#fff"; context.font = "bold 12px monospace";
-    context.fillText(`BANK ${Math.round(bank)}`, 14, 24); context.fillText(`HAUL ${haul}`, 126, 24); context.fillText(`MASS ${Math.round(mass)}kg`, 244, 24);
-    const effectiveness = Math.round(thrustEffectiveness(mass) * 100);
-    context.fillStyle = "#adb8c2"; context.font = "10px monospace";
-    context.fillText(`${orbitZone(player.y)} ORBIT • THRUST ${effectiveness}%`, 14, 42); context.fillText("INTEGRITY", 14, 59);
-    context.fillStyle = "#333"; context.fillRect(78, 51, 120, 9);
-    context.fillStyle = integrity > 60 ? "#8ee59b" : integrity > 30 ? "#f1c76b" : "#ff7167"; context.fillRect(78, 51, 120 * (integrity / 100), 9);
-    context.fillStyle = "#fff"; context.fillText(`${Math.round(integrity)}%`, 205, 59);
-    if (depositing && isNearStation()) {
-      context.fillStyle = "#a7f3b5"; context.fillText("TRANSFER", 248, 59);
-      context.fillStyle = "#36454f"; context.fillRect(248, 64, 94, 7);
-      context.fillStyle = "#a7f3b5"; context.fillRect(248, 64, 94 * clamp(depositProgress / 1.25, 0, 1), 7);
-    } else {
-      context.fillStyle = "#adb8c2"; context.fillText(isNearStation() ? "STATION IN RANGE" : "STATION APPROACHING", 225, 59);
-    }
     if (impactText > 0) {
       context.fillStyle = `rgba(255,70,60,${clamp(impactText * 1.4, 0, 1)})`; context.textAlign = "center"; context.font = "bold 20px monospace";
       context.fillText("IMPACT!", 180, 110); context.textAlign = "left";
@@ -588,7 +622,13 @@
   addHoldControl(thrustButton, () => { if (running) thrusting = true; }, () => { thrusting = false; });
   addHoldControl(depositButton, () => { if (running && !depositButton.disabled) depositing = true; }, () => { depositing = false; depositProgress = 0; });
   tetherButton.addEventListener("pointerdown", (event) => { event.preventDefault(); fireTether(); });
-  restartButton.addEventListener("pointerdown", (event) => { event.preventDefault(); start(); });
+  restartButton.addEventListener('click', () => {
+    if (!exitPaused) return;
+    exitAction = 'restart';
+    document.getElementById('exit-title').textContent = 'Restart this run?';
+    document.getElementById('leave-run').textContent = 'CONFIRM RESTART';
+    restartButton.hidden = true;
+  });
   startButton.addEventListener("pointerdown", (event) => { event.preventDefault(); start(); });
   playAgainButton.addEventListener("pointerdown", (event) => { event.preventDefault(); start(); });
 
@@ -602,10 +642,18 @@
     depositProgress = 0;
   });
 
+  document.getElementById('choose-campaign').addEventListener('click', () => {
+    if (!level.objective) level = LevelSystem.campaign.find(config => config.id === progress.currentLevel);
+    document.getElementById('mode-menu').hidden = true;
+    document.getElementById('campaign-picker').hidden = false;
+    refreshCampaign();
+  });
+  document.getElementById('back-modes').addEventListener('click', openCampaign);
+  document.getElementById('over-menu').addEventListener('click', openCampaign);
+  document.getElementById('result-menu').addEventListener('click', openCampaign);
   document.getElementById('endless').addEventListener('click', () => {
     level = LevelSystem.endless;
-    refreshCampaign();
-    draw();
+    start();
   });
   document.getElementById('result-endless').addEventListener('click', () => {
     level = LevelSystem.endless;
@@ -620,20 +668,28 @@
   function openCampaign() {
     reset();
     startScreen.classList.add('overlay--visible');
+    root.classList.add('menu-open');
+    document.getElementById('mode-menu').hidden = false;
+    document.getElementById('campaign-picker').hidden = true;
     refreshCampaign();
   }
   document.getElementById('campaign').addEventListener('click', () => {
     if (exitPaused) return;
     if (!running && !pendingResult) { openCampaign(); return; }
+    exitAction = 'leave';
+    document.getElementById('exit-title').textContent = 'Run paused';
+    document.getElementById('leave-run').textContent = 'LEAVE TO MENU';
+    restartButton.hidden = false;
     resumeAfterExit = running;
     exitPaused = true;
     running = false;
     thrusting = depositing = false;
     depositProgress = 0;
     cancelAnimationFrame(animationFrame);
-    restartButton.disabled = true;
+    restartButton.disabled = false;
     exitScreen.classList.add('overlay--visible');
     exitScreen.setAttribute('aria-hidden', 'false');
+    draw();
     document.getElementById('keep-playing').focus();
   });
   document.getElementById('keep-playing').addEventListener('click', () => {
@@ -648,7 +704,9 @@
     document.getElementById('campaign').focus();
   });
   document.getElementById('leave-run').addEventListener('click', () => {
-    if (exitPaused) openCampaign();
+    if (!exitPaused) return;
+    if (exitAction === 'restart') { exitPaused = false; start(); }
+    else openCampaign();
   });
   LevelSystem.campaign.forEach(config => {
     document.getElementById(`level-${config.id}`).addEventListener('click', () => {
