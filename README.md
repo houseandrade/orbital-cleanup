@@ -1,4 +1,4 @@
-# Orbital Cleanup v0.8.1
+# Orbital Cleanup v0.9
 
 A mobile-first, standalone PWA build of the v0.532 canvas prototype. Collect debris, manage the added cargo mass, and bank the haul at the cleanup station before the run ends.
 
@@ -84,3 +84,12 @@ Restore WebKit-prefixed selection protection and suppress native touch/double-ta
 ## PWA update recovery
 
 Fix for devices stuck on older builds: release-specific install fetches bypass stale HTTP cache entries, HTML references versioned scripts/styles, and worker registration explicitly checks for updates. `update.html` provides a save-preserving refresh: after checking connectivity it unregisters only this project’s worker and removes only Orbital Cleanup asset caches. It never accesses localStorage. The main menu links to it; older builds can open it directly. Tests cover fresh install requests, failed-install behavior, cache isolation, and saved-data isolation. Production approval is required before merging.
+
+## v0.9 — Recovery Detail and Temptation
+
+Campaign now has five sequential levels. Existing saves that completed High Roller can select Recovery Detail immediately; stars and Endless scores are preserved.
+
+- **4 — Recovery Detail:** bank 10 objects across any number of trips. One star requires the quota; two and three stars additionally require $400 and $650 banked. Mostly light $15–$25 mid-orbit scraps, with occasional $70–$100 heavier satellites above. The dashboard distinguishes banked and carried counts and prompts Return to bank when the carried objects would meet the quota.
+- **5 — Temptation:** bank $350 / $650 / $1,000 for one / two / three stars. Common mid-orbit panels pay $40–$60; recurring satellites near the upper boundary pay $150–$200 and display their value. These replenish normally rather than acting as a single special target.
+
+The new `bank_objects` criterion uses a dedicated deposited-object counter, independent of visual cargo pieces. All star criteria remain ordered behind objective completion. Both levels retain Junkyard station cadence, standard player integrity/movement, and eight debris slots. No fuel or additional mechanics. These reward distributions and thresholds are initial playtest settings.

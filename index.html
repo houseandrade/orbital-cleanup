@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=0.8.2-update1">
+  <link rel="stylesheet" href="styles.css?v=0.9-levels1">
   <title>Orbital Cleanup</title>
 </head>
 <body>
@@ -28,6 +28,7 @@
     <section class="flight-hud" aria-label="Flight dashboard">
       <div id="mission" class="mission"></div>
       <progress id="goal-progress" max="100" value="0" aria-label="Banked mission progress"></progress>
+      <div id="object-progress" class="object-progress" hidden></div>
       <div id="star-goals" class="star-goals" aria-label="Star targets">
         <span id="star-1"></span><span id="star-2"></span><span id="star-3"></span>
       </div>
@@ -44,11 +45,11 @@
 
       <div id="start-screen" class="overlay overlay--visible">
         <div class="panel menu-panel">
-          <div class="kicker">ORBITAL CLEANUP // v0.8.2</div>
+          <div class="kicker">ORBITAL CLEANUP // v0.9</div>
           <h1>ORBITAL<br>CLEANUP</h1>
           <p class="tagline">Collect. Risk. Return.</p>
           <div id="mode-menu">
-            <article class="mode-card"><span class="menu-sprite astronaut" aria-hidden="true"></span><div><h2>CAMPAIGN</h2><p>3 missions · Chase the stars</p><button id="choose-campaign" class="button button--cta" type="button">CHOOSE LEVEL</button></div></article>
+            <article class="mode-card"><span class="menu-sprite astronaut" aria-hidden="true"></span><div><h2>CAMPAIGN</h2><p>5 missions · Chase the stars</p><button id="choose-campaign" class="button button--cta" type="button">CHOOSE LEVEL</button></div></article>
             <article class="mode-card"><span class="menu-sprite satellite" aria-hidden="true"></span><div><h2>ENDLESS ORBIT</h2><p>Bank more. Beat your best.</p><p class="high-score">BEST <span id="endless-menu-best" class="mint">$0</span></p><button id="endless" class="button button--cta" type="button">PLAY ENDLESS</button></div></article>
           </div>
           <div id="campaign-picker" hidden>
@@ -57,6 +58,8 @@
               <button id="level-1" class="button" type="button"></button>
               <button id="level-2" class="button" type="button"></button>
               <button id="level-3" class="button" type="button"></button>
+              <button id="level-4" class="button" type="button"></button>
+              <button id="level-5" class="button" type="button"></button>
             </div>
             <p id="level-description" class="risk"></p>
             <div class="high-score"><span id="start-score-label">CAMPAIGN HIGH SCORE</span> <span id="start-high-score">0</span></div>
@@ -112,9 +115,9 @@
       <button id="thrust" type="button" class="button button--primary">▲ HOLD<br>THRUST</button>
     </section>
   </main>
-  <script src="src/levels.js?v=0.8.2-update1" defer></script>
-  <script src="src/art.js?v=0.8.2-update1" defer></script>
-  <script src="src/input.js?v=0.8.2-update1" defer></script>
-  <script src="src/game.js?v=0.8.2-update1" defer></script>
+  <script src="src/levels.js?v=0.9-levels1" defer></script>
+  <script src="src/art.js?v=0.9-levels1" defer></script>
+  <script src="src/input.js?v=0.9-levels1" defer></script>
+  <script src="src/game.js?v=0.9-levels1" defer></script>
 </body>
 </html>

@@ -56,6 +56,8 @@
   let depositing = false;
   let haul = 0;
   let bank = 0;
+  let carriedObjects = 0;
+  let bankedObjects = 0;
   let mass = 0;
   let integrity = 100;
   let lastFrame = 0;
@@ -116,7 +118,7 @@
     document.getElementById('over-score-label').textContent = isEndless ? 'ENDLESS BEST' : 'CAMPAIGN HIGH SCORE';
     startButton.textContent = isEndless ? '▶ START ENDLESS ORBIT' : '▶ START MISSION';
     setHighScore(getHighScore());
-    document.getElementById('level-description').textContent = isEndless ? level.description : `${level.description} Goal: $${level.objective.target}. Stars: $${level.objective.target} / $${level.stars[1].target} / $${level.stars[2].target}.`;
+    document.getElementById('level-description').textContent = isEndless ? level.description : `${level.description} Goal: ${LevelSystem.criterionLabel(level.objective)}. Stars: ${level.stars.map(criterion => LevelSystem.criterionLabel(criterion, level.objective)).join(" / ")}.${level.objective.type === "bank_objects" ? " Higher stars also require all 10 objects banked." : ""}`;
   }
 
   function showResult() {
@@ -126,9 +128,9 @@
     thrusting = depositing = false;
     depositProgress = 0;
     cancelAnimationFrame(animationFrame);
-    const stars = LevelSystem.rating(level, { bank });
+    const stars = LevelSystem.rating(level, { bank, bankedObjects });
     resultTitle.textContent = 'OBJECTIVE MET';
-    resultStats.textContent = `${level.id}. ${level.name} • $${bank} banked • ${'★'.repeat(stars)}${'☆'.repeat(3 - stars)} • Previous best: ${progress.best[level.id] || 0}/3`;
+    resultStats.textContent = `${level.id}. ${level.name} • $${bank} banked${level.objective.type === "bank_objects" ? ` • ${bankedObjects} objects banked` : ""} • ${'★'.repeat(stars)}${'☆'.repeat(3 - stars)} • Previous best: ${progress.best[level.id] || 0}/3`;
     finishButton.hidden = false;
     continueButton.hidden = stars === 3;
     continueButton.textContent = `KEEP SALVAGING → $${level.stars[stars]?.target || bank}`;
@@ -142,7 +144,7 @@
   function finishLevel() {
     if (!pendingResult) return;
     pendingResult = false;
-    const stars = LevelSystem.rating(level, { bank });
+    const stars = LevelSystem.rating(level, { bank, bankedObjects });
     progress.best[level.id] = Math.max(progress.best[level.id] || 0, stars);
     progress.currentLevel = Math.min(level.id + 1, LevelSystem.campaign.length);
     LevelSystem.saveProgress(progress);
@@ -190,6 +192,8 @@
     tether = null;
     haul = 0;
     bank = 0;
+    carriedObjects = 0;
+    bankedObjects = 0;
     mass = 0;
     depositProgress = 0;
     integrity = level.player.suitIntegrity;
@@ -264,17 +268,20 @@
   }
 
   function updateHud() {
-    const stars = LevelSystem.rating(level, { bank });
+    const stars = LevelSystem.rating(level, { bank, bankedObjects });
     document.getElementById('flight-title').textContent = level.objective ? `${level.id}. ${level.name}` : level.name;
-    missionDisplay.textContent = level.objective ? `BANK $${level.objective.target}` : `PERSONAL BEST $${sessionBests[scoreKey()] || 0}`;
+    missionDisplay.textContent = level.objective ? `BANK ${LevelSystem.criterionLabel(level.objective).toUpperCase()}` : `PERSONAL BEST $${sessionBests[scoreKey()] || 0}`;
     const goal = document.getElementById('goal-progress');
     goal.hidden = !level.objective;
     goal.max = level.objective?.target || 1;
-    goal.value = Math.min(bank, goal.max);
+    goal.value = Math.min(level.objective?.type === 'bank_objects' ? bankedObjects : bank, goal.max);
+    const objectProgress = document.getElementById('object-progress');
+    objectProgress.hidden = level.objective?.type !== 'bank_objects';
+    objectProgress.textContent = `${bankedObjects} / ${level.objective?.target || 0} banked · ${carriedObjects} carried${bankedObjects < (level.objective?.target || 0) && bankedObjects + carriedObjects >= (level.objective?.target || 0) ? ' · Return to bank' : ''}`;
     document.getElementById('star-goals').hidden = !level.objective;
     if (level.objective) level.stars.forEach((criterion, index) => {
       const star = document.getElementById(`star-${index + 1}`);
-      star.textContent = `${'★'.repeat(index + 1)} $${criterion.target || level.objective.target}`;
+      star.textContent = `${'★'.repeat(index + 1)} ${LevelSystem.criterionLabel(criterion, level.objective)}`;
       star.classList.remove('earned');
       if (stars > index) star.classList.add('earned');
     });
@@ -330,6 +337,7 @@
     const index = junk.indexOf(object);
     if (index >= 0) junk.splice(index, 1);
     haul += object.value;
+    carriedObjects += 1;
     mass += object.mass;
     cargo.push({ angle: random(0, 6.28), radius: 16 + Math.min(cargo.length * 2, 22), size: Math.max(3, object.size * 0.4) });
     for (let count = 0; count < 10; count += 1) {
@@ -422,6 +430,8 @@
       if (cargo.length && Math.random() < deltaTime * 18) cargo.pop();
       if (depositProgress >= 1.25 || mass <= 0.2) {
         bank += haul;
+        bankedObjects += carriedObjects;
+        carriedObjects = 0;
         haul = 0;
         mass = 0;
         cargo = [];
@@ -430,7 +440,7 @@
         depositing = false;
         status.textContent = `TRANSFER COMPLETE • integrity ${Math.round(integrity)}%`;
         setHighScore(bank);
-        if (LevelSystem.meets(level.objective, { bank })) showResult();
+        if (LevelSystem.meets(level.objective, { bank, bankedObjects })) showResult();
       }
     } else if (!depositing) {
       depositProgress = 0;
@@ -480,7 +490,7 @@
     } else {
       context.fillStyle = "#d0d4d7"; context.fillRect(-7, -8, 14, 16); context.fillStyle = "#52799f"; context.fillRect(-25, -5, 18, 10); context.fillRect(7, -5, 18, 10);
     }
-    if (object.special) {
+    if (object.special || (level.id === 5 && object.type === 'SAT')) {
       context.strokeStyle = '#f1c76b'; context.strokeRect(-29, -14, 58, 28);
       context.fillStyle = '#f1c76b'; context.font = 'bold 10px monospace'; context.textAlign = 'center';
       context.fillText(`$${object.value}`, 0, -20);
@@ -638,6 +648,7 @@
 
   document.getElementById('choose-campaign').addEventListener('click', () => {
     if (!level.objective) level = LevelSystem.campaign.find(config => config.id === progress.currentLevel);
+    root.classList.add('picker-open');
     document.getElementById('mode-menu').hidden = true;
     document.getElementById('campaign-picker').hidden = false;
     refreshCampaign();
@@ -663,6 +674,7 @@
     reset();
     startScreen.classList.add('overlay--visible');
     root.classList.add('menu-open');
+    root.classList.remove('picker-open');
     document.getElementById('mode-menu').hidden = false;
     document.getElementById('campaign-picker').hidden = true;
     refreshCampaign();
