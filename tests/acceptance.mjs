@@ -1,3 +1,4 @@
+import './input.mjs';
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import vm from "node:vm";
@@ -42,7 +43,7 @@ const drawingContext = new Proxy({
 });
 
 const ids = [
-  "over-menu", "result-menu", "mode-menu", "campaign-picker", "choose-campaign", "back-modes", "flight-title", "goal-progress", "star-goals", "star-1", "star-2", "star-3", "hud-bank", "hud-haul", "hud-integrity", "hud-mass", "integrity-progress", "station-status", "endless-menu-best", "exit-title", "endless", "result-endless", "start-score-label", "over-score-label", "exit-confirm", "keep-playing", "leave-run", "mission", "level-result", "result-title", "result-stats", "finish-level", "continue-level", "next-level", "replay-level", "campaign", "level-1", "level-2", "level-3", "level-description", "game", "canvas", "status", "restart", "tether", "deposit", "thrust",
+  "flight-controls", "over-menu", "result-menu", "mode-menu", "campaign-picker", "choose-campaign", "back-modes", "flight-title", "goal-progress", "star-goals", "star-1", "star-2", "star-3", "hud-bank", "hud-haul", "hud-integrity", "hud-mass", "integrity-progress", "station-status", "endless-menu-best", "exit-title", "endless", "result-endless", "start-score-label", "over-score-label", "exit-confirm", "keep-playing", "leave-run", "mission", "level-result", "result-title", "result-stats", "finish-level", "continue-level", "next-level", "replay-level", "campaign", "level-1", "level-2", "level-3", "level-description", "game", "canvas", "status", "restart", "tether", "deposit", "thrust",
   "start-screen", "start", "game-over", "play-again", "death", "detail",
   "bank", "lost", "summary", "start-high-score", "game-over-high-score"
 ];
@@ -94,6 +95,7 @@ source = source.replace(/\}\)\(\);\s*$/, `
 })();`);
 vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync(new URL('../src/levels.js', import.meta.url), 'utf8'), sandbox);
+vm.runInContext(fs.readFileSync(new URL('../src/input.js', import.meta.url), 'utf8'), sandbox);
 vm.runInContext(source, sandbox, { filename: "src/game.js" });
 
 const qa = sandbox.__qa;

@@ -1,5 +1,5 @@
 :root { color-scheme:dark; --space:#02050a; --page:#080d13; --panel:#0b1118; --muted:#abb8c6; --border:#465362; --accent:#a7f3b5; --text:#eef3f8; }
-* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none; user-select:none; }
+* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
 html,body { margin:0; height:100%; overflow:hidden; overscroll-behavior:none; background:var(--page); color:var(--text); font-family:system-ui,-apple-system,sans-serif; }
 body { display:flex; justify-content:center; padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left)); }
 .game { position:relative; width:min(100%,440px); height:100%; max-height:960px; display:flex; flex-direction:column; background:var(--space); border:1px solid #26313d; }
@@ -75,3 +75,6 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
 .menu-sprite.satellite { background-size:215px 143px; background-position:-6px -88px; height:35px; clip-path:polygon(45% 0,53% 0,61% 19%,54% 30%,64% 40%,100% 35%,100% 83%,65% 83%,55% 100%,42% 100%,35% 83%,0 83%,0 35%,35% 40%,40% 26%); }
 .menu-tutorial { background:#02050ae8; padding:8px 4px; border-radius:4px; }
 @media(max-width:340px) { .mode-card { grid-template-columns:52px 1fr; gap:10px; } .mode-card h2 { font-size:16px; } .menu-sprite { transform:scale(.8); transform-origin:left center; } }
+
+/* WebKit requires the prefixed rule, including on nested button labels. */
+.controls, .controls * { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; touch-action:none; }
