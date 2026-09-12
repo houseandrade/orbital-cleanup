@@ -44,7 +44,7 @@ const drawingContext = new Proxy({
 });
 
 const ids = [
-  "flight-controls", "over-menu", "result-menu", "mode-menu", "campaign-picker", "choose-campaign", "back-modes", "flight-title", "goal-progress", "star-goals", "star-1", "star-2", "star-3", "hud-bank", "hud-haul", "hud-integrity", "hud-mass", "integrity-progress", "station-status", "endless-menu-best", "exit-title", "endless", "result-endless", "start-score-label", "over-score-label", "exit-confirm", "keep-playing", "leave-run", "mission", "level-result", "result-title", "result-stats", "finish-level", "continue-level", "next-level", "replay-level", "campaign", "level-1", "level-2", "level-3", "level-description", "game", "canvas", "status", "restart", "tether", "deposit", "thrust",
+  "object-progress", "level-4", "level-5", "flight-controls", "over-menu", "result-menu", "mode-menu", "campaign-picker", "choose-campaign", "back-modes", "flight-title", "goal-progress", "star-goals", "star-1", "star-2", "star-3", "hud-bank", "hud-haul", "hud-integrity", "hud-mass", "integrity-progress", "station-status", "endless-menu-best", "exit-title", "endless", "result-endless", "start-score-label", "over-score-label", "exit-confirm", "keep-playing", "leave-run", "mission", "level-result", "result-title", "result-stats", "finish-level", "continue-level", "next-level", "replay-level", "campaign", "level-1", "level-2", "level-3", "level-description", "game", "canvas", "status", "restart", "tether", "deposit", "thrust",
   "start-screen", "start", "game-over", "play-again", "death", "detail",
   "bank", "lost", "summary", "start-high-score", "game-over-high-score"
 ];
@@ -78,10 +78,12 @@ sandbox.globalThis = sandbox;
 let source = fs.readFileSync(new URL("../src/game.js", import.meta.url), "utf8");
 source = source.replace(/\}\)\(\);\s*$/, `
   globalThis.__qa = {
-    draw, stationMessage, start, end, finishLevel, resumeLevel, update, fireTether, collide, thrustEffectiveness,
-    get state() { return { level, progress, pendingResult, running, haul, bank, mass, integrity, tether, junk, player, station, depositing, cargo }; },
+    collect, draw, stationMessage, start, end, finishLevel, resumeLevel, update, fireTether, collide, thrustEffectiveness,
+    get state() { return { carriedObjects, bankedObjects, level, progress, pendingResult, running, haul, bank, mass, integrity, tether, junk, player, station, depositing, cargo }; },
     set scenario(value) {
       if (value.running !== undefined) running = value.running;
+      if (value.carriedObjects !== undefined) carriedObjects = value.carriedObjects;
+      if (value.bankedObjects !== undefined) bankedObjects = value.bankedObjects;
       if (value.haul !== undefined) haul = value.haul;
       if (value.bank !== undefined) bank = value.bank;
       if (value.mass !== undefined) mass = value.mass;
@@ -233,14 +235,14 @@ assert.equal(qa.state.junk.filter(object => object.special).length, 1, 'missed s
 deposit(150);
 qa.finishLevel();
 assert.equal(qa.state.progress.best[3], 1, 'High Roller completes without satellite');
-assert.equal(elements.get('next-level').hidden, true);
+assert.equal(elements.get('next-level').hidden, false, 'Level 3 now unlocks Recovery Detail');
 qa.start();
 deposit(600);
 qa.finishLevel();
 assert.equal(qa.state.progress.best[3], 3);
 const loaded = vm.runInContext('LevelSystem.readProgress()', sandbox);
 assert.equal(loaded.best[3], 3, 'progress survives reload');
-assert.equal(loaded.currentLevel, 3);
+assert.equal(loaded.currentLevel, 4);
 qa.start();
 qa.scenario = { haul: 600, mass: 5, depositing: true, junk: [], player: { y: 361, velocityY: 0, flash: 0 }, station: { x: 180, y: 300, speed: 0 } };
 qa.update(0.3);
@@ -349,4 +351,90 @@ for (const asset of ['./src/art.js', './src/art/earth.png', './src/art/sprites.p
   assert.ok(cachedPaths.includes(asset), `${asset} cached offline`);
   assert.ok(fs.existsSync(new URL(`../${asset}`, import.meta.url)));
 }
-console.log("Orbital Cleanup v0.8.1 acceptance checks passed.");
+// New campaign content works with existing completed-three-level saves.
+storage.set('orbital-cleanup-progress-v1', JSON.stringify({currentLevel:3,best:{1:3,2:1,3:2}}));
+const legacy = vm.runInContext('LevelSystem.readProgress()', sandbox);
+assert.equal(legacy.best[3], 2);
+assert.equal(legacy.best[4], undefined);
+qa.end('REENTRY');
+elements.get('over-menu').listeners.click();
+elements.get('choose-campaign').listeners.click();
+elements.get('level-4').listeners.click();
+qa.start();
+assert.equal(qa.state.level.id, 4);
+assert.equal(qa.state.bankedObjects, 0);
+// Count is separate from orbiting cargo visuals and only commits at a deposit.
+qa.scenario = { junk: [] };
+for (let i=0; i<10; i++) qa.collect({value:20, mass:2, size:7});
+qa.draw();
+assert.equal(qa.state.carriedObjects, 10);
+assert.equal(qa.state.bankedObjects, 0);
+assert.equal(qa.state.pendingResult, false);
+assert.match(elements.get('object-progress').textContent, /Return to bank/);
+assert.equal(elements.get('star-1').textContent, '★ 10 objects');
+qa.scenario = { bank: 650 };
+qa.draw();
+assert.equal(elements.get('star-1').classList.contains('earned'), false, 'value alone cannot complete object quota');
+qa.start();
+qa.scenario = { carriedObjects: 4 };
+deposit(80);
+assert.equal(qa.state.bankedObjects, 4);
+assert.equal(qa.state.carriedObjects, 0);
+assert.equal(qa.state.pendingResult, false);
+qa.scenario = { carriedObjects: 6 };
+deposit(120);
+assert.equal(qa.state.bankedObjects, 10);
+assert.equal(qa.state.pendingResult, true);
+qa.finishLevel();
+assert.equal(qa.state.progress.best[4], 1, 'ten objects unlock next level with one star');
+assert.match(elements.get('result-stats').textContent, /10 objects banked/);
+qa.start();
+assert.equal(qa.state.bankedObjects, 0);
+qa.scenario = { carriedObjects:10 };
+deposit(400);
+qa.finishLevel();
+assert.equal(qa.state.progress.best[4], 2);
+qa.start();
+qa.scenario = { carriedObjects:10 };
+deposit(650);
+qa.finishLevel();
+assert.equal(qa.state.progress.best[4], 3);
+qa.start();
+qa.scenario = { carriedObjects:10, haul:650, mass:20, player:{y:361,velocityY:0,flash:0} };
+qa.update(0);
+assert.equal(qa.state.bankedObjects, 0, 'lost cargo never counts as banked objects');
+qa.start();
+qa.scenario = { carriedObjects:10, haul:650, mass:20 };
+elements.get('campaign').listeners.click();
+elements.get('keep-playing').listeners.click();
+assert.equal(qa.state.carriedObjects, 10, 'canceling Menu preserves object cargo');
+qa.scenario = { carriedObjects:10 };
+deposit(200);
+qa.finishLevel();
+assert.equal(qa.state.progress.best[4], 3, 'replay cannot reduce best');
+elements.get('next-level').listeners.click();
+assert.equal(qa.state.level.id, 5);
+assert.equal(qa.state.level.debris.special, undefined, 'valuable targets replenish normally');
+const bands = qa.state.level.debris.bands;
+assert.equal(bands[0].value[0], 40);
+assert.equal(bands[0].value[1], 60);
+assert.equal(bands[1].value[0], 150);
+assert.equal(bands[1].value[1], 200);
+qa.draw();
+assert.equal(elements.get('object-progress').hidden, true);
+assert.equal(elements.get('star-3').textContent, '★★★ $1000');
+deposit(350);
+qa.finishLevel();
+assert.equal(qa.state.progress.best[5], 1);
+assert.equal(elements.get('next-level').hidden, true);
+assert.equal(elements.get('result-endless').hidden, false);
+qa.start();
+deposit(650);
+qa.finishLevel();
+assert.equal(qa.state.progress.best[5], 2);
+qa.start();
+deposit(1000);
+qa.finishLevel();
+assert.equal(qa.state.progress.best[5], 3);
+assert.equal(vm.runInContext('LevelSystem.readProgress().best[5]', sandbox), 3);
+console.log("Orbital Cleanup v0.9 acceptance checks passed.");
