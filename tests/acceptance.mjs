@@ -41,7 +41,7 @@ const drawingContext = new Proxy({
 });
 
 const ids = [
-  "game", "canvas", "status", "restart", "tether", "deposit", "thrust",
+  "mission", "level-result", "result-title", "result-stats", "finish-level", "continue-level", "next-level", "replay-level", "campaign", "level-1", "level-2", "level-3", "level-description", "game", "canvas", "status", "restart", "tether", "deposit", "thrust",
   "start-screen", "start", "game-over", "play-again", "death", "detail",
   "bank", "lost", "summary", "start-high-score", "game-over-high-score"
 ];
@@ -74,8 +74,8 @@ sandbox.globalThis = sandbox;
 let source = fs.readFileSync(new URL("../src/game.js", import.meta.url), "utf8");
 source = source.replace(/\}\)\(\);\s*$/, `
   globalThis.__qa = {
-    start, end, update, fireTether, collide, thrustEffectiveness,
-    get state() { return { running, haul, bank, mass, integrity, tether, junk, player, station, depositing, cargo }; },
+    start, end, finishLevel, resumeLevel, update, fireTether, collide, thrustEffectiveness,
+    get state() { return { level, progress, pendingResult, running, haul, bank, mass, integrity, tether, junk, player, station, depositing, cargo }; },
     set scenario(value) {
       if (value.running !== undefined) running = value.running;
       if (value.haul !== undefined) haul = value.haul;
@@ -90,7 +90,9 @@ source = source.replace(/\}\)\(\);\s*$/, `
     }
   };
 })();`);
-vm.runInNewContext(source, sandbox, { filename: "src/game.js" });
+vm.createContext(sandbox);
+vm.runInContext(fs.readFileSync(new URL('../src/levels.js', import.meta.url), 'utf8'), sandbox);
+vm.runInContext(source, sandbox, { filename: "src/game.js" });
 
 const qa = sandbox.__qa;
 const pointerEvent = { preventDefault() {}, pointerId: 1 };
@@ -181,4 +183,74 @@ assert.ok(cachedPaths.every((assetPath) => assetPath.startsWith("./")), "offline
 const gameSource = fs.readFileSync(new URL("../src/game.js", import.meta.url), "utf8");
 assert.match(gameSource, /serviceWorker\.register\("\.\/service-worker\.js"\)/, "service worker registration is project-relative");
 
-console.log("Orbital Cleanup v0.6 acceptance checks passed.");
+// Qualifying carried value cannot complete a mission; only a safe deposit can.
+qa.start();
+qa.scenario = { haul: 600, mass: 25, junk: [] };
+qa.update(0);
+assert.equal(qa.state.pendingResult, false);
+function deposit(value) {
+  qa.scenario = { haul: value, mass: 5, junk: [], depositing: true,
+    player: { y: 225, velocityY: 0, flash: 0 }, station: { x: 180, y: 225, speed: 0 } };
+  qa.update(0.3);
+}
+deposit(60);
+assert.equal(qa.state.pendingResult, true);
+assert.equal(qa.state.running, false, 'star choice pauses simulation');
+assert.equal(qa.state.progress.best[1], undefined, 'choice does not commit completion');
+qa.resumeLevel();
+assert.equal(qa.state.running, true);
+deposit(60);
+qa.finishLevel();
+assert.equal(qa.state.progress.best[1], 2);
+assert.equal(elements.get('result-title').textContent, 'LEVEL COMPLETE');
+assert.equal(elements.get('next-level').hidden, false);
+qa.start();
+deposit(60);
+qa.finishLevel();
+assert.equal(qa.state.progress.best[1], 2, 'lower replay preserves best');
+assert.match(elements.get('result-stats').textContent, /Previous best: 2/);
+elements.get('next-level').listeners.click();
+assert.equal(qa.state.level.id, 2);
+assert.equal(qa.state.junk.length, 8);
+deposit(150);
+qa.finishLevel();
+assert.equal(qa.state.progress.best[2], 1, 'one star unlocks next level');
+elements.get('next-level').listeners.click();
+assert.equal(qa.state.level.id, 3);
+const special = qa.state.junk.find(object => object.special);
+assert.equal(special.value, 300);
+assert.equal(special.y, 112);
+special.x = -50;
+qa.update(0);
+assert.equal(qa.state.junk.filter(object => object.special).length, 1, 'missed satellite returns once');
+deposit(150);
+qa.finishLevel();
+assert.equal(qa.state.progress.best[3], 1, 'High Roller completes without satellite');
+assert.equal(elements.get('next-level').hidden, true);
+qa.start();
+deposit(600);
+qa.finishLevel();
+assert.equal(qa.state.progress.best[3], 3);
+const loaded = vm.runInContext('LevelSystem.readProgress()', sandbox);
+assert.equal(loaded.best[3], 3, 'progress survives reload');
+assert.equal(loaded.currentLevel, 3);
+qa.start();
+qa.scenario = { haul: 600, mass: 5, depositing: true, junk: [], player: { y: 361, velocityY: 0, flash: 0 }, station: { x: 180, y: 300, speed: 0 } };
+qa.update(0.3);
+assert.equal(qa.state.pendingResult, false, 'boundary death wins over deposit');
+assert.equal(qa.state.bank, 0);
+qa.start();
+qa.scenario = { haul: 600, mass: 5, integrity: 1, depositing: true, player: { y: 225, velocityY: 0, flash: 0 }, station: { x: 180, y: 225, speed: 0 }, junk: [{ x: 180, y: 225, speed: 40, size: 14, type: 'SAT', wobble: 0 }] };
+qa.update(0);
+assert.equal(qa.state.bank, 0, 'suit failure cannot bank later in same frame');
+assert.equal(qa.state.pendingResult, false);
+for (const invalid of ['{broken', 'null', '{"currentLevel":99,"best":{"1":9,"3":3}}']) {
+  storage.set('orbital-cleanup-progress-v1', invalid);
+  assert.equal(vm.runInContext('LevelSystem.readProgress().currentLevel', sandbox), 1);
+}
+const originalGet = sandbox.localStorage.getItem;
+sandbox.localStorage.getItem = () => { throw new Error('unavailable'); };
+assert.equal(vm.runInContext('LevelSystem.readProgress().currentLevel', sandbox), 1);
+sandbox.localStorage.getItem = originalGet;
+assert.ok(cachedPaths.includes('./src/levels.js'), 'levels available offline');
+console.log("Orbital Cleanup v0.7 acceptance checks passed.");

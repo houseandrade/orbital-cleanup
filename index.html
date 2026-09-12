@@ -19,21 +19,28 @@
   <main id="game" class="game" aria-label="Orbital Cleanup">
     <header class="topbar">
       <div>
-        <div class="title">ORBITAL CLEANUP // v0.6</div>
+        <div class="title">ORBITAL CLEANUP // v0.7</div>
         <div id="status" class="status" aria-live="polite">Collect debris. Bank your haul. Stay alive.</div>
       </div>
       <button id="restart" class="button button--small button--primary" type="button">START</button>
     </header>
 
+    <div id="mission" class="mission" aria-live="polite"></div>
     <section class="gamezone" aria-label="Game area">
       <canvas id="canvas" width="360" height="520" aria-label="Orbital Cleanup game"></canvas>
 
       <div id="start-screen" class="overlay overlay--visible">
         <div class="panel">
           <div class="kicker">ORBITAL CLEANUP</div>
-          <h1>Clear the orbit.<br>Make it home.</h1>
+          <h1>Choose your haul.</h1>
+          <div class="campaign-levels" aria-label="Campaign levels">
+            <button id="level-1" class="button" type="button"></button>
+            <button id="level-2" class="button" type="button"></button>
+            <button id="level-3" class="button" type="button"></button>
+          </div>
+          <p id="level-description" class="risk"></p>
           <p class="tutorial"><strong>Hold THRUST</strong> to climb. Release to fall.<br><strong>TETHER</strong> debris. Hold <strong>DEPOSIT</strong> at the station.</p>
-          <p class="risk">Your unbanked haul is lost when the mission ends.</p>
+          <p class="risk">A failed run loses your unbanked haul.</p>
           <div class="high-score">HIGH SCORE <span id="start-high-score">0</span></div>
           <button id="start" type="button" class="button button--cta">▶ START MISSION</button>
         </div>
@@ -53,7 +60,19 @@
           <button id="play-again" type="button" class="button button--cta">▶ PLAY AGAIN</button>
         </div>
       </div>
+      <div id="level-result" class="overlay" aria-hidden="true">
+        <div class="panel">
+          <div class="kicker">CAMPAIGN</div>
+          <h2 id="result-title">OBJECTIVE MET</h2>
+          <p id="result-stats" class="tutorial"></p>
+          <button id="finish-level" type="button" class="button button--cta">FINISH LEVEL</button>
+          <button id="continue-level" type="button" class="button result-action">KEEP SALVAGING</button>
+          <button id="next-level" type="button" class="button button--cta" hidden>NEXT LEVEL</button>
+          <button id="replay-level" type="button" class="button result-action" hidden>REPLAY LEVEL</button>
+        </div>
+      </div>
     </section>
+    <button id="campaign" type="button" class="button campaign-button">CAMPAIGN / LEAVE RUN</button>
 
     <section class="controls" aria-label="Game controls">
       <button id="tether" type="button" class="button">◎ TETHER</button>
@@ -61,6 +80,7 @@
       <button id="thrust" type="button" class="button button--primary">▲ HOLD<br>THRUST</button>
     </section>
   </main>
+  <script src="src/levels.js" defer></script>
   <script src="src/game.js" defer></script>
 </body>
 </html>

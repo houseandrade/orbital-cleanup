@@ -40,8 +40,8 @@ body {
 }
 
 .game {
-  width: min(100%, 420px, calc((100dvh - 116px) * .6923));
-  min-width: 280px;
+  width: min(100%, 420px, calc((100dvh - 230px) * .6923));
+  min-width: 0;
 }
 
 .topbar {
@@ -136,7 +136,7 @@ h1 { margin: 8px 0 14px; font-size: 26px; line-height: 1.05; }
 .game-over-summary { margin-top: 10px; color: #d0d7df; font-size: 12px; }
 
 @media (max-height: 600px) {
-  .game { width: min(100%, 420px, calc((100dvh - 104px) * .6923)); }
+  .game { width: min(100%, 420px, calc((100dvh - 216px) * .6923)); }
   .topbar { min-height: 40px; }
   .status { display: none; }
   .controls { gap: 6px; padding-top: 6px; }
@@ -151,3 +151,16 @@ h1 { margin: 8px 0 14px; font-size: 26px; line-height: 1.05; }
 @media (prefers-reduced-motion: reduce) {
   .button:active { transform: none; }
 }
+
+[hidden] { display: none !important; }
+.mission { min-height: 28px; font-size: 11px; color: #a7f3b5; padding: 3px 4px 7px; }
+.campaign-button { width: 100%; min-height: 44px; margin-top: 6px; font-size: 11px; }
+.campaign-levels { display: grid; gap: 5px; }
+.campaign-levels .button { min-height: 44px; font-size: 12px; }
+.campaign-levels [aria-pressed="true"] { border-color: #a7f3b5; color: #a7f3b5; }
+.result-action { width: 100%; min-height: 44px; margin-top: 8px; }
+.overlay { padding: 10px; overflow-y: auto; touch-action: pan-y; }
+.panel { padding: 12px; max-height: 100%; overflow-y: auto; touch-action: pan-y; }
+.panel h1 { font-size: 22px; margin: 4px 0 8px; }
+.panel .button--cta { margin-top: 10px; min-height: 44px; }
+.panel .high-score { margin-top: 6px; }

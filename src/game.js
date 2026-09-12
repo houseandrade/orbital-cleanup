@@ -21,11 +21,24 @@
   const startHighScore = document.getElementById("start-high-score");
   const gameOverHighScore = document.getElementById("game-over-high-score");
 
+  const missionDisplay = document.getElementById("mission");
+  const resultScreen = document.getElementById("level-result");
+  const resultTitle = document.getElementById("result-title");
+  const resultStats = document.getElementById("result-stats");
+  const finishButton = document.getElementById("finish-level");
+  const continueButton = document.getElementById("continue-level");
+  const nextButton = document.getElementById("next-level");
+  const replayButton = document.getElementById("replay-level");
+  const progress = LevelSystem.readProgress();
+  let level = LevelSystem.campaign.find(config => config.id === progress.currentLevel);
+  let pendingResult = false;
+  let specialCollected = false;
+
   const WIDTH = 360;
   const HEIGHT = 520;
   const PLAYER_X = 180;
-  const ESCAPE_Y = 75;
-  const REENTRY_Y = 360;
+  let ESCAPE_Y = level.field.escapeY;
+  let REENTRY_Y = level.field.reentryY;
   const HIGH_SCORE_KEY = "orbital-cleanup-high-score";
 
   let player;
@@ -71,30 +84,79 @@
   }
 
   function makeJunk(offset = 0) {
-    const zoneRoll = Math.random();
-    let y;
-    let speed;
-    let value;
-    let objectMass;
-    let size;
-    let type;
+    const bands = level.debris.bands;
+    let roll = Math.random() * bands.reduce((sum, band) => sum + band.weight, 0);
+    const band = bands.find(band => (roll -= band.weight) < 0) || bands[bands.length - 1];
+    junk.push({ x: WIDTH + offset, y: random(...band.y), speed: random(...band.speed),
+      value: Math.round(random(...band.value)), mass: band.mass, size: band.size,
+      type: band.type, wobble: random(0, 6.28), hit: false });
+  }
 
-    if (zoneRoll < 0.2) {
-      y = random(110, 165); speed = random(22, 34); value = 70; objectMass = 10; size = 14; type = "SAT";
-    } else if (zoneRoll < 0.62) {
-      y = random(180, 260); speed = random(38, 54); value = 30; objectMass = 5; size = 10; type = "PANEL";
-    } else {
-      y = random(282, 342); speed = random(76, 112); value = 30; objectMass = 2; size = 7; type = "SCRAP";
-    }
+  function refreshCampaign() {
+    LevelSystem.campaign.forEach(config => {
+      const button = document.getElementById(`level-${config.id}`);
+      button.disabled = config.id > 1 && !progress.best[config.id - 1];
+      button.textContent = `${config.id}. ${config.name} • ${progress.best[config.id] ? '★'.repeat(progress.best[config.id]) : button.disabled ? 'LOCKED' : 'NEW'}`;
+      button.setAttribute('aria-pressed', String(config.id === level.id));
+    });
+    document.getElementById('level-description').textContent = `${level.description} Goal: $${level.objective.target}. Stars: $${level.objective.target} / $${level.stars[1].target} / $${level.stars[2].target}.`;
+  }
 
-    junk.push({ x: WIDTH + offset, y, speed, value, mass: objectMass, size, type, wobble: random(0, 6.28), hit: false });
+  function showResult() {
+    running = false;
+    pendingResult = true;
+    thrusting = depositing = false;
+    depositProgress = 0;
+    cancelAnimationFrame(animationFrame);
+    const stars = LevelSystem.rating(level, { bank });
+    resultTitle.textContent = 'OBJECTIVE MET';
+    resultStats.textContent = `${level.id}. ${level.name} • $${bank} banked • ${'★'.repeat(stars)}${'☆'.repeat(3 - stars)} • Previous best: ${progress.best[level.id] || 0}/3`;
+    finishButton.hidden = false;
+    continueButton.hidden = stars === 3;
+    continueButton.textContent = `KEEP SALVAGING → $${level.stars[stars]?.target || bank}`;
+    replayButton.hidden = nextButton.hidden = true;
+    resultScreen.classList.add('overlay--visible');
+    resultScreen.setAttribute('aria-hidden', 'false');
+  }
+
+  function finishLevel() {
+    if (!pendingResult) return;
+    pendingResult = false;
+    const stars = LevelSystem.rating(level, { bank });
+    progress.best[level.id] = Math.max(progress.best[level.id] || 0, stars);
+    progress.currentLevel = Math.min(level.id + 1, LevelSystem.campaign.length);
+    LevelSystem.saveProgress(progress);
+    setHighScore(bank);
+    resultTitle.textContent = 'LEVEL COMPLETE';
+    finishButton.hidden = continueButton.hidden = true;
+    replayButton.hidden = false;
+    nextButton.hidden = level.id === LevelSystem.campaign.length;
+    status.textContent = nextButton.hidden ? 'Campaign prototype complete. Replay for more stars.' : 'Level complete. Next level unlocked.';
+    refreshCampaign();
+  }
+
+  function resumeLevel() {
+    if (!pendingResult) return;
+    pendingResult = false;
+    resultScreen.classList.remove('overlay--visible');
+    resultScreen.setAttribute('aria-hidden', 'true');
+    running = true;
+    lastFrame = performance.now();
+    animationFrame = requestAnimationFrame(loop);
   }
 
   function reset() {
     cancelAnimationFrame(animationFrame);
+    running = false;
+    pendingResult = false;
+    specialCollected = false;
+    ESCAPE_Y = level.field.escapeY;
+    REENTRY_Y = level.field.reentryY;
+    resultScreen.classList.remove('overlay--visible');
+    resultScreen.setAttribute('aria-hidden', 'true');
     gameOver.classList.remove("overlay--visible");
     gameOver.setAttribute("aria-hidden", "true");
-    player = { y: 225, velocityY: 0, flash: 0 };
+    player = { y: level.player.startY, velocityY: 0, flash: 0 };
     junk = [];
     cargo = [];
     particles = [];
@@ -103,14 +165,15 @@
     bank = 0;
     mass = 0;
     depositProgress = 0;
-    integrity = 100;
+    integrity = level.player.suitIntegrity;
     shake = 0;
     impactText = 0;
     elapsed = 0;
     thrusting = false;
     depositing = false;
-    station = { x: WIDTH + 300, y: 225, speed: 25 };
-    for (let index = 0; index < 8; index += 1) makeJunk(index * 85 + random(0, 30));
+    station = { x: level.station.startX, y: level.station.startY, speed: level.station.speed };
+    for (let index = 0; index < level.debris.count; index += 1) makeJunk(index * level.debris.spacing + random(0, 30));
+    if (level.debris.special) junk.push({ ...level.debris.special, special: true, wobble: 0, hit: false });
     depositButton.disabled = true;
     tetherButton.textContent = "◎ TETHER";
     draw();
@@ -122,7 +185,9 @@
     running = true;
     lastFrame = performance.now();
     restartButton.textContent = "RESTART";
-    status.textContent = "Dive low for fast money. Watch your boundaries.";
+    status.textContent = level.description;
+    progress.currentLevel = level.id;
+    LevelSystem.saveProgress(progress);
     animationFrame = requestAnimationFrame(loop);
   }
 
@@ -206,7 +271,8 @@
     }
     tether = null;
     tetherButton.textContent = "◎ TETHER";
-    makeJunk(random(150, 320));
+    if (object.special) specialCollected = true;
+    else makeJunk(random(150, 320));
     status.textContent = `+${object.value} • ${orbitZone(player.y)} ORBIT • ${mass}kg`;
   }
 
@@ -228,6 +294,7 @@
   }
 
   function update(deltaTime) {
+    if (!running) return;
     elapsed += deltaTime;
     const massRatio = Math.min(mass / 100, 1);
     const gravity = 26 + massRatio * 5;
@@ -249,13 +316,19 @@
       const objectY = object.y + Math.sin(object.wobble) * 4;
       if (Math.abs(object.x - PLAYER_X) < 12 + object.size && Math.abs(objectY - player.y) < 16 + object.size) collide(object);
     });
+    if (!running) return;
+    if (player.y < ESCAPE_Y) { end("ESCAPE"); return; }
+    if (player.y > REENTRY_Y) { end("REENTRY"); return; }
+    junk.forEach(object => {
+      if (object.special && object.x <= -40 && !specialCollected) { object.x = WIDTH + 300; object.hit = false; }
+    });
     junk = junk.filter((object) => object.x > -40 || (tether && tether.object === object));
-    while (junk.length < 8) makeJunk(random(140, 320));
+    while (junk.filter(object => !object.special).length < level.debris.count) makeJunk(random(140, 320));
 
     station.x -= station.speed * deltaTime;
     if (station.x < -70) {
-      station.x = WIDTH + random(420, 620);
-      station.y = random(190, 255);
+      station.x = WIDTH + random(...level.station.returnOffset);
+      station.y = random(...level.station.returnY);
     }
     depositButton.disabled = !isNearStation() || mass <= 0;
 
@@ -290,6 +363,8 @@
         depositProgress = 0;
         depositing = false;
         status.textContent = `TRANSFER COMPLETE • integrity ${Math.round(integrity)}%`;
+        setHighScore(bank);
+        if (LevelSystem.meets(level.objective, { bank })) showResult();
       }
     } else if (!depositing) {
       depositProgress = 0;
@@ -334,6 +409,11 @@
       context.fillStyle = "#52799f"; context.fillRect(-13, -6, 26, 12); context.strokeStyle = "#ccd5dc"; context.strokeRect(-13, -6, 26, 12);
     } else {
       context.fillStyle = "#d0d4d7"; context.fillRect(-7, -8, 14, 16); context.fillStyle = "#52799f"; context.fillRect(-25, -5, 18, 10); context.fillRect(7, -5, 18, 10);
+    }
+    if (object.special) {
+      context.strokeStyle = '#f1c76b'; context.strokeRect(-29, -14, 58, 28);
+      context.fillStyle = '#f1c76b'; context.font = 'bold 10px monospace'; context.textAlign = 'center';
+      context.fillText(`$${object.value}`, 0, -20);
     }
     context.restore();
   }
@@ -400,6 +480,8 @@
   }
 
   function draw() {
+    const stars = LevelSystem.rating(level, { bank });
+    missionDisplay.textContent = `${level.id}. ${level.name} • Bank $${bank} / $${level.objective.target} • ${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}`;
     context.save();
     if (shake > 0) context.translate(random(-4, 4), random(-4, 4));
     context.clearRect(-10, -10, WIDTH + 20, HEIGHT + 20);
@@ -460,7 +542,10 @@
 
   function preventDefault(event) { event.preventDefault(); }
   ["contextmenu", "selectstart", "dragstart", "touchmove"].forEach((eventName) => {
-    root.addEventListener(eventName, preventDefault, { passive: false });
+    root.addEventListener(eventName, event => {
+      if (eventName === 'touchmove' && event.target.closest('.panel')) return;
+      preventDefault(event);
+    }, { passive: false });
   });
 
   function addHoldControl(button, onPress, onRelease) {
@@ -495,6 +580,28 @@
     depositProgress = 0;
   });
 
+  finishButton.addEventListener('click', finishLevel);
+  continueButton.addEventListener('click', resumeLevel);
+  replayButton.addEventListener('click', start);
+  nextButton.addEventListener('click', () => {
+    if (level.id < LevelSystem.campaign.length && progress.best[level.id]) { level = LevelSystem.campaign[level.id]; start(); }
+  });
+  document.getElementById('campaign').addEventListener('click', () => {
+    reset();
+    startScreen.classList.add('overlay--visible');
+    refreshCampaign();
+  });
+  LevelSystem.campaign.forEach(config => {
+    document.getElementById(`level-${config.id}`).addEventListener('click', () => {
+      if (config.id > 1 && !progress.best[config.id - 1]) return;
+      level = config;
+      progress.currentLevel = level.id;
+      LevelSystem.saveProgress(progress);
+      refreshCampaign();
+      draw();
+    });
+  });
+  refreshCampaign();
   setHighScore(getHighScore());
   reset();
 

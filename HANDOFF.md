@@ -70,3 +70,17 @@ Then test `http://localhost:8080/` at a narrow mobile viewport. The acceptance h
 The current playtest should answer:
 
 > Do first-time players enjoy the core loop enough to voluntarily start another run?
+
+## v0.7 implementation
+
+The `codex/v0.7-level-system` branch introduces three configured campaign levels; production remains v0.6 until approved and merged. `src/levels.js` owns configurations, criteria, and versioned local progress. The existing game engine consumes the selected configuration.
+
+- First Haul: five slow mid-orbit panels, a more frequent station, $60 / $120 / $200 targets.
+- Junkyard: eight objects across the original three bands, broader values, $150 / $300 / $500 targets.
+- High Roller: seven ordinary objects plus one gold-marked $300 satellite at altitude 112; $150 / $350 / $600 targets. The satellite returns if missed and is not replaced if collected.
+- A safe qualifying deposit pauses play for Finish Level or Keep Salvaging. Finishing commits completion and best stars, unlocking the next level. Failure after continuing remains Game Over and does not commit that attempt's stars.
+- Completing all three levels offers replay; campaign selection supports any unlocked level. Storage failures do not prevent play. Existing high scores remain separate.
+- Movement, cargo effects, tether range, deposit repair, and failure causes are retained. No fuel is introduced.
+- Counts, bands, and station timing above intentionally replace single-run v0.6 tuning to serve the requested three-level prototype. These are initial playtest values, not validated balance conclusions.
+
+Validation: `node tests/acceptance.mjs` now also covers objectives, ratings, completion choices, progression, replay bests, save reload/corruption/unavailable storage, special-target return, failure/deposit ordering, and offline level data.
