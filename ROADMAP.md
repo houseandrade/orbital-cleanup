@@ -8,15 +8,17 @@ For version-by-version changes, see [Release notes](RELEASE-NOTES.md).
 2. **Moon / World Two: complete and deployed.** All ten missions are live, including Last Rover’s three checkpointed assignments, independent Moon checkpoint/reward handling, completion badge, and one-time $2,000 reward. Approved lunar artwork, vertical drift, and station-timed recovery are implemented. See [Moon campaign record](MOON-CAMPAIGN-PLAN.md).
 3. **Moon mode support: complete and deployed in v0.15.5.** Six Moon contracts use Earth/Moon navigation, difficulty sorting, and inline briefings. Starting a Moon campaign mission sets the persistent active world; browsing, contracts, and Earth replays do not reset it. Endless follows that world, labels its destination, and preserves separate Earth/Moon best scores. PR #22 deployed successfully; Brian’s playtest feedback was positive.
 4. **Shared presentation: complete and deployed.** Campaign and contract briefings expand directly below the selected card, with a MISSION BRIEFING heading and objective bullets. Briefings omit exact timing, altitude, and spawn-pattern hints. The responsive flight header reserves its height so changing status messages do not resize the playfield.
-5. **v0.16 / Mars / World Three: planning.** Follow the Moon’s artwork-first, small-batch prototype approach. The proposals below are recorded for discussion; Mars art, missions, mechanics, and upgrades have not been implemented or individually approved.
+5. **v0.16 / Mars / World Three: first playtest batch implemented, awaiting review.** Brian approved the artwork and requested Mars missions 1–3 plus tether reach, cargo stabilizer, and a one-time $100 recovery scanner. The first batch uses familiar movement; later missions and speed variation remain proposals. Production remains v0.15.5.
 
-## v0.16 — Mars proposal
+## v0.16 — Mars delivery and remaining proposals
 
 ### Setting and art direction
 
 An abandoned expedition site above red Martian terrain, with research equipment and remnants of unfinished infrastructure. Proposed salvage colors are cream, charcoal, and metallic tones with teal accents for readability against the red background. Mix new Mars items with familiar tool crates, panels, and rocket fragments.
 
-Create a Mars background and five salvage sprites after agreeing on the lineup. Review and approve the artwork before integrating it or changing gameplay. Preserve readable silhouettes and test background cropping at different device sizes, as with the Moon.
+Brian approved the Mars background and five salvage sprites from `previews/mars-art-v1`. Originals and prompts are preserved in `src/art/mars`. The first playtest integrates the background, sample canister, and survey drone; the other three sprites are prepared for later missions. Keep terrain below the flight boundary and preserve the expedition site in portrait cropping.
+
+**Later artwork task:** add illustrations for the upgrades. Brian requested these for a future pass; they are not part of this implementation batch.
 
 ### Proposed salvage lineup
 
@@ -28,7 +30,7 @@ Create a Mars background and five salvage sprites after agreeing on the lineup. 
 | Habitat support frame | Heavy structural debris for later missions and mixed recovery orders. |
 | Ascent engine | Unique finale target: the last major component of an abandoned expedition. Keep it special to the finale initially. |
 
-These are proposed names and roles, not finalized asset specifications. Masses, values, objective counts, and star thresholds remain to be tuned.
+The artwork lineup is approved. First playtest tuning: sample canisters weigh 4kg and are worth $55–70; survey drones weigh 9kg and are worth $110–140. Later-item gameplay specifications remain open.
 
 ### Gameplay experiments
 
@@ -45,30 +47,36 @@ Moon vertical drift is already implemented. Mars horizontal speed variation is a
 | Tether reach | Modestly increases collection range. | Improve interception without removing positioning decisions or adding a button. |
 | Cargo stabilizer | Reduces the handling penalty from heavy cargo. | Loaded trips should remain a meaningful tradeoff; define how this differs from existing thrust upgrades. |
 | Suit reinforcement | Reduces collision damage. | Give room to recover from mistakes without eliminating danger. |
-| Recovery scanner | Highlights item types still needed for the current objective. | Do not reveal arrival times or locations. Consider basic objective highlighting as a free readability feature instead of a paid upgrade. |
+| Recovery scanner | Highlights visible salvage still needed for the current objective. | Approved as a one-time $100 unlock, with no tiers or arrival/location forecasts. |
 
-The recommended first pair to explore is **tether reach and cargo stabilization**, supporting interception and loaded-cargo play styles respectively. This is a recommendation, not an approved implementation order. Existing reel, thrust, and deposit upgrades remain available. Prices, tiers, unlock requirements, effects, and interactions are open. Every campaign mission must remain achievable with standard gear.
+Brian approved **tether reach, cargo stabilization, and recovery scanner** for the first batch. Suit reinforcement stays deferred. Existing reel, thrust, and deposit upgrades remain available. Every campaign mission must remain achievable with standard gear.
+
+Initial playtest tuning (adjust after feedback):
+- Tether reach: +10% / +20% / +30% range, priced $600 / $2,400 / $6,000.
+- Cargo stabilizer: 15% / 30% / 45% smaller cargo handling penalties, priced $700 / $2,800 / $7,000. Scales only cargo's extra gravity, reduced thrust effectiveness and inertia; does not boost unloaded thrust or change actual mass, value, or reeling duration.
+- Both tiered upgrades use the existing 0 / 3 / 6 different completed-contract requirements. Purchases apply on the next launch in every mode.
+- Recovery scanner: **one-time $100 unlock, no tiers and no contract requirement**, as requested by Brian. Marks visible salvage still needed for the current objective; counts banked and carried items when deciding what remains needed. Supports mixed quotas and current finale assignments, with no arrival/location forecasting. No markers in Endless. Additional scanner benefits can be considered later only if worthwhile.
 
 ### Proposed first three missions
 
 | Mission | Working title | Prototype focus |
 | --- | --- | --- |
-| 3-1 | Red Arrival | Bank familiar salvage and get comfortable with the new setting. |
-| 3-2 | Sample Return | Recover sample canisters with established spaced-target rules. |
-| 3-3 | Survey Recovery | Introduce survey drones with familiar movement; test changing speed as a variant before committing. |
+| 3-1 | Red Arrival | Implemented: bank $250 of familiar panels/tool crates; $450/$700 higher stars. |
+| 3-2 | Sample Return | Implemented: bank 5 sample canisters from a finite pool of 7; $550/$800 higher stars. |
+| 3-3 | Survey Recovery | Implemented: bank 3 drones from a finite pool of 5, familiar constant speed; $600/$900 higher stars. Speed variation remains deferred. |
 
 Later missions can introduce solar arrays, habitat frames, mixed objectives, and an ascent-engine finale with saved assignment checkpoints. Retain ten campaign missions per world. Specific missions 3-4 through 3-10, rewards, and balance are not designed yet.
 
 ### Delivery sequence and open decisions
 
-1. Agree on the Mars salvage lineup and visual direction.
-2. Create and approve the background and five sprites.
-3. Integrate approved assets and prototype missions 3-1 through 3-3 with world navigation.
-4. Playtest movement and cargo experiments independently; decide which to retain and which upgrade to prototype first.
+1. Complete: Mars salvage lineup and visual direction approved.
+2. Complete: background and five sprites created and approved.
+3. Implemented for review: approved assets, missions 3-1 through 3-3, world navigation, and the selected upgrades.
+4. Playtest the initial missions and upgrade tuning. Compare a separate drone-speed variant later; keep movement and cargo experiments independent.
 5. Expand the campaign in small review batches, following the Moon’s 4–6, 7–9, and checkpointed-finale approach.
 6. After campaign approval, evaluate Mars Contracts and world-aware Endless support using the established per-world pattern. Their content and tuning remain open.
 
-Mars implementation remains future work. Use the established feature-branch, playtest, and production-approval workflow for each batch.
+The first three missions and approved upgrades are implemented for review. Mars unlocks after the Moon finale; completing 3-3 does not award a world-completion badge or reward. Active Mars campaign state persists through earlier-world replays. Until Mars mode support is designed, Contracts remain Earth/Moon and Endless explicitly uses Moon for Mars players. Use the established feature-branch, playtest, and production-approval workflow for each batch.
 
 ## Principles carried forward
 

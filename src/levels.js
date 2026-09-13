@@ -116,7 +116,8 @@ const LevelSystem = (() => {
   campaign[4].debris.encounter = valuablePass;
   const worlds = [
     { id: 1, name: 'EARTH ORBIT', planned: 10 },
-    { id: 2, name: 'MOON', planned: 10 }
+    { id: 2, name: 'MOON', planned: 10 },
+    { id: 3, name: 'MARS', planned: 10 }
   ];
   campaign.forEach(config => { config.world = 1; config.missionNumber = config.id; });
   const lunarSupport = [
@@ -192,6 +193,24 @@ const LevelSystem = (() => {
     assignments: moonAssignments, checkpointKey: 'moonFinale',
     completion: { title: 'WORLD TWO COMPLETE', salvage: 'Lunar rover secured' } }, 10));
 
+  // First Mars review batch: familiar motion, sparse support, finite targets + two spares.
+  const marsSupport = [
+    band(0.7, [180, 275], [30, 40], [35, 50], 5, 10, 'PANEL'),
+    { ...band(0.3, [170, 280], [28, 36], [60, 80], 8, 12, 'TOOL'), maxActive: 2 }
+  ];
+  const marsStation = { ...defaults.station, startX: 500, returnOffset: [240, 340], returnY: [205, 245] };
+  const mars = config => ({ ...config, world: 3, missionNumber: config.id - 20, station: marsStation });
+  campaign.push(
+    mars(level(21, 'Red Arrival', 'Begin recovery above the abandoned expedition site. Collect familiar salvage and bank your haul.', 250, 450, 700,
+      { count: 5, spacing: 115, bands: marsSupport })),
+    mars({ ...level(22, 'Sample Return', 'Recover 5 geological sample canisters. Missed canisters return on a later pass. Bank your samples over as many trips as you need.', 5, 550, 800,
+      { count: 5, spacing: 115, bands: marsSupport, limited: { count: 7, spacing: 420, speed: 30,
+        band: band(1, [180, 275], [30, 30], [55, 70], 4, 10, 'SAMPLE') } }), objective: typed('SAMPLE', 5) }),
+    mars({ ...level(23, 'Survey Recovery', 'Recover 3 folded survey drones. Their equipment adds weight to your haul. Missed drones return on a later pass.', 3, 600, 900,
+      { count: 5, spacing: 115, bands: marsSupport, limited: { count: 5, spacing: 480, speed: 30,
+        band: band(1, [170, 280], [30, 30], [110, 140], 9, 13, 'DRONE') } }), objective: typed('DRONE', 3) })
+  );
+
   const endless = {
     ...defaults, id: 'endless', name: 'Endless Orbit',
     description: 'Bank $150 for your first milestone. Explore changing fields; finish safely after any deposit or keep going.',
@@ -232,7 +251,8 @@ const LevelSystem = (() => {
           arrival: { band: landerLeg, interval: 20, speed: 30 } } }
     ]
   };
-  const endlessFor = world => world === 2 ? moonEndless : endless;
+  // Mars Endless is deferred; its active campaign uses the existing Moon destination.
+  const endlessFor = world => world >= 2 ? moonEndless : endless;
   function phaseFor(config, bank) {
     if (!config.phases) return null;
     const value = bank % config.phaseCycleValue;
@@ -260,7 +280,7 @@ const LevelSystem = (() => {
     if (criterion.type === 'all') return criterion.criteria.map(c => criterionLabel(c)).join(' + ');
     if (criterion.type === 'bank_group') return `${criterion.target} ordinary objects`;
     if (criterion.type === 'complete_objective') return criterionLabel(objective);
-    if (criterion.type === 'bank_type') return `${criterion.target} ${({ SAT: 'satellites', PANEL: 'panels', SCRAP: 'scraps', TOOL: 'tool crates', ROCKET: 'rocket fragments', CAPSULE: 'survey capsule', WHEEL: 'rover wheels', TANK: 'oxygen tanks', INSTRUMENT: 'instrument packages', LEG: 'lander legs', ROVER: 'rover chassis' })[criterion.salvageType] || 'items'}`;
+    if (criterion.type === 'bank_type') return `${criterion.target} ${({ SAT: 'satellites', PANEL: 'panels', SCRAP: 'scraps', TOOL: 'tool crates', ROCKET: 'rocket fragments', CAPSULE: 'survey capsule', WHEEL: 'rover wheels', TANK: 'oxygen tanks', INSTRUMENT: 'instrument packages', LEG: 'lander legs', ROVER: 'rover chassis', SAMPLE: 'sample canisters', DRONE: 'survey drones', ARRAY: 'solar array sections', FRAME: 'habitat support frames', ENGINE: 'ascent engines' })[criterion.salvageType] || 'items'}`;
     return criterion.type === 'bank_objects' ? `${criterion.target} objects` : `$${criterion.target}`;
   }
   const key = 'orbital-cleanup-progress-v1';
@@ -268,7 +288,7 @@ const LevelSystem = (() => {
     const result = { currentLevel: 1, best: {} };
     try {
       const saved = JSON.parse(localStorage.getItem(key));
-      if ([1, 2].includes(saved?.selectedWorld)) result.selectedWorld = saved.selectedWorld;
+      if (worlds.some(world => world.id === saved?.selectedWorld)) result.selectedWorld = saved.selectedWorld;
       for (const config of campaign) {
         const stars = saved?.best?.[config.id];
         if (Number.isInteger(stars) && stars >= 1 && stars <= 3 && (config.id === 1 || result.best[config.id - 1])) result.best[config.id] = stars;
@@ -281,10 +301,11 @@ const LevelSystem = (() => {
         }
       }
     } catch (_) {}
-    result.activeWorld = result.best[10] && (result.best[11] || result.currentLevel >= 11) ? 2 : 1;
+    result.activeWorld = result.best[20] && (result.best[21] || result.currentLevel >= 21) ? 3 : result.best[10] && (result.best[11] || result.currentLevel >= 11) ? 2 : 1;
     try {
       const saved = JSON.parse(localStorage.getItem(key));
-      if (saved?.activeWorld === 2 && result.best[10]) result.activeWorld = 2;
+      if (saved?.activeWorld === 3 && result.best[20]) result.activeWorld = 3;
+      else if (saved?.activeWorld === 2 && result.best[10] && !result.best[21]) result.activeWorld = 2;
       else if (saved?.activeWorld === 1 && !result.best[11]) result.activeWorld = 1;
     } catch (_) {}
     result.selectedWorld ??= campaign.find(config => config.id === result.currentLevel)?.world || 1;
