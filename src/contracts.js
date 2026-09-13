@@ -40,6 +40,26 @@ const ContractSystem = (() => {
       description: `Bank ${LevelSystem.criterionLabel(objective)} for a $${bonus} bonus. Only deposited salvage counts.`,
       debris: { count: 8, spacing: 85, bands, ...(arrival ? { arrival } : {}) } };
   });
+  // Targeted lunar jobs use finite, spaced pools with two spare items.
+  const moonDefinitions = [
+    ['moon-tank-return', 'Tank Return', 'Easy', 'bank_type', 5, 220, 'TANK', 12],
+    ['moon-wheel-run', 'Wheel Run', 'Easy', 'bank_type', 3, 280, 'WHEEL', 11],
+    ['moon-research-order', 'Research Order', 'Medium', 'bank_type', 4, 650, 'INSTRUMENT', 13],
+    ['moon-cleanup-shift', 'Lunar Cleanup', 'Medium', 'bank_objects', 12, 600],
+    ['moon-lander-recovery', 'Lander Recovery', 'Hard', 'bank_type', 4, 1100, 'LEG', 14],
+    ['moon-big-haul', 'Lunar Payday', 'Hard', 'bank_value', 1800, 1500]
+  ];
+  contracts.push(...moonDefinitions.map(([id, name, difficulty, type, target, bonus, salvageType, sourceIndex]) => {
+    const base = LevelSystem.campaign[13];
+    const objective = { type, target, salvageType };
+    const source = sourceIndex === undefined ? null : LevelSystem.campaign[sourceIndex].debris;
+    const targetBand = source?.limited?.band || source?.pocket?.band;
+    const debris = { count: 5, spacing: 110, bands: base.debris.bands,
+      ...(targetBand ? { limited: { count: target + 2, spacing: salvageType === 'TANK' ? 360 : 480, speed: 30, band: targetBand } }
+        : { arrival: { band: LevelSystem.campaign[type === 'bank_value' ? 13 : 11].debris.limited.band, interval: 16, speed: 30 } }) };
+    return { ...base, id, name, difficulty, bonus, contract: true, objective, stars: [], debris,
+      description: `Bank ${LevelSystem.criterionLabel(objective)} for a $${bonus} bonus. Only deposited salvage counts.` };
+  }));
   let career = { wallet: 0, completed: [], upgrades: { reel: 0, thrust: 0, deposit: 0 }, worldOneReward: false, worldTwoReward: false };
   let persistent = true;
   try {

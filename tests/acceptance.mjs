@@ -116,6 +116,13 @@ vm.runInContext(source, sandbox, { filename: "src/game.js" });
 const qa = sandbox.__qa;
 assert.equal(elements.get('endless').disabled, false, 'endless is available on a fresh save');
 assert.equal(elements.get('level-2').disabled, true, 'campaign unlocks remain separate');
+elements.get('choose-contracts').listeners.click();
+elements.get('next-contract-world').listeners.click();
+assert.equal(elements.get('select-contract-moon-tank-return').disabled,true);
+const freshLevelId=qa.state.level.id;
+elements.get('contract-moon-tank-return').listeners.click();
+assert.equal(qa.state.level.id,freshLevelId,'locked Moon contract cannot launch');
+elements.get('previous-contract-world').listeners.click();
 const pointerEvent = { preventDefault() {}, pointerId: 1 };
 
 assert.equal(qa.thrustEffectiveness(0), 1, "empty thrust is 100%");
@@ -692,7 +699,7 @@ assert.equal(corruptCareer.career.upgrades.reel, 0);
 assert.equal(corruptCareer.career.completed.length, 0);
 assert.ok(cachedPaths.includes('./src/contracts.js'), 'career logic is available offline');
 console.log('Contracts, saved economy, bonus isolation, purchases and upgrades across all modes passed.');
-for (const contract of careerSystem.contracts) {
+for (const contract of careerSystem.contracts.filter(c => c.world === 1)) {
   launchContract(contract.id);
   const balance = careerSystem.career.wallet;
   const count = contract.objective.type === 'bank_value' ? 1 : contract.objective.target;
@@ -1369,3 +1376,100 @@ assert.equal(careerSystem.rewardWorld(2), false);
 assert.equal(vm.runInContext("LevelSystem.criterionLabel({type:'bank_type',salvageType:'ROVER',target:1})", sandbox), '1 rover chassis');
 assert.ok(fs.readFileSync(new URL('../service-worker.js', import.meta.url),'utf8').includes('./src/art/lunar/rover-chassis.png'));
 console.log('Moon finale mixed quotas, density, world-isolated checkpoints, rover tether/retry, badge, and one-time reward passed.');
+
+// Moon contract board retains sorted difficulty, world filtering, and isolated campaign progress.
+qa.state.progress.activeWorld=1;
+const lunarJobs = careerSystem.contracts.filter(c => c.world === 2);
+assert.equal(lunarJobs.length, 6);
+const earthScoresBeforeModes = JSON.stringify(qa.state.progress.best);
+elements.get('choose-contracts').listeners.click();
+elements.get('next-contract-world').listeners.click();
+assert.equal(elements.get('contract-world-name').textContent, 'MOON CONTRACTS');
+assert.equal(elements.get('contract-card-first-shift').hidden, true);
+assert.equal(elements.get(`contract-card-${lunarJobs[0].id}`).hidden, false);
+const boardOrder = [...elements.keys()].filter(id => id.startsWith('select-contract-moon-'));
+assert.deepEqual(boardOrder.map(id => lunarJobs.find(c => `select-contract-${c.id}`===id).difficulty), ['Easy','Easy','Medium','Medium','Hard','Hard']);
+for (const contract of lunarJobs) {
+  elements.get(`select-contract-${contract.id}`).listeners.click();
+  assert.equal(elements.get(`contract-briefing-${contract.id}`).hidden, false);
+  for (const other of lunarJobs.filter(c=>c!==contract)) assert.equal(elements.get(`contract-briefing-${other.id}`).hidden,true);
+  launchContract(contract.id);
+  assert.equal(qa.state.level.world,2);
+  assert.equal(qa.state.level.debris.count,5);
+  assert.ok(qa.state.junk.filter(o=>o.type==='SAT').length<=2);
+  if(contract.debris.limited) {
+    const targets=qa.state.junk.filter(o=>o.type===contract.objective.salvageType);
+    assert.equal(targets.length,contract.objective.target+2);
+    assert.equal(targets[1].x-targets[0].x,contract.debris.limited.spacing);
+    targets[0].x=-50; qa.update(.01); assert.ok(targets[0].x>360);
+  }
+  const priorWallet=careerSystem.career.wallet;
+  const type=contract.objective.salvageType||'WHEEL';
+  collectItems(type,contract.objective.type==='bank_value'?1:contract.objective.target,contract.objective.type==='bank_value'?1800:40);
+  const haul=qa.state.haul;
+  assert.equal(qa.state.pendingResult,false);
+  deposit(haul); assert.equal(qa.state.pendingResult,true);
+  assert.equal(careerSystem.career.wallet,priorWallet+haul+contract.bonus);
+  qa.resumeLevel(); collectItems('SCRAP',1,20); deposit(20);
+  assert.equal(careerSystem.career.wallet,priorWallet+haul+contract.bonus+20,'bonus only once per run');
+  qa.end('REENTRY');
+  assert.equal(elements.get('death').textContent,'SURFACE IMPACT');
+  assert.equal(careerSystem.career.completed.includes(contract.id),true);
+}
+assert.equal(JSON.stringify(qa.state.progress.best),earthScoresBeforeModes);
+assert.equal(qa.state.progress.activeWorld,1,'Moon contract browsing and play do not advance the active campaign world');
+assert.equal(reloadCareer(sandbox.localStorage).career.completed.filter(id=>id.startsWith('moon-')).length,6);
+
+// Migration infers established lunar progression, but explicit active world is independent of browsing.
+const modeSave = storage.get('orbital-cleanup-progress-v1');
+function migratedWorld(value) {
+  storage.set('orbital-cleanup-progress-v1', JSON.stringify(value));
+  return vm.runInContext('LevelSystem.readProgress().activeWorld', sandbox);
+}
+const earthComplete = Object.fromEntries(Array.from({length:10},(_,i)=>[i+1,1]));
+assert.equal(migratedWorld({currentLevel:1,best:{}}),1);
+assert.equal(migratedWorld({currentLevel:11,best:earthComplete}),2,'old Moon save migrates');
+assert.equal(migratedWorld({currentLevel:11,best:earthComplete,activeWorld:1}),1,'browsing a Moon mission does not change explicit active world');
+assert.equal(migratedWorld({currentLevel:1,best:{...earthComplete,11:1}}),2,'legacy Earth replay keeps established Moon progression');
+assert.equal(migratedWorld({currentLevel:1,best:{},activeWorld:2}),1,'locked world cannot become active');
+storage.set('orbital-cleanup-progress-v1', modeSave);
+qa.state.progress.activeWorld=1;
+elements.get('level-11').listeners.click();
+assert.equal(qa.state.progress.activeWorld,1);
+qa.start(); assert.equal(qa.state.progress.activeWorld,2);
+elements.get('level-1').listeners.click(); qa.start();
+assert.equal(qa.state.progress.activeWorld,2,'Earth replay does not reset active world');
+assert.equal(elements.get('endless-destination').textContent,'MOON');
+const earthEndlessBefore=storage.get('orbital-cleanup-endless-best-v1');
+const walletBeforeEndless=careerSystem.career.wallet;
+elements.get('endless').listeners.click();
+assert.equal(qa.state.level.world,2);
+assert.equal(qa.state.level.id,'endless');
+assert.equal(qa.state.phase.name,'Lunar salvage');
+assert.ok(qa.state.junk.every(o=>o.type!=='ROVER'));
+collectItems('SCRAP',5,30); deposit(150);
+assert.equal(qa.state.queuedPhase.name,'Workshop spares');
+qa.resumeLevel();
+qa.scenario={elapsed:100,junk:[]}; qa.fillDebris();
+assert.ok(qa.state.junk.some(o=>o.type==='WHEEL'));
+assert.ok(qa.state.junk.some(o=>o.type==='TANK'));
+assert.ok(qa.state.junk.length<=5);
+collectItems('SCRAP',5,30); deposit(150); qa.resumeLevel();
+assert.equal(qa.state.phase.name,'Research recovery');
+qa.scenario={elapsed:200,junk:[]};qa.fillDebris();
+assert.equal(qa.state.junk.filter(o=>o.type==='INSTRUMENT').length,1);
+qa.fillDebris();assert.equal(qa.state.junk.filter(o=>o.scheduledSalvage).length,1);
+collectItems('SCRAP',5,40);deposit(200);qa.resumeLevel();
+assert.equal(qa.state.phase.name,'Lander salvage');
+qa.scenario={elapsed:300,junk:[]};qa.fillDebris();
+assert.equal(qa.state.junk.filter(o=>o.type==='LEG').length,1);
+assert.ok(qa.state.junk.length<=5);
+collectItems('SCRAP',5,50);deposit(250);
+assert.equal(qa.state.queuedPhase.name,'Lunar salvage');
+qa.finishLevel();
+assert.equal(storage.get('orbital-cleanup-endless-best-v1'),earthEndlessBefore);
+assert.equal(Number(storage.get('orbital-cleanup-moon-endless-best-v1')),750);
+assert.equal(careerSystem.career.wallet,walletBeforeEndless,'Endless does not award spendable contract earnings');
+elements.get('result-menu').listeners.click();
+assert.equal(elements.get('endless-menu-best').textContent,'$750');
+console.log('Moon contracts, world navigation, finite target density, payouts, migration, active world, Endless phases and separate scores passed.');

@@ -39,7 +39,7 @@ After missions 2-1 through 2-10 are implemented and playtested:
 3. Lunar Endless should use the lunar environment and salvage mix, with staged introduction of new items and retained rare-item spacing. Preserve existing bank/deposit milestones and shared gear where appropriate.
 4. Keep Earth and Moon Endless best scores separate, preserving existing Earth scores. Keep spendable earnings in Contracts under the existing economy policy.
 
-The exact active-world rule is a recommendation for review. The user has requested Moon Endless while actively progressing through Moon missions; it must not depend merely on the last viewed world page.
+The active-world rule above is implemented in v0.15.5 for review. The user has requested Moon Endless while actively progressing through Moon missions; it must not depend merely on the last viewed world page.
 
 ## Suggested implementation batches
 
@@ -48,7 +48,7 @@ The exact active-world rule is a recommendation for review. The user has request
 - Third: 2-10, per-world checkpoint/reward handling, completion presentation, and a full ten-mission balance pass.
 - Then: lunar Contracts and world-aware Endless Orbit.
 
-Missions 2-4 through 2-6 are approved and deployed. Missions 2-7 through 2-9 are approved and deployed in v0.15.3. Mission 2-10 is implemented for playtesting in v0.15.4, using the three assignments above, a 22kg rover, $1,800/$2,400 higher-star targets, and an independent one-time $2,000 reward. Mode changes remain planned.
+Missions 2-4 through 2-6 are approved and deployed. Missions 2-7 through 2-9 are approved and deployed in v0.15.3. Mission 2-10 is approved and deployed in v0.15.4, using the three assignments above, a 22kg rover, $1,800/$2,400 higher-star targets, and an independent one-time $2,000 reward. Moon contracts and world-aware Endless are implemented for playtesting in v0.15.5.
 
 ## Next destination: Mars
 
@@ -61,3 +61,9 @@ Carry World One’s manageable object density across worlds, while allowing diff
 ## Briefing guideline
 
 Use Heavy Metal’s concise style: clear goals, relevant cargo behavior, and missed-item recovery rules. Do not reveal exact timing, altitude, or spawn patterns. Detailed tuning belongs in developer notes, not player briefings.
+
+## Moon mode implementation — v0.15.5
+
+Six lunar contracts: Tank Return (5 tanks, $220 bonus), Wheel Run (3 wheels, $280), Research Order (4 instruments, $650), Lunar Cleanup (12 objects, $600), Lander Recovery (4 legs, $1,100), and Lunar Payday ($1,800 banked, $1,500 bonus). These are initial playtest settings. The board separates worlds and sorts each by difficulty; Moon access follows World Two unlock. Briefings retain concise goals/recovery rules.
+
+Moon Endless cycles at existing bank milestones through familiar salvage, wheels/tanks, instruments, and legs. It retains the same five-object budget with reserved rare-item slots, lunar scenery, and Surface Impact behavior. A separate score preserves Earth history. No rover spawns outside the finale and no wallet earnings from Endless.
