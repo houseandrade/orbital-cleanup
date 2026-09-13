@@ -112,7 +112,7 @@
   const debrisConfig = () => phase?.debris || level.debris;
 
   function makeJunk(offset = 0, chosenBand = null) {
-    const bands = debrisConfig().bands;
+    const bands = debrisConfig().bands.filter(band => !band.maxActive || junk.filter(object => object.type === band.type).length < band.maxActive);
     let roll = Math.random() * bands.reduce((sum, band) => sum + band.weight, 0);
     const band = chosenBand || bands.find(band => (roll -= band.weight) < 0) || bands[bands.length - 1];
     let zone = band;

@@ -168,3 +168,8 @@ Brian found the capsule too immediate and safely positioned. Its finite pool now
 ### v0.13 finale3 — campaign completion indicator
 
 User requested replacing the standalone World One completion banner with a green check beside CAMPAIGN inside its entry card. The check retains an accessible World One complete label and appears only after Level 10 completion.
+
+
+## v0.13 polish1 — satellite variety and Campaign card
+
+User reported too few satellites in Levels 6–10, requested the completion check before World One in the card subtext, and noted the astronaut's right-side clipping. Later missions and all finale assignments now include a low-weight satellite band capped at two active satellites, sampling high/mid/low altitudes with upper-range rewards near boundaries. Existing normal debris counts and mission target pools remain unchanged. New target contracts inherit the varied support bands. The Campaign heading is plain, with subtext `10 missions · [green check when complete] World One`. The astronaut atlas background offset and silhouette mask now match its source bounds, preserving both arms inside the icon column. Grid text columns can shrink without overflowing. Full acceptance checks include satellite presence across all late-campaign assignments and the two-satellite cap. Production remains unchanged pending playtest approval.
