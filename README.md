@@ -1,6 +1,14 @@
-# Orbital Cleanup v0.15.3
+# Orbital Cleanup v0.15.5
+
+For version-by-version changes, see [Release notes](RELEASE-NOTES.md).
 
 A mobile-first, standalone PWA build of the v0.532 canvas prototype. Collect debris, manage the added cargo mass, and bank the haul at the cleanup station before the run ends.
+
+## Current release and next work
+
+v0.15.5 is approved and deployed: both ten-mission campaigns, Earth/Moon Contracts, world-aware Endless with separate best scores, shared upgrades, and independent finale checkpoints/rewards are live. The flight-header stability fix and concise inline briefings are also deployed. The later release sections record historical implementation/playtest notes; their pending-review wording does not override this status.
+
+Next: v0.16 Mars planning. See [the current roadmap](ROADMAP.md) for proposed salvage, mechanics, upgrades, and the artwork-first prototype sequence. Mars proposals are not implemented or individually approved.
 
 ## Production deployment
 
@@ -15,7 +23,8 @@ To release an iteration:
 1. Complete and validate the work on a feature branch.
 2. Open a pull request targeting `main`.
 3. Merge only after the playtest build is explicitly approved.
-4. Monitor the **Deploy production PWA to GitHub Pages** workflow in GitHub Actions. A successful run updates the production URL above.
+4. Update `RELEASE-NOTES.md` with the review version and implemented changes.
+5. Monitor the **Deploy production PWA to GitHub Pages** workflow in GitHub Actions. A successful run updates the production URL above. Then mark the release notes Released and record the verified deployment date and PR.
 
 All browser-facing paths are relative, so the PWA operates under the `/orbital-cleanup/` GitHub Pages project path. The service worker scope and offline cache remain within that project path.
 
