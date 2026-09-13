@@ -86,3 +86,16 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
 .picker-open .menu-panel > h1, .picker-open .tagline { display:none; }
 #campaign-picker { background:#0b1118f5; border-radius:8px; padding:12px; margin-top:14px; }
 .picker-open .menu-panel { padding-bottom:12px; }
+
+.career-bar { grid-column:1 / -1; display:flex; align-items:center; justify-content:space-between; gap:8px; padding-top:12px; border-top:1px solid var(--border); font-size:12px; }
+.workshop-wallet { font-size:13px; padding:10px 0; border-bottom:1px solid var(--border); }
+.career-panel { text-align:left; background:#0b1118f5; border-radius:8px; padding:12px; margin-top:12px; }
+.contract-mode { border-color:#a7f3b5; }
+.career-card { border:1px solid var(--border); border-radius:8px; padding:12px; margin:10px 0; background:#101a24; }
+.career-card h3 { margin:6px 0; font-size:16px; }
+.career-card p { font-size:12px; line-height:1.5; color:var(--muted); margin:6px 0; }
+.career-card .reward { color:var(--accent); font-weight:800; }
+.panel .button { touch-action:pan-y; }
+
+.menu-sprite.contracts { background-image:url('src/art/contracts.png'); background-size:90px auto; background-position:center; height:90px; }
+.career-panel > .result-action { margin:0 0 14px; }

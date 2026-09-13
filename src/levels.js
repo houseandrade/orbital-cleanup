@@ -88,6 +88,7 @@ const LevelSystem = (() => {
   function meets(criterion, stats, objective) {
     if (!criterion) return false;
     switch (criterion.type) {
+      case 'bank_type': return (stats.bankedTypes?.[criterion.salvageType] || 0) >= criterion.target;
       case 'bank_objects': return stats.bankedObjects >= criterion.target;
       case 'bank_value': return stats.bank >= criterion.target;
       case 'complete_objective': return meets(objective, stats);
@@ -98,6 +99,7 @@ const LevelSystem = (() => {
     stars === index && meets(criterion, stats, config.objective) ? stars + 1 : stars, 0);
   function criterionLabel(criterion, objective) {
     if (criterion.type === 'complete_objective') return criterionLabel(objective);
+    if (criterion.type === 'bank_type') return `${criterion.target} ${criterion.salvageType === 'SAT' ? 'satellites' : 'panels'}`;
     return criterion.type === 'bank_objects' ? `${criterion.target} objects` : `$${criterion.target}`;
   }
   const key = 'orbital-cleanup-progress-v1';

@@ -15,6 +15,9 @@ function makeElement(id) {
     hidden: false,
     style: { setProperty() {} },
     listeners: {},
+    set innerHTML(value) {
+      for (const match of value.matchAll(/id="([^"]+)"/g)) elements.set(match[1], makeElement(match[1]));
+    },
     classList: {
       add: (...names) => names.forEach((name) => classes.add(name)),
       remove: (...names) => names.forEach((name) => classes.delete(name)),
@@ -48,6 +51,7 @@ const ids = [
   "start-screen", "start", "game-over", "play-again", "death", "detail",
   "bank", "lost", "summary", "start-high-score", "game-over-high-score"
 ];
+ids.push(...Array.from(fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8').matchAll(/id="([^"]+)"/g), match => match[1]));
 ids.forEach((id) => elements.set(id, makeElement(id)));
 elements.get("canvas").getContext = () => drawingContext;
 
@@ -55,6 +59,7 @@ const storage = new Map();
 const sandbox = {
   GameArt: { sprite: () => false, backdrop: () => false },
   console,
+  structuredClone,
   Math,
   Number,
   String,
@@ -78,6 +83,8 @@ sandbox.globalThis = sandbox;
 let source = fs.readFileSync(new URL("../src/game.js", import.meta.url), "utf8");
 source = source.replace(/\}\)\(\);\s*$/, `
   globalThis.__qa = {
+    ContractSystem, refreshCareer,
+    get careerState() { return { carriedTypes, bankedTypes, contractBonus, contractCompleted, runEffects }; },
     fillDebris, scheduleEncounter, collect, draw, stationMessage, start, end, finishLevel, resumeLevel, update, fireTether, collide, thrustEffectiveness,
     get state() { return { phase, queuedPhase, nextStation, elapsed, carriedObjects, bankedObjects, level, progress, pendingResult, running, haul, bank, mass, integrity, tether, junk, player, station, depositing, cargo }; },
     set scenario(value) {
@@ -99,6 +106,7 @@ source = source.replace(/\}\)\(\);\s*$/, `
 vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync(new URL('../src/levels.js', import.meta.url), 'utf8'), sandbox);
 vm.runInContext(fs.readFileSync(new URL('../src/input.js', import.meta.url), 'utf8'), sandbox);
+vm.runInContext(fs.readFileSync(new URL('../src/contracts.js', import.meta.url), 'utf8'), sandbox);
 vm.runInContext(source, sandbox, { filename: "src/game.js" });
 
 const qa = sandbox.__qa;
@@ -563,4 +571,110 @@ for (const config of vm.runInContext('LevelSystem.campaign', sandbox)) {
   assert.deepEqual(Array.from(config.station.returnOffset), config.id === 1 ? [120,180] : [420,620]);
 }
 assert.deepEqual(Array.from(vm.runInContext('LevelSystem.campaign.map(c=>c.objective.target)', sandbox)), [60,150,150,10,350]);
-console.log('Orbital Cleanup v0.10 acceptance checks passed.');
+console.log('Orbital Cleanup v0.11 acceptance checks passed.');
+
+// Contract deposits, type tracking, once-per-run bonuses, and career purchases.
+const careerSystem = qa.ContractSystem;
+const campaignBeforeContracts = storage.get('orbital-cleanup-progress-v1');
+const endlessBeforeContracts = storage.get('orbital-cleanup-endless-best-v1');
+const launchContract = id => elements.get(`contract-${id}`).listeners.click();
+launchContract('satellite-sweep');
+assert.equal(careerSystem.career.wallet, 0, 'old scores are not imported as money');
+for (let i = 0; i < 5; i++) qa.collect({ type:'PANEL', value:30, mass:5, size:10 });
+deposit(150);
+assert.equal(qa.state.pendingResult, false, 'panels cannot satisfy a satellite job');
+assert.equal(careerSystem.career.wallet, 150);
+for (let i = 0; i < 3; i++) qa.collect({ type:'SAT', value:70, mass:10, size:14 });
+deposit(210);
+assert.equal(qa.careerState.bankedTypes.SAT, 3);
+assert.equal(qa.state.pendingResult, false);
+for (let i = 0; i < 2; i++) qa.collect({ type:'SAT', value:70, mass:10, size:14 });
+assert.equal(careerSystem.career.wallet, 360, 'carried salvage is not paid');
+deposit(140);
+assert.equal(qa.state.pendingResult, true);
+assert.equal(careerSystem.career.wallet, 1250, '500 salvage plus 750 bonus');
+assert.equal(qa.careerState.contractBonus, 750);
+assert.ok(elements.get('contract-payout').textContent.includes('$1250'));
+qa.resumeLevel();
+deposit(50);
+assert.equal(careerSystem.career.wallet, 1300, 'later deposits cannot repeat the bonus');
+qa.finishLevel(); qa.finishLevel();
+assert.equal(careerSystem.career.wallet, 1300, 'finish cannot repeat payment');
+assert.equal(careerSystem.career.completed.length, 1);
+assert.equal(storage.get('orbital-cleanup-progress-v1'), campaignBeforeContracts);
+assert.equal(storage.get('orbital-cleanup-endless-best-v1'), endlessBeforeContracts);
+launchContract('satellite-sweep');
+assert.equal(qa.careerState.bankedTypes.SAT, undefined, 'new runs reset type counts');
+qa.collect({ type:'SAT', value:70, mass:10, size:14 });
+qa.end('SUIT');
+assert.equal(careerSystem.career.wallet, 1300, 'lost cargo is unpaid');
+launchContract('first-shift');
+deposit(90);
+qa.end('SUIT');
+assert.equal(careerSystem.career.wallet, 1390, 'deposits survive a failed contract');
+elements.get('over-menu').listeners.click();
+elements.get('choose-upgrades').listeners.click();
+elements.get('buy-reel').listeners.click();
+assert.equal(careerSystem.career.wallet, 490);
+assert.equal(careerSystem.career.upgrades.reel, 1);
+assert.equal(careerSystem.purchase('reel'), false, 'later tiers require distinct jobs');
+assert.equal(careerSystem.purchase('thrust'), false, 'insufficient balance cannot buy');
+assert.equal(careerSystem.purchase('invalid'), false);
+careerSystem.credit(1000);
+elements.get('buy-thrust').listeners.click();
+assert.equal(careerSystem.career.upgrades.thrust, 1);
+// Every mode snapshots the same owned equipment, including campaign and Endless.
+for (const launch of [() => launchContract('panel-patrol'), () => elements.get('endless').listeners.click(), () => { elements.get('level-1').listeners.click(); qa.start(); }]) {
+  launch();
+  assert.equal(qa.careerState.runEffects.reel, 0.9);
+  assert.equal(qa.careerState.runEffects.thrust, 1.06);
+  qa.scenario = { junk:[{x:200,y:225,wobble:0,mass:10}], player:{y:225,velocityY:0,flash:0} };
+  qa.fireTether();
+  assert.ok(Math.abs(qa.state.tether.duration - 0.72) < 1e-10, 'reel effect reaches the live tether');
+}
+for (const c of careerSystem.contracts.slice(0, 6)) careerSystem.complete(c.id);
+careerSystem.credit(50000);
+for (const id of ['reel','thrust']) {
+  assert.equal(careerSystem.purchase(id), true);
+  assert.equal(careerSystem.purchase(id), true);
+  assert.equal(careerSystem.purchase(id), false, 'maximum tier cannot be exceeded');
+}
+assert.equal(careerSystem.career.completed.length, 6, 'replays do not unlock tiers twice');
+const careerSource = fs.readFileSync(new URL('../src/contracts.js', import.meta.url), 'utf8');
+function reloadCareer(localStorage) {
+  const fresh = vm.createContext({ structuredClone, localStorage });
+  vm.runInContext(fs.readFileSync(new URL('../src/levels.js', import.meta.url), 'utf8'), fresh);
+  vm.runInContext(careerSource, fresh);
+  return vm.runInContext('ContractSystem', fresh);
+}
+const reloaded = reloadCareer(sandbox.localStorage).career;
+const expectedCareer = careerSystem.career;
+reloaded.completed.sort(); expectedCareer.completed.sort();
+assert.deepEqual(reloaded, expectedCareer, 'wallet, gear and completions survive reload');
+const blockedCareer = reloadCareer({ getItem(){throw Error('blocked');}, setItem(){throw Error('blocked');} });
+assert.equal(blockedCareer.credit(1000), true);
+assert.equal(blockedCareer.purchase('reel'), true);
+assert.equal(blockedCareer.career.wallet, 100);
+assert.equal(blockedCareer.persistent, false);
+const corruptCareer = reloadCareer({ getItem: () => '{"wallet":-40,"upgrades":{"reel":99},"completed":["fake"]}', setItem(){} });
+assert.equal(corruptCareer.career.wallet, 0);
+assert.equal(corruptCareer.career.upgrades.reel, 0);
+assert.equal(corruptCareer.career.completed.length, 0);
+assert.ok(cachedPaths.includes('./src/contracts.js'), 'career logic is available offline');
+console.log('Contracts, saved economy, bonus isolation, purchases and upgrades across all modes passed.');
+for (const contract of careerSystem.contracts) {
+  launchContract(contract.id);
+  const balance = careerSystem.career.wallet;
+  const count = contract.objective.type === 'bank_value' ? 1 : contract.objective.target;
+  for (let i = 0; i < count; i++) qa.collect({ type:contract.objective.salvageType || 'SCRAP', value:contract.objective.type === 'bank_value' ? contract.objective.target : 30, mass:2, size:7 });
+  const salvage = qa.state.haul;
+  qa.draw();
+  assert.equal(qa.state.pendingResult, false, 'carried objective does not complete a contract');
+  deposit(salvage);
+  assert.equal(qa.state.pendingResult, true, `${contract.name} can be completed`);
+  assert.equal(careerSystem.career.wallet, balance + salvage + contract.bonus);
+  qa.finishLevel();
+  assert.equal(elements.get('next-level').hidden, true);
+  assert.equal(elements.get('result-endless').hidden, true);
+}
+console.log('All nine contract objectives and payouts passed.');

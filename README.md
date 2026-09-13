@@ -1,4 +1,4 @@
-# Orbital Cleanup v0.10
+# Orbital Cleanup v0.11
 
 A mobile-first, standalone PWA build of the v0.532 canvas prototype. Collect debris, manage the added cargo mass, and bank the haul at the cleanup station before the run ends.
 
@@ -105,3 +105,13 @@ Endless phases use banked value within a repeating $750 cycle: Open field at $0,
 Score milestones are $150, $300, $500, $750, $1,000, then every $250 indefinitely. Banking across a milestone announces it. Every successful Endless deposit pauses for Keep Salvaging or Finish Run Successfully, including deposits below $150. Finishing shows Run Complete without campaign stars or unlocks; continuing retains normal failure outcomes. The existing separate Endless best and campaign save keys are retained; no save migration or new persistent fields.
 
 Validation: `node tests/acceptance.mjs` covers countdown/queued returns/pause, pocket recurrence and capacity, encounter alignment, bank-only phase transitions and previews, multi-threshold deposits, repeated cycles, finish/replay/failure, existing saves, mobile pointer ownership, and offline update isolation. Browser QA verified flight, banking preview, and successful finish at 320×568 and 375×667 with no console errors. Real iOS gesture behavior and initial balance settings still need hands-on playtesting. Fuel, upgrades, drifting debris, and new campaign levels remain deferred. Do not merge or deploy without approval.
+
+## v0.11 — Contracts and shared upgrades
+
+Nine repeatable contracts span Easy, Medium, and Hard jobs: total deposited objects, deposited panels/satellites, and deposited salvage value. Choose one job from the new contract board. Deposits immediately credit a separate career wallet; the first qualifying deposit also pays the bonus and records completion. Continuing pays only additional salvage, while a new run can earn its bonus again. Failure, restart, and menu exit retain deposited earnings and lose carried salvage. Campaign/Endless scores are not imported into the wallet, and only Contracts award spendable money.
+
+The workshop offers three tiers each of reel speed (10/20/30% shorter tether duration) and thruster power (+6/12/18%). Purchased upgrades apply to **Campaign, Endless, and Contracts** at run launch. Reel tiers cost $900/$3,500/$9,000; thrusters cost $1,000/$4,000/$10,000. Second and third tiers require 3 and 6 distinct completed contracts respectively. Replays do not increase the distinct-job count. These are initial playtest settings, not a validated multi-day progression curve.
+
+Career data uses `orbital-cleanup-career-v1`, separate from existing campaign and best-score keys. Blocked storage falls back to session memory with a visible notice. Existing stars and scores are preserved; new runs in all modes benefit from purchased gear. The contract clipboard is an alpha-transparent generated PNG cached for offline use.
+
+Validation: `node tests/acceptance.mjs` covers every contract objective/payout, mixed-type multi-deposit recovery, lost cargo, bonus duplication, campaign/save isolation, purchase requirements and caps, reload and unavailable storage, and gear effects in all modes, plus the existing gameplay/input/PWA checks. Browser QA checked 320×568 and 375×667 menu layouts, contract board, workshop, launch and pause/exit, with no browser warnings/errors observed. Real-device handling and progression pacing need playtesting. This local build has not been merged or deployed.
