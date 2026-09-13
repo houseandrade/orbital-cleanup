@@ -2,19 +2,81 @@
 
 ## Current roadmap — September 13, 2026
 
-1. **Earth / World One: complete.** Ten campaign missions, checkpointed finale, Contracts, upgrades, and Endless Orbit are available. v0.14 added inline mission briefings and automatic contract difficulty sorting.
-2. **Moon / World Two: in progress.** v0.15 is approved and deployed, adding the world selector and missions 2-1 Lunar Arrival, 2-2 Spare Parts, and 2-3 Tank Sweep. All lunar artwork is approved.
-3. **Finish the Moon campaign.** Missions 2-4 through 2-6 are approved and deployed. Missions 2-7 Off Course, 2-8 Catch the Window, and 2-9 Heavy Recovery are approved and deployed in v0.15.3. Mission 2-10 Last Rover is approved and deployed in v0.15.4 with independent checkpoints, a Moon badge, and a one-time $2,000 reward. The full ten-mission Moon campaign is complete. The progression covers: instrument recovery, lander legs, mixed workshop orders, a gentle-drift experiment, station-timed recovery, heavy salvage, and a checkpointed rover finale. Counts and balance are proposals, not final values. See [Moon campaign plan](MOON-CAMPAIGN-PLAN.md).
-4. **Moon mode support: playtesting.** v0.15.5 adds six lunar Contracts with Earth/Moon board navigation and automatic difficulty sorting. Endless follows persistent active campaign progress: starting Moon sets the destination; browsing, contracts, and Earth replays do not reset it. Separate Earth/Moon best scores and the labeled menu destination are implemented. Playtest balance and approve deployment before Mars.
-5. **Mars / World Three: next destination.** Begin Mars after the Moon campaign and its mode support are complete. Continue the ten-mission-per-world structure and world selector. Mars salvage, environmental behavior, artwork, and mission details are not yet defined.
+1. **Earth / World One: complete and deployed.** Ten campaign missions, checkpointed finale, Contracts, and Endless Orbit are available. Shared upgrades include reel motor, thruster power, and deposit speed.
+2. **Moon / World Two: complete and deployed.** All ten missions are live, including Last Rover’s three checkpointed assignments, independent Moon checkpoint/reward handling, completion badge, and one-time $2,000 reward. Approved lunar artwork, vertical drift, and station-timed recovery are implemented. See [Moon campaign record](MOON-CAMPAIGN-PLAN.md).
+3. **Moon mode support: complete and deployed in v0.15.5.** Six Moon contracts use Earth/Moon navigation, difficulty sorting, and inline briefings. Starting a Moon campaign mission sets the persistent active world; browsing, contracts, and Earth replays do not reset it. Endless follows that world, labels its destination, and preserves separate Earth/Moon best scores. PR #22 deployed successfully; Brian’s playtest feedback was positive.
+4. **Shared presentation: complete and deployed.** Campaign and contract briefings expand directly below the selected card, with a MISSION BRIEFING heading and objective bullets. Briefings omit exact timing, altitude, and spawn-pattern hints. The responsive flight header reserves its height so changing status messages do not resize the playfield.
+5. **v0.16 / Mars / World Three: planning.** Follow the Moon’s artwork-first, small-batch prototype approach. The proposals below are recorded for discussion; Mars art, missions, mechanics, and upgrades have not been implemented or individually approved.
 
-Preserve manageable object density across worlds: spaced mission targets, bounded support fields, capped valuable support items, and no random clusters of mission targets. Exact tuning may vary by world.
+## v0.16 — Mars proposal
 
-Keep mission briefings concise across every world: goals, relevant cargo behavior, and recovery rules, without exact timing, altitude, or spawn-pattern hints. This copy cleanup is approved and deployed in v0.15.3; apply the same guideline to every future mission.
+### Setting and art direction
 
-Next batch: playtest and deploy lunar Contracts and world-aware Endless. Mars planning follows this work.
+An abandoned expedition site above red Martian terrain, with research equipment and remnants of unfinished infrastructure. Proposed salvage colors are cream, charcoal, and metallic tones with teal accents for readability against the red background. Mix new Mars items with familiar tool crates, panels, and rocket fragments.
 
-The sections below are historical delivery notes. This current roadmap supersedes older statements about available missions, deployment state, and deferred modes.
+Create a Mars background and five salvage sprites after agreeing on the lineup. Review and approve the artwork before integrating it or changing gameplay. Preserve readable silhouettes and test background cropping at different device sizes, as with the Moon.
+
+### Proposed salvage lineup
+
+| Item | Intended role |
+| --- | --- |
+| Sample canister | Small, light geological sample container; an accessible introduction to Mars recovery. |
+| Survey drone | Moderately valuable equipment with a folded-wing silhouette; candidate for a new movement experiment. |
+| Solar array section | Bulky salvage that encourages decisions about how much cargo to carry. |
+| Habitat support frame | Heavy structural debris for later missions and mixed recovery orders. |
+| Ascent engine | Unique finale target: the last major component of an abandoned expedition. Keep it special to the finale initially. |
+
+These are proposed names and roles, not finalized asset specifications. Masses, values, objective counts, and star thresholds remain to be tuned.
+
+### Gameplay experiments
+
+- **Primary candidate: changing horizontal speed on survey drones.** Drones gradually speed up and slow down as they pass, giving players movement to judge before tethering. Use existing controls, with no sudden reversals or unpredictable jumps. Introduce drones with familiar motion first, then compare a speed-varying variant before adopting it.
+- **Cargo-management variety:** first test solar arrays and habitat frames through existing mass and handling rules. Careful tuning may provide enough variety without a new system. Do not add a separate bulk mechanic merely because the artwork looks large.
+- **Deferred possibility: tether tension.** Revisit only if simpler mission prototypes reveal a worthwhile gap. This is not part of the initial prototype commitment.
+
+Moon vertical drift is already implemented. Mars horizontal speed variation is a separate proposal; avoid layering multiple unfamiliar mechanics into the first introduction.
+
+### Upgrade proposals
+
+| Upgrade | Proposed benefit | Design constraint |
+| --- | --- | --- |
+| Tether reach | Modestly increases collection range. | Improve interception without removing positioning decisions or adding a button. |
+| Cargo stabilizer | Reduces the handling penalty from heavy cargo. | Loaded trips should remain a meaningful tradeoff; define how this differs from existing thrust upgrades. |
+| Suit reinforcement | Reduces collision damage. | Give room to recover from mistakes without eliminating danger. |
+| Recovery scanner | Highlights item types still needed for the current objective. | Do not reveal arrival times or locations. Consider basic objective highlighting as a free readability feature instead of a paid upgrade. |
+
+The recommended first pair to explore is **tether reach and cargo stabilization**, supporting interception and loaded-cargo play styles respectively. This is a recommendation, not an approved implementation order. Existing reel, thrust, and deposit upgrades remain available. Prices, tiers, unlock requirements, effects, and interactions are open. Every campaign mission must remain achievable with standard gear.
+
+### Proposed first three missions
+
+| Mission | Working title | Prototype focus |
+| --- | --- | --- |
+| 3-1 | Red Arrival | Bank familiar salvage and get comfortable with the new setting. |
+| 3-2 | Sample Return | Recover sample canisters with established spaced-target rules. |
+| 3-3 | Survey Recovery | Introduce survey drones with familiar movement; test changing speed as a variant before committing. |
+
+Later missions can introduce solar arrays, habitat frames, mixed objectives, and an ascent-engine finale with saved assignment checkpoints. Retain ten campaign missions per world. Specific missions 3-4 through 3-10, rewards, and balance are not designed yet.
+
+### Delivery sequence and open decisions
+
+1. Agree on the Mars salvage lineup and visual direction.
+2. Create and approve the background and five sprites.
+3. Integrate approved assets and prototype missions 3-1 through 3-3 with world navigation.
+4. Playtest movement and cargo experiments independently; decide which to retain and which upgrade to prototype first.
+5. Expand the campaign in small review batches, following the Moon’s 4–6, 7–9, and checkpointed-finale approach.
+6. After campaign approval, evaluate Mars Contracts and world-aware Endless support using the established per-world pattern. Their content and tuning remain open.
+
+Mars implementation remains future work. Use the established feature-branch, playtest, and production-approval workflow for each batch.
+
+## Principles carried forward
+
+- Preserve manageable object density across worlds: spaced mission targets, bounded support fields, capped valuable support items, and no random target clusters. Exact tuning may vary by world.
+- Finite mission pools normally include two spare targets per required type; unique finale targets are the exception. Missed targets return. Do not replenish collected finite targets.
+- Keep briefings concise: clear goals, relevant cargo behavior, and recovery rules. Use Heavy Metal as the style reference. Omit exact timing, altitude, and spawn patterns; detailed tuning belongs in developer notes.
+- Preserve inline objective bullets, automatic contract difficulty ordering, responsive playfield stability, existing saves, shared gear, and independent world checkpoints/rewards and Endless scores.
+- Introduce mechanics gradually, retain the existing controls where possible, and keep standard gear sufficient.
+
+The sections below are historical delivery notes, not outstanding work. This current roadmap supersedes their older deployment statuses and deferred-feature statements.
 
 ## Phase 1 — v0.6 Shareable PWA
 

@@ -2,13 +2,19 @@
 
 ## Current state
 
-`main` contains the stable v0.6 mobile-first PWA playtest build. The original v0.532 single-file prototype is preserved unchanged at `reference/prototype-v0.532.html` and remains the behavioral baseline for the core loop.
+`main` contains approved production v0.15.5 (PR #22, commit 330d7a6). Deployment 34779457553 succeeded and the public release was verified. Earth and Moon each have ten campaign missions; lunar Contracts and world-aware Endless are deployed alongside shared upgrades, concise inline briefings, and the stable responsive flight header. Mars v0.16 is the next planning focus; see ROADMAP.md for the proposed art, salvage, mechanics, upgrades, and first three missions. These Mars proposals are not implemented or individually approved.
 
-The v0.6 build separates the game into a maintainable static project with no build step:
+The release sections below are historical records. Their original playtest/pending-review wording is superseded by this current status. The original v0.532 single-file prototype is preserved unchanged at `reference/prototype-v0.532.html` and remains the behavioral baseline for the core loop.
+
+The project separates the game into a maintainable static project with no build step:
 
 - `index.html` — application shell, title screen, and game-over UI
 - `styles.css` — mobile layout, safe-area handling, and input protections
-- `src/game.js` — gameplay simulation, rendering, and controls
+- `src/game.js` — gameplay simulation, rendering, controls, and mode navigation
+- `src/levels.js` — campaign/world configurations, Endless phases, and progression
+- `src/contracts.js` — contracts, upgrades, and saved economy
+- `src/art.js` — approved sprite/background rendering
+- `src/input.js` — mobile pointer ownership and input safety
 - `manifest.webmanifest` and `service-worker.js` — installability and offline app shell
 - `icons/` — temporary placeholder install icons
 - `tests/acceptance.mjs` — deterministic core-loop acceptance checks
