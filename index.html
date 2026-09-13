@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=0.10-encounters1">
+  <link rel="stylesheet" href="styles.css?v=0.11-contracts4">
   <title>Orbital Cleanup</title>
 </head>
 <body>
@@ -45,13 +45,17 @@
 
       <div id="start-screen" class="overlay overlay--visible">
         <div class="panel menu-panel">
-          <div class="kicker">ORBITAL CLEANUP // v0.10</div>
+          <div class="kicker">ORBITAL CLEANUP // v0.11</div>
           <h1>ORBITAL<br>CLEANUP</h1>
           <p class="tagline">Collect. Risk. Return.</p>
+          <p id="save-notice" class="tutorial" hidden>Saving unavailable. Earnings and purchases last only for this session.</p>
           <div id="mode-menu">
             <article class="mode-card"><span class="menu-sprite astronaut" aria-hidden="true"></span><div><h2>CAMPAIGN</h2><p>5 missions · Chase the stars</p><button id="choose-campaign" class="button button--cta" type="button">CHOOSE LEVEL</button></div></article>
+            <article class="mode-card contract-mode"><span class="menu-sprite contracts" aria-hidden="true"></span><div><div class="kicker">BUILD YOUR CAREER</div><h2>CONTRACTS</h2><p>Earn salvage + bonuses. Upgrade your gear.</p><button id="choose-contracts" class="button button--cta" type="button">BROWSE CONTRACTS</button></div><div class="career-bar"><span>WALLET <strong id="wallet" class="mint">$0</strong></span><button id="choose-upgrades" class="button button--small" type="button">UPGRADES</button></div></article>
             <article class="mode-card"><span class="menu-sprite satellite" aria-hidden="true"></span><div><h2>ENDLESS ORBIT</h2><p>Bank more. Beat your best.</p><p class="high-score">BEST <span id="endless-menu-best" class="mint">$0</span></p><button id="endless" class="button button--cta" type="button">PLAY ENDLESS</button></div></article>
           </div>
+          <div id="contracts-picker" class="career-panel" hidden><button id="back-contracts" class="button result-action" type="button">BACK TO MODES</button><h2>CONTRACT BOARD</h2><p class="tutorial">One job per run. Deposits pay immediately; meeting the objective pays the bonus once. Jobs are repeatable.</p><div id="contract-list"></div></div>
+          <div id="upgrades-picker" class="career-panel" hidden><button id="back-upgrades" class="button result-action" type="button">BACK TO MODES</button><h2>UPGRADE WORKSHOP</h2><p class="workshop-wallet">WALLET <strong id="workshop-wallet" class="mint">$0</strong></p><p class="tutorial">Active in every game mode. Later tiers require 3 / 6 different completed jobs. Purchases apply on your next launch.</p><div id="upgrade-list"></div><p id="purchase-status" class="tutorial" aria-live="polite"></p></div>
           <div id="campaign-picker" hidden>
             <h2>CHOOSE YOUR MISSION</h2>
             <div class="campaign-levels" aria-label="Campaign levels">
@@ -90,7 +94,7 @@
         <div class="panel">
           <div class="kicker">RUN PAUSED</div>
           <h2 id="exit-title">Leave this run?</h2>
-          <p class="tutorial">This attempt ends and its carried haul is lost. Unfinished campaign progress is discarded. Saved best scores, completed levels, and stars remain.</p>
+          <p class="tutorial">This attempt ends and its carried haul is lost. Unfinished campaign progress is discarded. Banked contract earnings, upgrades, saved best scores, completed levels, and stars remain.</p>
           <button id="keep-playing" type="button" class="button button--cta">KEEP PLAYING</button>
           <button id="restart" class="button result-action" type="button">RESTART RUN…</button>
           <button id="leave-run" type="button" class="button result-action">LEAVE TO MENU</button>
@@ -101,6 +105,7 @@
           <div id="result-mode" class="kicker">CAMPAIGN</div>
           <h2 id="result-title">OBJECTIVE MET</h2>
           <p id="result-stats" class="tutorial"></p>
+          <p id="contract-payout" class="tutorial" hidden></p>
           <p id="phase-preview" class="tutorial" hidden></p>
           <button id="finish-level" type="button" class="button button--cta">FINISH LEVEL</button>
           <button id="continue-level" type="button" class="button result-action">KEEP SALVAGING</button>
@@ -116,9 +121,10 @@
       <button id="thrust" type="button" class="button button--primary">▲ HOLD<br>THRUST</button>
     </section>
   </main>
-  <script src="src/levels.js?v=0.10-encounters1" defer></script>
-  <script src="src/art.js?v=0.10-encounters1" defer></script>
-  <script src="src/input.js?v=0.10-encounters1" defer></script>
-  <script src="src/game.js?v=0.10-encounters1" defer></script>
+  <script src="src/levels.js?v=0.11-contracts4" defer></script>
+  <script src="src/contracts.js?v=0.11-contracts4" defer></script>
+  <script src="src/art.js?v=0.11-contracts4" defer></script>
+  <script src="src/input.js?v=0.11-contracts4" defer></script>
+  <script src="src/game.js?v=0.11-contracts4" defer></script>
 </body>
 </html>

@@ -61,6 +61,11 @@
   let bank = 0;
   let carriedObjects = 0;
   let bankedObjects = 0;
+  let carriedTypes = {};
+  let bankedTypes = {};
+  let contractBonus = 0;
+  let contractCompleted = false;
+  let runEffects = { reel: 1, thrust: 1 };
   let mass = 0;
   let integrity = 100;
   let lastFrame = 0;
@@ -77,7 +82,7 @@
   const thrustEffectiveness = (cargoMass) => Math.max(0.75, 1 - Math.min(cargoMass / 100, 1) * 0.25);
 
   const sessionBests = {};
-  const scoreKey = () => level.id === 'endless' ? 'orbital-cleanup-endless-best-v1' : HIGH_SCORE_KEY;
+  const scoreKey = () => level.contract ? 'orbital-cleanup-contract-best-v1' : level.id === 'endless' ? 'orbital-cleanup-endless-best-v1' : HIGH_SCORE_KEY;
   function readEndlessBest() {
     try { return Math.max(sessionBests['orbital-cleanup-endless-best-v1'] || 0, Number.parseInt(localStorage.getItem('orbital-cleanup-endless-best-v1'), 10) || 0); }
     catch (_) { return sessionBests['orbital-cleanup-endless-best-v1'] || 0; }
@@ -148,6 +153,26 @@
     object.encounter = object.valuable = true;
   }
 
+  function refreshCareer() {
+    const career = ContractSystem.career;
+    document.getElementById('wallet').textContent = `$${career.wallet.toLocaleString()}`;
+    document.getElementById('workshop-wallet').textContent = `$${career.wallet.toLocaleString()}`;
+    document.getElementById('save-notice').hidden = ContractSystem.persistent;
+    for (const contract of ContractSystem.contracts) {
+      document.getElementById(`contract-${contract.id}`).textContent = `${career.completed.includes(contract.id) ? 'REPLAY' : 'ACCEPT'} CONTRACT`;
+    }
+    for (const [id, item] of Object.entries(ContractSystem.upgrades)) {
+      const tier = career.upgrades[id];
+      const button = document.getElementById(`buy-${id}`);
+      const required = ContractSystem.requirements[tier];
+      document.getElementById(`tier-${id}`).textContent = `Tier ${tier}/3 · ${item.labels[tier]}`;
+      const locked = tier < 3 && career.completed.length < required;
+      button.disabled = tier === 3 || locked || career.wallet < item.prices[tier];
+      button.textContent = tier === 3 ? 'FULLY UPGRADED' : locked ? `${career.completed.length}/${required} DIFFERENT JOBS COMPLETED` : career.wallet < item.prices[tier] ? `NEED $${item.prices[tier] - career.wallet} MORE` : `BUY TIER ${tier + 1} · $${item.prices[tier]}`;
+      document.getElementById(`next-${id}`).textContent = tier === 3 ? 'Maximum tier reached.' : `Next: ${item.labels[tier + 1]} · $${item.prices[tier].toLocaleString()}`;
+    }
+  }
+
   function refreshCampaign() {
     LevelSystem.campaign.forEach(config => {
       const button = document.getElementById(`level-${config.id}`);
@@ -156,12 +181,13 @@
       button.setAttribute('aria-pressed', String(config.id === level.id));
     });
     document.getElementById('endless-menu-best').textContent = `$${readEndlessBest()}`;
+    refreshCareer();
     const isEndless = level.id === 'endless';
-    document.getElementById('start-score-label').textContent = isEndless ? 'ENDLESS BEST' : 'CAMPAIGN HIGH SCORE';
-    document.getElementById('over-score-label').textContent = isEndless ? 'ENDLESS BEST' : 'CAMPAIGN HIGH SCORE';
+    document.getElementById('start-score-label').textContent = level.contract ? 'CONTRACT BEST' : isEndless ? 'ENDLESS BEST' : 'CAMPAIGN HIGH SCORE';
+    document.getElementById('over-score-label').textContent = level.contract ? 'CONTRACT BEST' : isEndless ? 'ENDLESS BEST' : 'CAMPAIGN HIGH SCORE';
     startButton.textContent = isEndless ? '▶ START ENDLESS ORBIT' : '▶ START MISSION';
     setHighScore(getHighScore());
-    document.getElementById('level-description').textContent = isEndless ? level.description : `${level.description} Goal: ${LevelSystem.criterionLabel(level.objective)}. Stars: ${level.stars.map(criterion => LevelSystem.criterionLabel(criterion, level.objective)).join(" / ")}.${level.objective.type === "bank_objects" ? " Higher stars also require all 10 objects banked." : ""}`;
+    document.getElementById('level-description').textContent = (isEndless || level.contract) ? level.description : `${level.description} Goal: ${LevelSystem.criterionLabel(level.objective)}. Stars: ${level.stars.map(criterion => LevelSystem.criterionLabel(criterion, level.objective)).join(" / ")}.${level.objective.type === "bank_objects" ? " Higher stars also require all 10 objects banked." : ""}`;
   }
 
   function showResult(previousBank = bank) {
@@ -171,6 +197,7 @@
     thrusting = depositing = false;
     depositProgress = 0;
     cancelAnimationFrame(animationFrame);
+    document.getElementById('contract-payout').hidden = !level.contract;
     const isEndless = !level.objective;
     document.getElementById('result-mode').textContent = isEndless ? 'ENDLESS ORBIT' : 'CAMPAIGN';
     document.getElementById('phase-preview').hidden = !isEndless;
@@ -192,6 +219,16 @@
       continueButton.hidden = false;
       continueButton.textContent = `KEEP SALVAGING → $${next}`;
     }
+    if (level.contract) {
+      document.getElementById('result-mode').textContent = `${level.difficulty.toUpperCase()} CONTRACT`;
+      resultTitle.textContent = 'CONTRACT FULFILLED';
+      resultStats.textContent = `${level.name} • ${LevelSystem.criterionLabel(level.objective)} deposited`;
+      document.getElementById('contract-payout').textContent = `Salvage $${bank} + bonus $${contractBonus} = $${bank + contractBonus} earned this run. Wallet $${ContractSystem.career.wallet}.${ContractSystem.persistent ? '' : ' Saving unavailable: session only.'}`;
+      finishButton.textContent = 'FINISH CONTRACT';
+      continueButton.hidden = false;
+      continueButton.textContent = 'KEEP SALVAGING';
+      replayButton.textContent = 'REPLAY CONTRACT';
+    }
     replayButton.hidden = nextButton.hidden = true;
     document.getElementById('result-endless').hidden = true;
     document.getElementById('result-menu').hidden = true;
@@ -202,6 +239,14 @@
   function finishLevel() {
     if (!pendingResult) return;
     pendingResult = false;
+    if (level.contract) {
+      resultTitle.textContent = 'CONTRACT COMPLETE';
+      finishButton.hidden = continueButton.hidden = nextButton.hidden = true;
+      replayButton.hidden = false;
+      document.getElementById('result-menu').hidden = false;
+      refreshCareer();
+      return;
+    }
     if (!level.objective) {
       resultTitle.textContent = 'RUN COMPLETE';
       resultStats.textContent = `$${bank} safely banked • Best $${getHighScore()} • No haul lost`;
@@ -263,6 +308,11 @@
     bank = 0;
     carriedObjects = 0;
     bankedObjects = 0;
+    carriedTypes = {};
+    bankedTypes = {};
+    contractBonus = 0;
+    contractCompleted = false;
+    runEffects = { reel: ContractSystem.effect('reel'), thrust: ContractSystem.effect('thrust') };
     mass = 0;
     depositProgress = 0;
     integrity = level.player.suitIntegrity;
@@ -291,7 +341,7 @@
     lastFrame = performance.now();
     root.classList.remove('menu-open');
     status.textContent = level.description;
-    if (level.objective) {
+    if (level.objective && !level.contract) {
       progress.currentLevel = level.id;
       LevelSystem.saveProgress(progress);
     }
@@ -323,6 +373,7 @@
     bankDisplay.textContent = String(finalBank);
     lostDisplay.textContent = String(lostHaul);
     summary.textContent = `${finalBank} banked • ${lostHaul} lost`;
+    if (level.contract) summary.textContent = `Salvage $${finalBank} + bonus $${contractBonus} retained • $${lostHaul} lost • Wallet $${ContractSystem.career.wallet}`;
     status.textContent = `${title} • ${finalBank} banked • ${lostHaul} lost`;
     gameOver.classList.add("overlay--visible");
     gameOver.setAttribute("aria-hidden", "false");
@@ -343,7 +394,7 @@
 
   function updateHud() {
     const stars = LevelSystem.rating(level, { bank, bankedObjects });
-    document.getElementById('flight-title').textContent = level.objective ? `${level.id}. ${level.name}` : level.name;
+    document.getElementById('flight-title').textContent = level.contract ? level.name : level.objective ? `${level.id}. ${level.name}` : level.name;
     missionDisplay.textContent = level.objective ? `BANK ${LevelSystem.criterionLabel(level.objective).toUpperCase()}` : `PERSONAL BEST $${sessionBests[scoreKey()] || 0}`;
     const goal = document.getElementById('goal-progress');
     const endlessTarget = level.milestones ? LevelSystem.nextMilestone(level, bank) : null;
@@ -354,7 +405,14 @@
     const objectProgress = document.getElementById('object-progress');
     objectProgress.hidden = level.objective?.type !== 'bank_objects';
     objectProgress.textContent = `${bankedObjects} / ${level.objective?.target || 0} banked · ${carriedObjects} carried${bankedObjects < (level.objective?.target || 0) && bankedObjects + carriedObjects >= (level.objective?.target || 0) ? ' · Return to bank' : ''}`;
-    document.getElementById('star-goals').hidden = !level.objective;
+    if (level.contract) {
+      const count = level.objective.type === 'bank_type' ? (bankedTypes[level.objective.salvageType] || 0) : level.objective.type === 'bank_objects' ? bankedObjects : bank;
+      const carried = level.objective.type === 'bank_type' ? (carriedTypes[level.objective.salvageType] || 0) : level.objective.type === 'bank_objects' ? carriedObjects : haul;
+      goal.value = Math.min(count, goal.max);
+      objectProgress.hidden = false;
+      objectProgress.textContent = `${count}/${goal.max} banked · ${carried} carried · ${contractCompleted ? 'Bonus paid' : `Bonus $${level.bonus}`}${!contractCompleted && count + carried >= goal.max ? ' · Return to bank' : ''}`;
+    }
+    document.getElementById('star-goals').hidden = !level.objective || level.contract;
     if (level.objective) level.stars.forEach((criterion, index) => {
       const star = document.getElementById(`star-${index + 1}`);
       star.textContent = `${'★'.repeat(index + 1)} ${LevelSystem.criterionLabel(criterion, level.objective)}`;
@@ -402,7 +460,7 @@
       startX: target.x,
       startY: target.y,
       progress: 0,
-      duration: 0.55 + target.mass * 0.025,
+      duration: (0.55 + target.mass * 0.025) * runEffects.reel,
       currentX: target.x,
       currentY: target.y
     };
@@ -414,6 +472,7 @@
     if (index >= 0) junk.splice(index, 1);
     haul += object.value;
     carriedObjects += 1;
+    carriedTypes[object.type] = (carriedTypes[object.type] || 0) + 1;
     mass += object.mass;
     cargo.push({ angle: random(0, 6.28), radius: 16 + Math.min(cargo.length * 2, 22), size: Math.max(3, object.size * 0.4) });
     for (let count = 0; count < 10; count += 1) {
@@ -449,7 +508,7 @@
     elapsed += deltaTime;
     const massRatio = Math.min(mass / 100, 1);
     const gravity = 26 + massRatio * 5;
-    const thrustPower = 72 * thrustEffectiveness(mass);
+    const thrustPower = 72 * runEffects.thrust * thrustEffectiveness(mass);
     const damping = 0.968 + massRatio * 0.014;
 
     player.velocityY += gravity * deltaTime;
@@ -511,6 +570,14 @@
         const previousBank = bank;
         bank += haul;
         bankedObjects += carriedObjects;
+        for (const [type, count] of Object.entries(carriedTypes)) bankedTypes[type] = (bankedTypes[type] || 0) + count;
+        carriedTypes = {};
+        if (level.contract) {
+          const completedNow = !contractCompleted && LevelSystem.meets(level.objective, { bank, bankedObjects, bankedTypes });
+          contractBonus = completedNow ? level.bonus : contractBonus;
+          ContractSystem.credit(haul + (completedNow ? level.bonus : 0));
+          if (completedNow) { contractCompleted = true; ContractSystem.complete(level.id); }
+        }
         carriedObjects = 0;
         haul = 0;
         mass = 0;
@@ -520,7 +587,7 @@
         depositing = false;
         status.textContent = `TRANSFER COMPLETE • integrity ${Math.round(integrity)}%`;
         setHighScore(bank);
-        if (!level.objective || LevelSystem.meets(level.objective, { bank, bankedObjects })) showResult(previousBank);
+        if (!level.objective || LevelSystem.meets(level.objective, { bank, bankedObjects, bankedTypes })) showResult(previousBank);
       }
     } else if (!depositing) {
       depositProgress = 0;
@@ -726,11 +793,31 @@
     depositProgress = 0;
   });
 
+  function careerPage(id) {
+    root.classList.add('picker-open');
+    for (const page of ['mode-menu', 'campaign-picker', 'contracts-picker', 'upgrades-picker']) document.getElementById(page).hidden = page !== id;
+    refreshCareer();
+    document.getElementById(id).scrollIntoView?.({ block: 'start' });
+  }
+  document.getElementById('contract-list').innerHTML = ContractSystem.contracts.map(c => `<article class="career-card"><div class="kicker">${c.difficulty} · ${c.objective.type === 'bank_type' ? 'TARGETED RECOVERY' : c.objective.type === 'bank_value' ? 'VALUE TARGET' : 'COLLECTION'}</div><h3>${c.name}</h3><p>Bank ${LevelSystem.criterionLabel(c.objective)}</p><p class="reward">Salvage value + $${c.bonus} bonus</p><button id="contract-${c.id}" type="button" class="button button--cta">ACCEPT CONTRACT</button></article>`).join('');
+  document.getElementById('upgrade-list').innerHTML = Object.entries(ContractSystem.upgrades).map(([id, item]) => `<article class="career-card"><h3>${item.name}</h3><p id="tier-${id}" class="reward"></p><p>${item.description}</p><p id="next-${id}"></p><button id="buy-${id}" type="button" class="button button--cta"></button></article>`).join('');
+  for (const contract of ContractSystem.contracts) document.getElementById(`contract-${contract.id}`).addEventListener('click', () => { level = contract; start(); });
+  for (const [id, item] of Object.entries(ContractSystem.upgrades)) document.getElementById(`buy-${id}`).addEventListener('click', () => {
+    if (running || pendingResult || exitPaused) return;
+    document.getElementById('purchase-status').textContent = ContractSystem.purchase(id) ? `${item.name} upgraded. Ready for your next contract.` : 'Purchase unavailable.';
+    refreshCareer();
+  });
+  document.getElementById('choose-contracts').addEventListener('click', () => careerPage('contracts-picker'));
+  document.getElementById('choose-upgrades').addEventListener('click', () => careerPage('upgrades-picker'));
+  document.getElementById('back-contracts').addEventListener('click', openCampaign);
+  document.getElementById('back-upgrades').addEventListener('click', openCampaign);
   document.getElementById('choose-campaign').addEventListener('click', () => {
-    if (!level.objective) level = LevelSystem.campaign.find(config => config.id === progress.currentLevel);
+    if (!level.objective || level.contract) level = LevelSystem.campaign.find(config => config.id === progress.currentLevel);
     root.classList.add('picker-open');
     document.getElementById('mode-menu').hidden = true;
     document.getElementById('campaign-picker').hidden = false;
+    document.getElementById('contracts-picker').hidden = true;
+    document.getElementById('upgrades-picker').hidden = true;
     refreshCampaign();
   });
   document.getElementById('back-modes').addEventListener('click', openCampaign);
@@ -757,6 +844,8 @@
     root.classList.remove('picker-open');
     document.getElementById('mode-menu').hidden = false;
     document.getElementById('campaign-picker').hidden = true;
+    document.getElementById('contracts-picker').hidden = true;
+    document.getElementById('upgrades-picker').hidden = true;
     refreshCampaign();
   }
   document.getElementById('campaign').addEventListener('click', () => {
