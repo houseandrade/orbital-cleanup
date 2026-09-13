@@ -71,6 +71,9 @@
   let lastFrame = 0;
   let animationFrame = 0;
   let depositProgress = 0;
+  let depositStartBank = null;
+  let depositNotice = '';
+  let depositNoticeTime = 0;
   let shake = 0;
   let impactText = 0;
   let elapsed = 0;
@@ -232,6 +235,7 @@
     replayButton.hidden = nextButton.hidden = true;
     document.getElementById('result-endless').hidden = true;
     document.getElementById('result-menu').hidden = true;
+    document.getElementById('result-contracts').hidden = true;
     resultScreen.classList.add('overlay--visible');
     resultScreen.setAttribute('aria-hidden', 'false');
   }
@@ -241,6 +245,7 @@
     pendingResult = false;
     if (level.contract) {
       resultTitle.textContent = 'CONTRACT COMPLETE';
+      document.getElementById('result-contracts').hidden = false;
       finishButton.hidden = continueButton.hidden = nextButton.hidden = true;
       replayButton.hidden = false;
       document.getElementById('result-menu').hidden = false;
@@ -316,6 +321,9 @@
     mass = 0;
     depositProgress = 0;
     integrity = level.player.suitIntegrity;
+    depositStartBank = null;
+    depositNotice = '';
+    depositNoticeTime = 0;
     shake = 0;
     impactText = 0;
     elapsed = 0;
@@ -385,7 +393,8 @@
   }
 
   function stationMessage() {
-    if (isNearStation()) return depositing ? 'TRANSFERRING SALVAGE…' : 'STATION IN RANGE';
+    if (depositNoticeTime > 0) return depositNotice;
+    if (isNearStation()) return depositing && mass > 0 ? `TRANSFERRING SALVAGE… ${Math.min(100, Math.floor(100 * depositProgress / Math.min(0.3, (cargo[0]?.mass || mass) / 18)))}% · KEEP HOLDING` : 'STATION IN RANGE';
     if (station.x >= PLAYER_X + 90) return `STATION PASS IN ${Math.ceil((station.x - PLAYER_X - 90) / station.speed)}s`;
     if (station.x > PLAYER_X - 90) return 'STATION PASS NOW • ALIGN ALTITUDE';
     const seconds = (station.x + 70 + nextStation.x - PLAYER_X - 90) / station.speed;
@@ -426,7 +435,7 @@
     const suit = document.getElementById('integrity-progress');
     suit.value = integrity;
     suit.style.setProperty('--accent', integrity > 60 ? '#a7f3b5' : integrity > 30 ? '#f1c76b' : '#ff7167');
-    document.getElementById('station-status').textContent = running ? stationMessage() : '';
+    document.getElementById('station-status').textContent = depositNoticeTime > 0 ? depositNotice : running ? stationMessage() : '';
     depositButton.disabled = !running || !isNearStation() || mass <= 0;
     thrustButton.disabled = tetherButton.disabled = !running;
   }
@@ -474,7 +483,7 @@
     carriedObjects += 1;
     carriedTypes[object.type] = (carriedTypes[object.type] || 0) + 1;
     mass += object.mass;
-    cargo.push({ angle: random(0, 6.28), radius: 16 + Math.min(cargo.length * 2, 22), size: Math.max(3, object.size * 0.4) });
+    cargo.push({ value: object.value, mass: object.mass, type: object.type, angle: random(0, 6.28), radius: 16 + Math.min(cargo.length * 2, 22), size: Math.max(3, object.size * 0.4) });
     for (let count = 0; count < 10; count += 1) {
       particles.push({ x: PLAYER_X, y: player.y, velocityX: random(-50, 50), velocityY: random(-50, 50), life: random(0.2, 0.6) });
     }
@@ -506,6 +515,7 @@
   function update(deltaTime) {
     if (!running) return;
     elapsed += deltaTime;
+    depositNoticeTime = Math.max(0, depositNoticeTime - deltaTime);
     const massRatio = Math.min(mass / 100, 1);
     const gravity = 26 + massRatio * 5;
     const thrustPower = 72 * runEffects.thrust * thrustEffectiveness(mass);
@@ -563,33 +573,39 @@
 
     if (depositing && isNearStation() && mass > 0) {
       depositProgress += deltaTime;
-      const transfer = Math.min(mass, deltaTime * 18);
-      mass -= transfer;
-      if (cargo.length && Math.random() < deltaTime * 18) cargo.pop();
-      if (depositProgress >= 1.25 || mass <= 0.2) {
+      while (cargo.length && depositProgress >= Math.min(0.3, cargo[0].mass / 18)) {
         const previousBank = bank;
-        bank += haul;
-        bankedObjects += carriedObjects;
-        for (const [type, count] of Object.entries(carriedTypes)) bankedTypes[type] = (bankedTypes[type] || 0) + count;
-        carriedTypes = {};
+        if (depositStartBank === null) depositStartBank = bank;
+        const item = cargo.shift();
+        depositProgress -= Math.min(0.3, item.mass / 18);
+        bank += item.value;
+        haul -= item.value;
+        mass = Math.max(0, mass - item.mass);
+        carriedObjects -= 1;
+        carriedTypes[item.type] -= 1;
+        bankedObjects += 1;
+        bankedTypes[item.type] = (bankedTypes[item.type] || 0) + 1;
         if (level.contract) {
           const completedNow = !contractCompleted && LevelSystem.meets(level.objective, { bank, bankedObjects, bankedTypes });
           contractBonus = completedNow ? level.bonus : contractBonus;
-          ContractSystem.credit(haul + (completedNow ? level.bonus : 0));
+          ContractSystem.credit(item.value + (completedNow ? level.bonus : 0));
           if (completedNow) { contractCompleted = true; ContractSystem.complete(level.id); }
         }
-        carriedObjects = 0;
-        haul = 0;
-        mass = 0;
-        cargo = [];
-        integrity = clamp(integrity + 12, 0, 100);
-        depositProgress = 0;
-        depositing = false;
-        status.textContent = `TRANSFER COMPLETE • integrity ${Math.round(integrity)}%`;
+        depositNotice = `BANKED +$${bank - previousBank} · TOTAL $${bank}`;
+        depositNoticeTime = 3;
         setHighScore(bank);
-        if (!level.objective || LevelSystem.meets(level.objective, { bank, bankedObjects, bankedTypes })) showResult(previousBank);
+        if (!cargo.length) {
+          carriedTypes = {};
+          carriedObjects = haul = mass = depositProgress = 0;
+          integrity = clamp(integrity + 12, 0, 100);
+          depositing = false;
+          if (!level.objective || LevelSystem.meets(level.objective, { bank, bankedObjects, bankedTypes })) showResult(depositStartBank);
+          depositStartBank = null;
+        }
+        status.textContent = `${depositNotice} • integrity ${Math.round(integrity)}%`;
+        updateHud();
       }
-    } else if (!depositing) {
+    } else {
       depositProgress = 0;
     }
 
@@ -823,6 +839,11 @@
   document.getElementById('back-modes').addEventListener('click', openCampaign);
   document.getElementById('over-menu').addEventListener('click', openCampaign);
   document.getElementById('result-menu').addEventListener('click', openCampaign);
+  document.getElementById('result-contracts').addEventListener('click', () => {
+    openCampaign();
+    careerPage('contracts-picker');
+    document.getElementById('back-contracts').focus();
+  });
   document.getElementById('endless').addEventListener('click', () => {
     level = LevelSystem.endless;
     start();
