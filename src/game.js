@@ -112,6 +112,9 @@
 
   const debrisConfig = () => phase?.debris || level.debris;
 
+  // Drifting targets use one altitude for rendering, collisions, and tether acquisition.
+  const debrisY = object => object.drift || tether?.object === object ? object.y : object.y + Math.sin(object.wobble) * 4;
+
   function makeJunk(offset = 0, chosenBand = null) {
     const bands = debrisConfig().bands.filter(band => !band.maxActive || junk.filter(object => object.type === band.type).length < band.maxActive);
     let roll = Math.random() * bands.reduce((sum, band) => sum + band.weight, 0);
@@ -123,7 +126,8 @@
     }
     junk.push({ x: WIDTH + offset, y: random(...zone.y), speed: random(...band.speed),
       value: Math.round(random(...zone.value)), valuable: Boolean(zone.risky), mass: band.mass, size: band.size,
-      type: band.type, wobble: random(0, 6.28), hit: false });
+      type: band.type, wobble: random(0, 6.28), hit: false,
+      ...(band.drift ? { drift: { ...band.drift }, driftDirection: Math.random() < 0.5 ? -1 : 1 } : {}) });
   }
 
   function fillDebris(initial = false) {
@@ -170,6 +174,8 @@
     // Reserve a slot without removing a target that the player is reeling in.
     junk = junk.filter(object => !object.encounter || tether?.object === object);
     if (junk.some(object => object.encounter)) return;
+    const type = encounter.band.type;
+    if (encounter.finiteCount && (bankedTypes[type] || 0) + (carriedTypes[type] || 0) >= encounter.finiteCount) return;
     makeJunk(0, encounter.band);
     const object = junk.at(-1);
     object.x = PLAYER_X + object.speed * ((station.x - (PLAYER_X + 90)) / station.speed - encounter.leadSeconds);
@@ -204,7 +210,7 @@
     document.getElementById('previous-world').disabled = selectedWorld === 1;
     document.getElementById('next-world').disabled = selectedWorld === LevelSystem.worlds.length;
     document.getElementById('world-note').textContent = selectedWorld === 2
-      ? `${progress.best[10] ? `First ${missions.length} missions available.` : 'Complete World One to unlock the Moon.'} Missions 2-${missions.length + 1} through 2-10 are coming later.` : '';
+      ? `${progress.best[10] ? `First ${missions.length} missions available.` : 'Complete World One to unlock the Moon.'} ${missions.length === 9 ? 'Final mission 2-10 is coming later.' : `Missions 2-${missions.length + 1} through 2-10 are coming later.`}` : '';
     root.classList.toggle('moon-menu', selectedWorld === 2);
     LevelSystem.campaign.forEach(config => {
       const button = document.getElementById(`level-${config.id}`);
@@ -542,7 +548,7 @@
     let target = null;
     let closestDistance = 82;
     junk.forEach((object) => {
-      const objectY = object.y + Math.sin(object.wobble) * 4;
+      const objectY = debrisY(object);
       const distance = Math.hypot(object.x - PLAYER_X, objectY - player.y);
       if (distance < closestDistance) {
         closestDistance = distance;
@@ -627,7 +633,17 @@
       if (tether && tether.object === object) return;
       object.x -= object.speed * deltaTime;
       object.wobble += deltaTime * 1.5;
-      const objectY = object.y + Math.sin(object.wobble) * 4;
+      if (object.drift) {
+        const { minY, maxY, speed } = object.drift;
+        if (object.y <= minY) object.driftDirection = 1;
+        if (object.y >= maxY) object.driftDirection = -1;
+        const wasInside = object.y >= minY && object.y <= maxY;
+        object.y += object.driftDirection * speed * deltaTime;
+        // A canceled tether can leave a target outside its normal band: return
+        // inward smoothly instead of snapping it back to its spawn altitude.
+        if (wasInside) object.y = clamp(object.y, minY, maxY);
+      }
+      const objectY = debrisY(object);
       if (Math.abs(object.x - PLAYER_X) < 12 + object.size && Math.abs(objectY - player.y) < 16 + object.size) collide(object);
     });
     if (!running) return;
@@ -742,7 +758,7 @@
   }
 
   function drawJunk(object) {
-    const objectY = tether && tether.object === object ? object.y : object.y + Math.sin(object.wobble) * 4;
+    const objectY = debrisY(object);
     context.save();
     context.translate(object.x, objectY);
     const dimensions = { SCRAP: [14, 14], PANEL: [28, 14], SAT: [50, 28], TOOL: [40, 40], ROCKET: [44, 44], CAPSULE: [44, 44], WHEEL: [36, 36], TANK: [34, 34], INSTRUMENT: [40, 40], LEG: [44, 44] }[object.type] || [28, 28];

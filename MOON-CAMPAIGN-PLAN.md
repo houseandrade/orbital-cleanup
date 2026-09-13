@@ -48,7 +48,7 @@ The exact active-world rule is a recommendation for review. The user has request
 - Third: 2-10, per-world checkpoint/reward handling, completion presentation, and a full ten-mission balance pass.
 - Then: lunar Contracts and world-aware Endless Orbit.
 
-Missions 2-4 through 2-6 are now implemented for playtesting in v0.15.1. Missions 2-7 onward and mode changes remain planned.
+Missions 2-4 through 2-6 are approved and deployed. Missions 2-7 through 2-9 are now implemented for playtesting in v0.15.3. Mission 2-10 and mode changes remain planned.
 
 ## Next destination: Mars
 

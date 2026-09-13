@@ -154,7 +154,20 @@ const LevelSystem = (() => {
       { count: 5, spacing: 110, bands: lunarRecoverySupport, pools: [
         { count: 5, spacing: 480, speed: 30, band: roverWheel },
         { count: 4, spacing: 480, offset: 240, speed: 30, band: toolCrates }
-      ] }), objective: all(typed('WHEEL', 3), typed('TOOL', 2)) }, 6)
+      ] }), objective: all(typed('WHEEL', 3), typed('TOOL', 2)) }, 6),
+    moon({ ...level(17, 'Off Course', 'Bank 3 instrument packages that drift gently up and down. Follow their movement before tethering. Five spaced packages circle back if missed; ordinary debris keeps its familiar motion.', 3, 650, 950,
+      { count: 5, spacing: 110, bands: lunarRecoverySupport, limited: { count: 5, spacing: 480, speed: 30,
+        band: { ...lunarInstrument, y: [180, 265], drift: { speed: 7, minY: 140, maxY: 300 } } } }),
+      objective: typed('INSTRUMENT', 3) }, 7),
+    moon({ ...level(18, 'Catch the Window', 'Bank 4 instrument packages. One package crosses your path four seconds before each station window. Choose whether to grab it or prepare to deposit. Missed packages return on a later pass; up to six can be recovered.', 4, 800, 1150,
+      { count: 6, spacing: 110, bands: lunarRecoverySupport, encounter: { leadSeconds: 4, finiteCount: 6,
+        band: { ...lunarInstrument, y: [195, 250] } } }),
+      objective: typed('INSTRUMENT', 4) }, 8),
+    moon({ ...level(19, 'Heavy Recovery', 'Bank 3 lander legs and 2 rocket fragments. Both types are heavy: short trips leave more room to maneuver and deposit. Five legs and four fragments arrive in staggered passes; missed targets circle back.', 1, 1100, 1500,
+      { count: 5, spacing: 110, bands: lunarRecoverySupport, pools: [
+        { count: 5, spacing: 480, speed: 30, band: { ...landerLeg, y: [160, 290] } },
+        { count: 4, spacing: 480, offset: 240, speed: 30, band: rocketFragments }
+      ] }), objective: all(typed('LEG', 3), typed('ROCKET', 2)) }, 9)
   );
   const endless = {
     ...defaults, id: 'endless', name: 'Endless Orbit',
