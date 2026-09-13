@@ -141,11 +141,26 @@ qa.scenario = {
   mass: 5,
   integrity: 50,
   depositing: true,
-  cargo: [{ angle: 0, radius: 16, size: 4 }],
+  cargo: [{ value: 30, mass: 5, type: "PANEL", angle: 0, radius: 16, size: 4 }],
   junk: []
 };
-qa.update(1.3);
+qa.update(0.1);
+qa.draw();
+assert.equal(qa.state.bank, 0, 'unfinished transfer does not credit money');
+assert.equal(qa.state.mass, 5, 'unfinished transfer keeps cargo mass');
+assert.equal(qa.state.cargo.length, 1, 'unfinished transfer keeps visible cargo');
+assert.match(elements.get('station-status').textContent, /TRANSFERRING SALVAGE.*36%/);
+qa.scenario = { depositing: false };
+qa.update(0);
+assert.equal(qa.state.haul, 30, 'interrupting a transfer preserves its value');
+qa.scenario = { depositing: true };
+qa.update(0.2);
+assert.equal(qa.state.bank, 0, 'a new hold starts transfer progress over');
+qa.update(0.1);
 assert.equal(qa.state.bank, 30, "deposit banks the current haul");
+assert.equal(elements.get('hud-bank').textContent, '$30', 'first deposit immediately refreshes the banked display');
+assert.equal(elements.get('hud-haul').textContent, '$0');
+assert.equal(elements.get('station-status').textContent, 'BANKED +$30 · TOTAL $30');
 assert.equal(qa.state.haul, 0, "deposit clears current haul");
 assert.equal(qa.state.mass, 0, "deposit clears cargo mass");
 assert.equal(qa.state.integrity, 62, "deposit repairs exactly 12% integrity");
@@ -206,9 +221,20 @@ qa.scenario = { haul: 600, mass: 25, junk: [] };
 qa.update(0);
 assert.equal(qa.state.pendingResult, false);
 function deposit(value) {
-  qa.scenario = { haul: value, mass: 5, junk: [], depositing: true,
-    player: { y: 225, velocityY: 0, flash: 0 }, station: { x: 180, y: 225, speed: 0 } };
-  qa.update(0.3);
+  // Populate real cargo when a scenario supplies only an aggregate haul.
+  if (!qa.state.cargo.length || qa.state.cargo.reduce((sum, item) => sum + item.value, 0) !== value) {
+    const types = Object.entries(qa.careerState.carriedTypes).flatMap(([type, count]) => Array(count).fill(type));
+    if (!types.length) types.push(...Array(qa.state.carriedObjects || 1).fill('SCRAP'));
+    qa.scenario = { haul: 0, mass: 0, cargo: [], carriedObjects: 0 };
+    qa.careerState.carriedTypes && Object.keys(qa.careerState.carriedTypes).forEach(type => delete qa.careerState.carriedTypes[type]);
+    types.forEach(type => qa.collect({ type, value: value / types.length, mass: 5, size: 7 }));
+  }
+  const frames = qa.state.cargo.length * 10;
+  for (let i = 0; i < frames && qa.state.cargo.length && qa.state.running; i++) {
+    qa.scenario = { junk: [], depositing: true,
+      player: { y: 225, velocityY: 0, flash: 0 }, station: { x: 180, y: 225, speed: 0 } };
+    qa.update(0.034);
+  }
 }
 deposit(60);
 assert.equal(qa.state.pendingResult, true);
@@ -672,9 +698,51 @@ for (const contract of careerSystem.contracts) {
   assert.equal(qa.state.pendingResult, false, 'carried objective does not complete a contract');
   deposit(salvage);
   assert.equal(qa.state.pendingResult, true, `${contract.name} can be completed`);
+  assert.equal(elements.get('result-contracts').hidden, true, 'finish the contract before choosing another job');
   assert.equal(careerSystem.career.wallet, balance + salvage + contract.bonus);
   qa.finishLevel();
   assert.equal(elements.get('next-level').hidden, true);
   assert.equal(elements.get('result-endless').hidden, true);
+  assert.equal(elements.get('result-contracts').hidden, false);
+  elements.get('result-contracts').listeners.click();
+  assert.equal(elements.get('level-result').classList.contains('overlay--visible'), false);
+  assert.equal(elements.get('start-screen').classList.contains('overlay--visible'), true);
+  assert.equal(elements.get('contracts-picker').hidden, false);
+  assert.equal(elements.get('mode-menu').hidden, true);
+  assert.equal(elements.get(`contract-${contract.id}`).textContent, 'REPLAY CONTRACT');
+  assert.equal(qa.state.running, false);
+  assert.equal(qa.state.pendingResult, false);
+  assert.equal(careerSystem.career.wallet, balance + salvage + contract.bonus, 'returning to the board preserves earnings');
 }
+elements.get('endless').listeners.click();
+deposit(100);
+assert.equal(elements.get('result-contracts').hidden, true, 'contract action does not carry into endless results');
 console.log('All nine contract objectives and payouts passed.');
+
+launchContract('first-shift');
+const partialWallet = careerSystem.career.wallet;
+for (const item of [{ type: 'PANEL', value: 30 }, { type: 'SAT', value: 70 }, { type: 'SCRAP', value: 20 }]) {
+  qa.collect({ ...item, mass: 5, size: 7 });
+}
+const transferFrame = () => {
+  qa.scenario = { junk: [], depositing: true, player: { y: 225, velocityY: 0, flash: 0 }, station: { x: 180, y: 225, speed: 0 } };
+  qa.update(0.034);
+};
+for (let i = 0; i < 9; i++) transferFrame();
+assert.equal(qa.state.cargo.length, 2, 'one dot disappears for the first received item');
+assert.equal(elements.get('hud-bank').textContent, '$30');
+assert.equal(elements.get('hud-haul').textContent, '$90');
+assert.equal(qa.state.bankedObjects, 1);
+assert.equal(qa.careerState.bankedTypes.PANEL, 1);
+assert.equal(careerSystem.career.wallet, partialWallet + 30);
+qa.scenario = { depositing: false };
+qa.update(0);
+assert.equal(qa.state.cargo.length, 2, 'releasing leaves unreceived items aboard');
+for (let i = 0; i < 9; i++) transferFrame();
+assert.equal(qa.state.cargo.length, 1);
+assert.equal(elements.get('hud-bank').textContent, '$100', 'second dot credits its own value');
+assert.equal(elements.get('hud-haul').textContent, '$20');
+assert.equal(careerSystem.career.wallet, partialWallet + 100);
+qa.end('SUIT');
+assert.equal(careerSystem.career.wallet, partialWallet + 100, 'failure retains received items only');
+console.log('Per-item deposit display, interruption, and retained earnings checks passed.');
