@@ -114,8 +114,13 @@
     const bands = debrisConfig().bands;
     let roll = Math.random() * bands.reduce((sum, band) => sum + band.weight, 0);
     const band = chosenBand || bands.find(band => (roll -= band.weight) < 0) || bands[bands.length - 1];
-    junk.push({ x: WIDTH + offset, y: random(...band.y), speed: random(...band.speed),
-      value: Math.round(random(...band.value)), mass: band.mass, size: band.size,
+    let zone = band;
+    if (band.zones) {
+      let zoneRoll = Math.random() * band.zones.reduce((sum, entry) => sum + entry.weight, 0);
+      zone = band.zones.find(entry => (zoneRoll -= entry.weight) < 0) || band.zones.at(-1);
+    }
+    junk.push({ x: WIDTH + offset, y: random(...zone.y), speed: random(...band.speed),
+      value: Math.round(random(...zone.value)), valuable: Boolean(zone.risky), mass: band.mass, size: band.size,
       type: band.type, wobble: random(0, 6.28), hit: false });
   }
 

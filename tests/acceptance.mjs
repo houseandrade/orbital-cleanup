@@ -85,7 +85,7 @@ source = source.replace(/\}\)\(\);\s*$/, `
   globalThis.__qa = {
     ContractSystem, refreshCareer,
     get careerState() { return { carriedTypes, bankedTypes, contractBonus, contractCompleted, runEffects }; },
-    fillDebris, scheduleEncounter, collect, draw, stationMessage, start, end, finishLevel, resumeLevel, update, fireTether, collide, thrustEffectiveness,
+    makeJunk, fillDebris, scheduleEncounter, collect, draw, stationMessage, start, end, finishLevel, resumeLevel, update, fireTether, collide, thrustEffectiveness,
     get state() { return { phase, queuedPhase, nextStation, elapsed, carriedObjects, bankedObjects, level, progress, pendingResult, running, haul, bank, mass, integrity, tether, junk, player, station, depositing, cargo }; },
     set scenario(value) {
       if (value.elapsed !== undefined) elapsed = value.elapsed;
@@ -880,3 +880,33 @@ qa.fillDebris();
 assert.equal(qa.state.junk.filter(o => o.scheduledSalvage).length, 1);
 assert.equal(qa.state.junk.find(o => o.scheduledSalvage).type, 'ROCKET');
 console.log('Contract and Endless rare-item intervals, single-item caps, and phase transitions passed.');
+
+// Force each weighted altitude zone to verify risk, reward, and safe boundaries.
+const originalRandom = sandbox.Math.random;
+try {
+  for (const id of [6, 7]) {
+    elements.get(`level-${id}`).listeners.click(); qa.start();
+    const band = qa.state.level.debris.limited.band;
+    for (const [roll, zoneIndex] of [[0.1, 0], [0.5, 1], [0.9, 2]]) {
+      sandbox.Math.random = () => roll;
+      qa.makeJunk(0, band);
+      const object = qa.state.junk.at(-1);
+      const zone = band.zones[zoneIndex];
+      assert.ok(object.y >= zone.y[0] && object.y <= zone.y[1]);
+      assert.ok(object.value >= zone.value[0] && object.value <= zone.value[1]);
+      assert.equal(object.valuable, Boolean(zone.risky));
+      assert.ok(object.y - object.size - 4 > qa.state.level.field.escapeY);
+      assert.ok(object.y + object.size + 4 < qa.state.level.field.reentryY);
+    }
+    assert.ok(band.zones[0].value[0] > band.zones[1].value[1]);
+    assert.ok(band.zones[2].value[0] > band.zones[1].value[1]);
+  }
+} finally { sandbox.Math.random = originalRandom; }
+for (const id of ['equipment-return', 'engine-recovery']) {
+  launchContract(id);
+  assert.equal(qa.state.level.debris.arrival.band.zones.length, 3);
+}
+for (const at of [150, 300]) {
+  assert.equal(vm.runInContext(`LevelSystem.phaseFor(LevelSystem.endless, ${at}).debris.arrival.band.zones.length`, sandbox), 3);
+}
+console.log('Randomized salvage altitude zones, edge rewards, safe bounds, and shared-mode configuration passed.');

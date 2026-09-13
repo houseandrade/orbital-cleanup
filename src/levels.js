@@ -11,8 +11,16 @@ const LevelSystem = (() => {
     objective: { type: 'bank_value', target },
     stars: [{ type: 'complete_objective' }, { type: 'bank_value', target: two }, { type: 'bank_value', target: three }]
   });
-  const toolCrates = band(0.5, [185, 260], [30, 42], [60, 80], 8, 12, 'TOOL');
-  const rocketFragments = band(0.45, [145, 205], [24, 34], [130, 170], 18, 16, 'ROCKET');
+  const toolCrates = { ...band(0.5, [185, 260], [30, 42], [60, 80], 8, 12, 'TOOL'), zones: [
+    { weight: 0.25, y: [105, 140], value: [70, 80], risky: true },
+    { weight: 0.5, y: [170, 280], value: [60, 69] },
+    { weight: 0.25, y: [300, 330], value: [70, 80], risky: true }
+  ] };
+  const rocketFragments = { ...band(0.45, [145, 205], [24, 34], [130, 170], 18, 16, 'ROCKET'), zones: [
+    { weight: 0.25, y: [105, 140], value: [155, 170], risky: true },
+    { weight: 0.5, y: [170, 280], value: [130, 154] },
+    { weight: 0.25, y: [300, 330], value: [155, 170], risky: true }
+  ] };
   const campaign = [
     level(1, 'First Haul', 'Collect, return, bank. Only banked salvage counts.', 60, 120, 200, {
       count: 5, spacing: 95, bands: [band(1, [185, 265], [24, 34], [30, 40], 5, 10, 'PANEL')]
@@ -43,15 +51,15 @@ const LevelSystem = (() => {
         band(0.25, [108, 135], [22, 34], [150, 200], 10, 14, 'SAT')
       ]
     }),
-    { ...level(6, 'Lost Equipment', 'Recover 5 tool crates. Look for the cream cases with mint latches; Seven crates are spread around the orbit; missed crates come around again.', 5, 550, 850, {
+    { ...level(6, 'Lost Equipment', 'Recover 5 tool crates. Look for the cream cases with mint latches; Seven crates travel at varied altitudes. Edge-of-orbit crates pay more; missed crates return.', 5, 550, 850, {
       count: 5, spacing: 110, limited: { count: 7, spacing: 360, speed: 30, band: toolCrates }, bands: [
-        band(0.3, [190, 265], [38, 48], [35, 50], 5, 10, 'PANEL'),
-        band(0.2, [265, 310], [45, 65], [20, 35], 2, 7, 'SCRAP')]
+        band(0.3, [160, 290], [38, 48], [35, 50], 5, 10, 'PANEL'),
+        band(0.2, [115, 325], [45, 65], [20, 35], 2, 7, 'SCRAP')]
     }), objective: { type: 'bank_type', salvageType: 'TOOL', target: 5 } },
-    { ...level(7, 'Heavy Metal', 'Bank 3 rocket fragments. Heavy engine sections slow your reel and add cargo mass; Five fragments are spread around the orbit; missed fragments return.', 3, 750, 1100, {
+    { ...level(7, 'Heavy Metal', 'Bank 3 rocket fragments. Heavy engine sections slow your reel and add cargo mass; Five fragments travel at varied altitudes. Edge-of-orbit fragments pay more; missed fragments return.', 3, 750, 1100, {
       count: 5, spacing: 110, limited: { count: 5, spacing: 480, speed: 30, band: rocketFragments }, bands: [
-        band(0.2, [260, 310], [45, 65], [20, 35], 2, 7, 'SCRAP'),
-        band(0.3, [195, 270], [38, 48], [35, 50], 5, 10, 'PANEL')]
+        band(0.2, [115, 325], [45, 65], [20, 35], 2, 7, 'SCRAP'),
+        band(0.3, [160, 290], [38, 48], [35, 50], 5, 10, 'PANEL')]
     }), objective: { type: 'bank_type', salvageType: 'ROCKET', target: 3 } }
   ];
   const scrapPocket = {
