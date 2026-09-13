@@ -65,6 +65,15 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
 .campaign-levels { display:grid; gap:8px; margin-top:14px; }
 .campaign-levels .button { text-align:left; min-height:52px; }
 .campaign-levels [aria-pressed="true"] { border-color:var(--accent); color:var(--accent); }
+.campaign-levels [aria-expanded="true"] { border-radius:7px 7px 0 0; border-bottom:0; scroll-margin-top:8px; }
+.mission-briefing { margin-top:-8px; padding:12px; text-align:left; border:1px solid var(--accent); border-top:0; border-radius:0 0 7px 7px; background:#111a23; }
+.mission-briefing h3 { margin:0 0 8px; color:var(--accent); font:800 12px/1.4 ui-monospace,monospace; letter-spacing:.06em; }
+.mission-briefing p,.mission-briefing li { font-size:12px; line-height:1.55; }
+.mission-briefing p { margin:0 0 10px; color:var(--muted); }
+.mission-briefing ul { margin:0 0 12px; padding-left:19px; }
+.mission-briefing li + li { margin-top:6px; }
+.mission-briefing .briefing-stars { border-top:1px solid var(--border); padding-top:10px; font-size:11px; }
+.campaign-levels .mission-briefing .button { text-align:center; min-height:46px; margin-top:0; }
 .menu-open > .topbar,.menu-open > .flight-hud,.menu-open > .controls { visibility:hidden; }
 [hidden] { display:none !important; }
 @media(max-height:700px) { .menu-panel { padding-top:8px; padding-bottom:70px; } .panel h1 { font-size:26px; margin:6px 0; } .tagline { margin-bottom:8px; } .mode-card { padding:12px; margin-bottom:8px; }  .flight-stats { padding:6px 12px; } .flight-stats strong { font-size:22px; } .star-goals { padding:6px 12px; } .controls .button { min-height:58px; } }
@@ -95,6 +104,14 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
 .career-card h3 { margin:6px 0; font-size:16px; }
 .career-card p { font-size:12px; line-height:1.5; color:var(--muted); margin:6px 0; }
 .career-card .reward { color:var(--accent); font-weight:800; }
+.contract-card { padding:0; border:0; background:transparent; }
+.contract-selector { width:100%; text-align:left; padding:12px; scroll-margin-top:8px; }
+.contract-selector[aria-expanded="true"] { border-color:var(--accent); border-bottom:0; border-radius:7px 7px 0 0; }
+.contract-name { display:block; margin:6px 0; font-size:16px; }
+.contract-prompt { color:var(--accent); font-size:10px; letter-spacing:.06em; }
+.contract-selector[aria-expanded="true"] .contract-prompt { display:none; }
+.contract-briefing { margin-top:0; }
+.contract-briefing h3 { font-size:12px; }
 .panel .button { touch-action:pan-y; }
 
 .menu-sprite.contracts { background-image:url('src/art/contracts.png'); background-size:90px auto; background-position:center; height:90px; }

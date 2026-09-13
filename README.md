@@ -1,4 +1,4 @@
-# Orbital Cleanup v0.13.1
+# Orbital Cleanup v0.14
 
 A mobile-first, standalone PWA build of the v0.532 canvas prototype. Collect debris, manage the added cargo mass, and bank the haul at the cleanup station before the run ends.
 
@@ -135,3 +135,16 @@ Sorting Shift (8) requires 3 tool crates and 2 rocket fragments; extra stars req
 Final Sweep (10) contains three assignments: bank six ordinary objects; bank three crates and two fragments; recover and deposit one survey capsule. The capsule appears after 28 seconds near either orbit boundary, after the first station pass, and circles back if missed. Completing an assignment saves the next checkpoint and cumulative bank. Failure or leaving discards only the current assignment's progress; retry restores the checkpoint bank, a fresh field and suit, and the capsule when applicable. Checkpoints persist across reopening when storage is available. Completing all three assignments grants one star, with $1,200/$1,800 total for additional stars. A simple World One Complete screen, campaign badge, and one-time $2,000 wallet reward mark the finale. Replaying starts from assignment one. The concept ending animation is not included.
 
 Deposit Speed tiers reduce each item transfer duration by 15%/30%/45% relative to v0.12. Prices are $800/$3,000/$7,500 with the existing 0/3/6 different-contract gates. It applies on next launch in every mode; Reel Motor and thrust remain separate. Older saves default the new upgrade to tier zero.
+
+
+## v0.14 — Mission briefings and contract sorting
+
+Selecting a campaign mission expands a connected MISSION BRIEFING directly below its card. Objectives appear as bullets; mixed quotas are separate items, and Final Sweep lists all three assignments with its saved checkpoint. Star requirements remain explicit. Start Mission appears inside the briefing. Selecting another mission moves the briefing and scrolls the selected card into view.
+
+Contracts use the same expandable briefing, with objective bullets, payout terms, and Accept Contract inside the selected card. Only one contract briefing is open at a time. The board automatically sorts Easy, Medium, then Hard, preserving order within each difficulty. Existing objectives, unlocks, saved progress, payouts, and flight behavior are unchanged.
+
+Validation: full acceptance suite and whitespace checks pass; local browser review verified the campaign card, contract objectives, and collapse-on-selection behavior. Brian approved the changes and requested a v0.14 PR targeting production.
+
+## v0.15 — Planned Moon prototype
+
+Brian approved the five lunar salvage sprites and Moon background. Local assets are saved under src/art/lunar/ and previews/lunar-art-v1/ for the next iteration; they are not included in the v0.14 release. Preserve the distant Earth when cropping the Moon background. Next scope: world selector and the first three Moon missions, using the v0.14 inline briefing pattern.
