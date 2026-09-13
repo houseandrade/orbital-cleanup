@@ -1,10 +1,12 @@
-# Orbital Cleanup v0.16.0
+# Orbital Cleanup v0.17.0 (in review)
 
 For version-by-version changes, see [Release notes](RELEASE-NOTES.md).
 
 A mobile-first, standalone PWA build of the v0.532 canvas prototype. Collect debris, manage the added cargo mass, and bank the haul at the cleanup station before the run ends.
 
 ## Current release and next work
+
+The local v0.17.0 review completes Mars missions 4–10 and adds broader Mars altitude coverage plus shared cargo momentum. See [Mars campaign review](MARS-CAMPAIGN-PLAN.md). This batch is not deployed.
 
 v0.16.0 is approved and deployed via PR #24 (commit `989e90f`, deployment 34782069208). Mars missions 1–3, tether reach, cargo stabilizer, and the one-time $100 recovery scanner are live. The scanner is listed first in the workshop. Live release files and production checks were verified. See ROADMAP.md for future work and RELEASE-NOTES.md for release history.
 

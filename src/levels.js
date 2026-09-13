@@ -194,9 +194,18 @@ const LevelSystem = (() => {
     completion: { title: 'WORLD TWO COMPLETE', salvage: 'Lunar rover secured' } }, 10));
 
   // First Mars review batch: familiar motion, sparse support, finite targets + two spares.
+  const marsHigh = [105, 120];
+  const marsLow = [325, 338];
+  const marsMiddle = [195, 250];
+  // Ordinary salvage has outer-band opportunities too, without a rare-value bonus.
+  const marsZones = value => [
+    { weight: 0.3, y: [120, 145], value },
+    { weight: 0.4, y: [175, 270], value },
+    { weight: 0.3, y: [305, 330], value }
+  ];
   const marsSupport = [
-    band(0.7, [180, 275], [30, 40], [35, 50], 5, 10, 'PANEL'),
-    { ...band(0.3, [170, 280], [28, 36], [60, 80], 8, 12, 'TOOL'), maxActive: 2 }
+    { ...band(0.7, [180, 275], [30, 40], [35, 50], 5, 10, 'PANEL'), zones: marsZones([35, 50]) },
+    { ...band(0.3, [170, 280], [28, 36], [60, 80], 8, 12, 'TOOL'), maxActive: 2, zones: marsZones([60, 80]) }
   ];
   const marsStation = { ...defaults.station, startX: 500, returnOffset: [240, 340], returnY: [205, 245] };
   const mars = config => ({ ...config, world: 3, missionNumber: config.id - 20, station: marsStation });
@@ -204,12 +213,57 @@ const LevelSystem = (() => {
     mars(level(21, 'Red Arrival', 'Begin recovery above the abandoned expedition site. Collect familiar salvage and bank your haul.', 250, 450, 700,
       { count: 5, spacing: 115, bands: marsSupport })),
     mars({ ...level(22, 'Sample Return', 'Recover 5 geological sample canisters. Missed canisters return on a later pass. Bank your samples over as many trips as you need.', 5, 550, 800,
-      { count: 5, spacing: 115, bands: marsSupport, limited: { count: 7, spacing: 420, speed: 30,
+      { count: 5, spacing: 115, bands: marsSupport, limited: { count: 7, spacing: 420, speed: 30, altitudeBands: [marsMiddle, marsHigh, marsLow],
         band: band(1, [180, 275], [30, 30], [55, 70], 4, 10, 'SAMPLE') } }), objective: typed('SAMPLE', 5) }),
     mars({ ...level(23, 'Survey Recovery', 'Recover 3 folded survey drones. Their equipment adds weight to your haul. Missed drones return on a later pass.', 3, 600, 900,
-      { count: 5, spacing: 115, bands: marsSupport, limited: { count: 5, spacing: 480, speed: 30,
+      { count: 5, spacing: 115, bands: marsSupport, limited: { count: 5, spacing: 480, speed: 30, altitudeBands: [marsHigh, marsLow, marsMiddle],
         band: band(1, [170, 280], [30, 30], [110, 140], 9, 13, 'DRONE') } }), objective: typed('DRONE', 3) })
   );
+
+  const sampleCanister = campaign[21].debris.limited.band;
+  const surveyDrone = campaign[22].debris.limited.band;
+  const solarArray = band(1, [180, 275], [30, 30], [140, 170], 14, 16, 'ARRAY');
+  const habitatFrame = band(1, [175, 280], [30, 30], [180, 220], 20, 17, 'FRAME');
+  const marsHeavyRocket = band(1, [165, 285], [30, 30], [130, 170], 18, 16, 'ROCKET');
+  const marsRecoverySupport = [
+    ...marsSupport.map(entry => ({ ...entry, weight: entry.weight * 0.9 })),
+    { ...varietySatellite, weight: 0.1 }
+  ];
+  const marsField = extra => ({ count: 5, spacing: 115, bands: marsRecoverySupport, ...extra });
+  const marsPool = (targetBand, required, offset = 0, altitudeBands = [marsHigh, marsLow]) => ({ count: required + 2, spacing: 480, offset, speed: 30, band: targetBand, altitudeBands });
+  campaign.push(
+    mars({ ...level(24, 'Power Salvage', 'Bank 3 solar array sections. Heavy loads carry momentum. Brake early near the boundaries. Missed arrays return on a later pass.', 3, 750, 1050,
+      marsField({ limited: marsPool(solarArray, 3, 0, [marsHigh, marsLow, marsMiddle]) })), objective: typed('ARRAY', 3) }),
+    mars({ ...level(25, 'Habitat Recovery', 'Bank 3 habitat support frames. Shorter trips keep this heavy cargo manageable. Brake early when moving fast. Missed frames return on a later pass.', 3, 900, 1250,
+      marsField({ limited: marsPool(habitatFrame, 3, 0, [marsLow, marsHigh, marsMiddle]) })), objective: typed('FRAME', 3) }),
+    mars({ ...level(26, 'Research Manifest', 'Bank 4 sample canisters and 2 survey drones. Choose the types you still need. Missed items return on a later pass.', 1, 850, 1200,
+      marsField({ pools: [marsPool(sampleCanister, 4, 0, [marsHigh]), marsPool(surveyDrone, 2, 240, [marsLow])] })),
+      objective: all(typed('SAMPLE', 4), typed('DRONE', 2)) }),
+    mars({ ...level(27, 'Survey Window', 'Bank 4 survey drones. Balance recovery with returns to the station. Missed drones return on a later pass; up to six can be recovered.', 4, 850, 1200,
+      marsField({ encounter: { leadSeconds: 4, finiteCount: 6, band: { ...surveyDrone, y: marsHigh } } })),
+      objective: typed('DRONE', 4) }),
+    mars({ ...level(28, 'Power Reserve', 'Bank 4 solar array sections and $1,000 total. Balance heavy arrays with other salvage, and bank over as many trips as you need. Missed arrays return on a later pass.', 1, 1350, 1750,
+      marsField({ limited: marsPool({ ...solarArray, y: [155, 290] }, 4) })),
+      objective: all(typed('ARRAY', 4), { type: 'bank_value', target: 1000 }) }),
+    mars({ ...level(29, 'Heavy Lift', 'Bank 3 habitat support frames and 2 rocket fragments. Shorter trips keep heavy cargo manageable. Missed items return on a later pass.', 1, 1350, 1800,
+      marsField({ pools: [marsPool(habitatFrame, 3, 0, [marsHigh]), marsPool(marsHeavyRocket, 2, 240, [marsLow])] })),
+      objective: all(typed('FRAME', 3), typed('ROCKET', 2)) })
+  );
+  const marsAssignments = [
+    { name: 'Secure the research', description: 'Bank 3 sample canisters and 2 survey drones. Missed items return on a later pass.',
+      objective: all(typed('SAMPLE', 3), typed('DRONE', 2)),
+      debris: marsField({ pools: [marsPool(sampleCanister, 3, 0, [marsLow]), marsPool(surveyDrone, 2, 240, [marsHigh])] }) },
+    { name: 'Recover the infrastructure', description: 'Bank 2 solar array sections and 2 habitat support frames. Make shorter trips with heavy cargo. Missed items return on a later pass.',
+      objective: all(typed('ARRAY', 2), typed('FRAME', 2)),
+      debris: marsField({ pools: [marsPool(solarArray, 2, 0, [marsHigh]), marsPool(habitatFrame, 2, 240, [marsLow])] }) },
+    { name: 'Bring the engine home', description: 'Recover and bank the ascent engine. This heavy cargo returns on a later pass if missed.',
+      objective: typed('ENGINE', 1), debris: marsField({ limited: { count: 1, spacing: 900, offset: 840, speed: 30,
+        band: band(1, [190, 260], [30, 30], [550, 550], 24, 18, 'ENGINE') } }) }
+  ];
+  campaign.push(mars({ ...level(30, 'Last Ascent', 'Three assignments, saved checkpoints, and the expedition’s final engine. Complete the Mars campaign for a one-time $2,000 reward.',
+    1, 2300, 3000, marsAssignments[0].debris), objective: marsAssignments[0].objective,
+    assignments: marsAssignments, checkpointKey: 'marsFinale',
+    completion: { title: 'WORLD THREE COMPLETE', salvage: 'Ascent engine secured' } }));
 
   const endless = {
     ...defaults, id: 'endless', name: 'Endless Orbit',

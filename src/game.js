@@ -139,7 +139,11 @@
     const missing = limit - junk.filter(object => !object.special && !object.encounter && !object.limited && !object.scheduledSalvage).length;
     for (const pool of initial ? (config.pools || (config.limited ? [config.limited] : [])) : []) {
       for (let i = 0; i < pool.count; i++) {
-        makeJunk((pool.offset || 0) + i * pool.spacing, pool.band);
+        // Explicit altitude bands guarantee coverage across the field, even with unlucky random rolls.
+        const targetBand = pool.altitudeBands
+          ? { ...pool.band, zones: undefined, y: pool.altitudeBands[i % pool.altitudeBands.length] }
+          : pool.band;
+        makeJunk((pool.offset || 0) + i * pool.spacing, targetBand);
         Object.assign(junk.at(-1), { limited: true, speed: pool.speed, orbitLength: pool.count * pool.spacing });
       }
     }
@@ -216,7 +220,7 @@
     document.getElementById('previous-world').disabled = selectedWorld === 1;
     document.getElementById('next-world').disabled = selectedWorld === LevelSystem.worlds.length;
     document.getElementById('world-note').textContent = selectedWorld === 2
-      ? progress.best[10] ? 'Ten Moon missions available.' : 'Complete World One to unlock the Moon.' : selectedWorld === 3 ? progress.best[20] ? 'Mars missions 1–3 available. More missions, Mars Contracts, and Mars Endless are coming later.' : 'Complete World Two to unlock Mars.' : '';
+      ? progress.best[10] ? 'Ten Moon missions available.' : 'Complete World One to unlock the Moon.' : selectedWorld === 3 ? progress.best[20] ? 'Ten Mars missions available. Mars Contracts and Mars Endless are coming later.' : 'Complete World Two to unlock Mars.' : '';
     root.classList.toggle('moon-menu', selectedWorld === 2);
     root.classList.toggle('mars-menu', selectedWorld === 3);
     LevelSystem.campaign.forEach(config => {
@@ -239,6 +243,7 @@
     startButton.textContent = level.assignments && progress[level.checkpointKey] ? `▶ RESUME ASSIGNMENT ${progress[level.checkpointKey].stage + 1}` : isEndless ? '▶ START ENDLESS ORBIT' : '▶ START MISSION';
     document.getElementById('world-one-badge').hidden = !progress.best[10];
     document.getElementById('world-two-badge').hidden = !progress.best[20];
+    document.getElementById('world-three-badge').hidden = !progress.best[30];
     setHighScore(getHighScore());
     const briefing = document.getElementById('mission-briefing');
     briefing.hidden = isEndless || Boolean(level.contract) || level.world !== selectedWorld;
@@ -356,7 +361,7 @@
     nextButton.hidden = level.id === LevelSystem.campaign.length;
     document.getElementById('result-endless').hidden = !nextButton.hidden;
     nextButton.textContent = level.id === 10 ? 'CONTINUE TO THE MOON' : level.id === 20 ? 'CONTINUE TO MARS' : 'NEXT LEVEL';
-    status.textContent = nextButton.hidden ? 'Mars missions 1–3 complete. More missions are coming later. Replay for stars or try Moon Endless.' : level.id === 10 ? 'World One complete. The Moon is unlocked!' : level.id === 20 ? 'World Two complete. Mars is unlocked!' : 'Level complete. Next level unlocked.';
+    status.textContent = nextButton.hidden ? 'Mars campaign complete. Ascent engine recovered! Replay for stars or try Moon Endless.' : level.id === 10 ? 'World One complete. The Moon is unlocked!' : level.id === 20 ? 'World Two complete. Mars is unlocked!' : 'Level complete. Next level unlocked.';
     refreshCampaign();
   }
 
@@ -630,7 +635,10 @@
     const massRatio = Math.min(mass / 100, 1) * runEffects.stabilizer;
     const gravity = 26 + massRatio * 5;
     const thrustPower = 72 * runEffects.thrust * thrustEffectiveness(mass, runEffects.stabilizer);
-    const damping = 0.968 + massRatio * 0.014;
+    // Fast loaded travel retains more velocity. Continuous ramp, no edge-triggered kick.
+    const speedFactor = clamp((Math.abs(player.velocityY) - 30) / 50, 0, 1);
+    const cargoMomentum = Math.min(mass / 60, 1) * runEffects.stabilizer;
+    const damping = Math.min(0.996, 0.968 + massRatio * 0.014 + 0.018 * cargoMomentum * speedFactor);
 
     player.velocityY += gravity * deltaTime;
     if (thrusting) player.velocityY -= thrustPower * deltaTime;
@@ -878,7 +886,24 @@
     context.restore();
   }
 
+  function momentumWarning() {
+    const velocity = player.velocityY;
+    if (!running || mass < 14 || Math.abs(velocity) < 30) return null;
+    const gravity = 26 + Math.min(mass / 100, 1) * runEffects.stabilizer * 5;
+    const thrust = 72 * runEffects.thrust * thrustEffectiveness(mass, runEffects.stabilizer);
+    // Conservative braking estimate ignores drag so the cue comes before the danger line.
+    const braking = velocity < 0 ? gravity : Math.max(1, thrust - gravity);
+    const distance = velocity < 0 ? player.y - ESCAPE_Y : REENTRY_Y - player.y;
+    if (distance > velocity * velocity / (2 * braking) + 20) return null;
+    return velocity < 0 ? { text: 'RELEASE THRUST · BRAKE', y: 145 } : { text: 'THRUST · BRAKE', y: 305 };
+  }
+
   function drawWarnings() {
+    const warning = momentumWarning();
+    if (warning) {
+      context.fillStyle = '#f1c76b'; context.font = 'bold 13px monospace'; context.textAlign = 'center';
+      context.fillText(warning.text, PLAYER_X, warning.y); context.textAlign = 'left';
+    }
     const top = clamp((135 - player.y) / 60, 0, 1);
     const bottom = clamp((player.y - 300) / 60, 0, 1);
     const pulse = 0.55 + 0.25 * Math.sin(elapsed * 7);

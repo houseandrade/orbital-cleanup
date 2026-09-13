@@ -4,7 +4,7 @@ const ContractSystem = (() => {
   const upgrades = {
     scanner: { name: 'Recovery scanner', description: 'Marks visible salvage still needed for your current objective. Carried items count toward what you already have; bank them to complete the objective.', prices: [100], effects: [0, 1], labels: ['Not unlocked', 'Unlocked'] },
     reach: { name: 'Tether reach', description: 'A little more collection range. Positioning still matters.', prices: [600, 2400, 6000], effects: [82, 90.2, 98.4, 106.6], labels: ['Standard', '10% farther', '20% farther', '30% farther'] },
-    stabilizer: { name: 'Cargo stabilizer', description: 'Reduces cargo handling penalties without increasing unloaded thrust. Cargo keeps its full mass and recovery time.', prices: [700, 2800, 7000], effects: [1, 0.85, 0.7, 0.55], labels: ['Standard', '15% less cargo penalty', '30% less cargo penalty', '45% less cargo penalty'] },
+    stabilizer: { name: 'Cargo stabilizer', description: 'Reduces cargo handling penalties and momentum at speed. Cargo keeps its full mass and recovery time.', prices: [700, 2800, 7000], effects: [1, 0.85, 0.7, 0.55], labels: ['Standard', '15% less cargo penalty', '30% less cargo penalty', '45% less cargo penalty'] },
     deposit: { name: 'Deposit speed', description: 'Shorter station transfers. Each item still banks separately.', prices: [800, 3000, 7500], effects: [1, 0.85, 0.7, 0.55], labels: ['Standard', '15% shorter', '30% shorter', '45% shorter'] },
     reel: { name: 'Reel motor', description: 'Shorter recovery time. Heavy salvage still takes longer.', prices: [900, 3500, 9000], effects: [1, 0.9, 0.8, 0.7], labels: ['Standard', '10% shorter', '20% shorter', '30% shorter'] },
     thrust: { name: 'Thruster power', description: 'More lift under load. Watch your altitude near the upper boundary.', prices: [1000, 4000, 10000], effects: [1, 1.06, 1.12, 1.18], labels: ['Standard', '+6% power', '+12% power', '+18% power'] }
@@ -63,13 +63,14 @@ const ContractSystem = (() => {
     return { ...base, id, name, difficulty, bonus, contract: true, objective, stars: [], debris,
       description: `Bank ${LevelSystem.criterionLabel(objective)} for a $${bonus} bonus. Only deposited salvage counts.` };
   }));
-  let career = { wallet: 0, completed: [], upgrades: Object.fromEntries(Object.keys(upgrades).map(id => [id, 0])), worldOneReward: false, worldTwoReward: false };
+  let career = { wallet: 0, completed: [], upgrades: Object.fromEntries(Object.keys(upgrades).map(id => [id, 0])), worldOneReward: false, worldTwoReward: false, worldThreeReward: false };
   let persistent = true;
   try {
     const saved = JSON.parse(localStorage.getItem(key));
     if (saved) {
       career.worldOneReward = saved.worldOneReward === true;
       career.worldTwoReward = saved.worldTwoReward === true;
+      career.worldThreeReward = saved.worldThreeReward === true;
       if (Number.isSafeInteger(saved.wallet) && saved.wallet >= 0) career.wallet = saved.wallet;
       career.completed = contracts.filter(c => Array.isArray(saved.completed) && saved.completed.includes(c.id)).map(c => c.id);
       for (const id of Object.keys(upgrades)) {
@@ -89,7 +90,7 @@ const ContractSystem = (() => {
     return true;
   }
   function rewardWorld(world) {
-    const key = ({ 1: 'worldOneReward', 2: 'worldTwoReward' })[world];
+    const key = ({ 1: 'worldOneReward', 2: 'worldTwoReward', 3: 'worldThreeReward' })[world];
     if (!key || career[key] || !Number.isSafeInteger(career.wallet + 2000)) return false;
     career.wallet += 2000;
     career[key] = true;

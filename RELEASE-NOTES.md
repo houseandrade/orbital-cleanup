@@ -6,6 +6,14 @@ The history below was reconstructed from merged changes and project records. Fol
 
 ## Unreleased
 
+### v0.17.0 — Full Mars campaign and cargo momentum (in review)
+
+- Added Power Salvage, Habitat Recovery, Research Manifest, Survey Window, Power Reserve, Heavy Lift, and the three-assignment Last Ascent finale.
+- Added independent Mars checkpoints, completion badge, and one-time $2,000 reward. Existing 3-3 completion unlocks 3-4.
+- Broadened Mars support salvage and guaranteed upper/lower finite targets so central hovering cannot finish recovery quotas with standard gear. Mixed orders require travel between opposite bands.
+- Fast, loaded movement retains more momentum across all worlds and modes. Early braking cues and the cargo stabilizer help manage approaches; unloaded and slow movement retain their previous physics.
+- Acceptance checks cover mission completion, target supply, rewards/checkpoints, altitude coverage and actual braking trajectories. Awaiting playtest approval; not deployed. Mars Contracts and Endless follow campaign review.
+
 ### Documentation
 
 - Recorded the v0.16 Mars proposals: five salvage items, art direction, gameplay experiments, upgrade candidates, and the first three mission concepts.
