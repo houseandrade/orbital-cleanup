@@ -4,6 +4,11 @@ const GameArt = (() => {
   const earth = new Image();
   atlas.src = 'src/art/sprites.png';
   earth.src = 'src/art/earth.png';
+  const salvage = {};
+  for (const [type, file] of Object.entries({ TOOL: 'tool-crate', ROCKET: 'rocket-fragment' })) {
+    salvage[type] = new Image();
+    salvage[type].src = `src/art/${file}.png`;
+  }
   // Source rectangles and silhouette masks keep the atlas backdrop out of play.
   const sprites = {
     astronaut: { box: [132, 123, 248, 339], shape: [[.4,0],[.6,0],[.72,.06],[.78,.15],[.82,.15],[.83,.34],[.98,.54],[1,.65],[.91,.66],[.82,.56],[.74,.51],[.73,.61],[.78,.78],[.74,.87],[.78,.99],[.54,1],[.5,.85],[.46,1],[.2,1],[.24,.87],[.21,.8],[.26,.61],[.25,.51],[.16,.57],[.08,.66],[0,.65],[.02,.54],[.18,.34],[.18,.16],[.23,.15],[.29,.06]] },
@@ -13,7 +18,14 @@ const GameArt = (() => {
     station: { box: [518, 598, 501, 290], shape: [[.48,0],[.52,0],[.53,.14],[.56,.16],[.57,.33],[.65,.43],[.69,.47],[.71,.43],[.71,.41],[.68,.41],[.68,.2],[1,.2],[1,.42],[.85,.42],[.85,.5],[.9,.52],[.9,.62],[.85,.65],[.85,.73],[1,.73],[1,.95],[.68,.95],[.68,.73],[.74,.73],[.74,.65],[.65,.66],[.57,.8],[.56,.9],[.52,1],[.48,1],[.44,.9],[.43,.8],[.35,.66],[.26,.65],[.26,.73],[.32,.73],[.32,.95],[0,.95],[0,.73],[.15,.73],[.15,.65],[.1,.62],[.1,.52],[.15,.5],[.15,.42],[0,.42],[0,.2],[.32,.2],[.32,.41],[.29,.41],[.29,.43],[.31,.47],[.35,.43],[.43,.33],[.44,.16],[.47,.14]] }
   };
   function sprite(ctx, name, x, y, width, height) {
-    if (!atlas.complete || !atlas.naturalWidth) return false;
+    if (salvage[name]) {
+      const image = salvage[name];
+      if (!image.complete || !image.naturalWidth) return false;
+      ctx.save(); ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(image, Math.round(x - width / 2), Math.round(y - height / 2), width, height);
+      ctx.restore(); return true;
+    }
+    if (!sprites[name] || !atlas.complete || !atlas.naturalWidth) return false;
     const { box, shape } = sprites[name];
     ctx.save();
     ctx.imageSmoothingEnabled = false;

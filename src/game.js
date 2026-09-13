@@ -190,7 +190,7 @@
     document.getElementById('over-score-label').textContent = level.contract ? 'CONTRACT BEST' : isEndless ? 'ENDLESS BEST' : 'CAMPAIGN HIGH SCORE';
     startButton.textContent = isEndless ? '▶ START ENDLESS ORBIT' : '▶ START MISSION';
     setHighScore(getHighScore());
-    document.getElementById('level-description').textContent = (isEndless || level.contract) ? level.description : `${level.description} Goal: ${LevelSystem.criterionLabel(level.objective)}. Stars: ${level.stars.map(criterion => LevelSystem.criterionLabel(criterion, level.objective)).join(" / ")}.${level.objective.type === "bank_objects" ? " Higher stars also require all 10 objects banked." : ""}`;
+    document.getElementById('level-description').textContent = (isEndless || level.contract) ? level.description : `${level.description} Goal: ${LevelSystem.criterionLabel(level.objective)}. Stars: ${level.stars.map(criterion => LevelSystem.criterionLabel(criterion, level.objective)).join(" / ")}.${level.objective.type === "bank_objects" ? " Higher stars also require the object quota banked." : ""}`;
   }
 
   function showResult(previousBank = bank) {
@@ -206,7 +206,7 @@
     document.getElementById('phase-preview').hidden = !isEndless;
     finishButton.textContent = isEndless ? 'FINISH RUN SUCCESSFULLY' : 'FINISH LEVEL';
     replayButton.textContent = isEndless ? 'PLAY ENDLESS AGAIN' : 'REPLAY LEVEL';
-    const stars = LevelSystem.rating(level, { bank, bankedObjects });
+    const stars = LevelSystem.rating(level, { bank, bankedObjects, bankedTypes });
     resultTitle.textContent = 'OBJECTIVE MET';
     resultStats.textContent = `${level.id}. ${level.name} • $${bank} banked${level.objective?.type === "bank_objects" ? ` • ${bankedObjects} objects banked` : ""} • ${'★'.repeat(stars)}${'☆'.repeat(3 - stars)} • Previous best: ${progress.best[level.id] || 0}/3`;
     finishButton.hidden = false;
@@ -262,7 +262,7 @@
       status.textContent = `Run complete • $${bank} banked`;
       return;
     }
-    const stars = LevelSystem.rating(level, { bank, bankedObjects });
+    const stars = LevelSystem.rating(level, { bank, bankedObjects, bankedTypes });
     progress.best[level.id] = Math.max(progress.best[level.id] || 0, stars);
     progress.currentLevel = Math.min(level.id + 1, LevelSystem.campaign.length);
     LevelSystem.saveProgress(progress);
@@ -273,7 +273,7 @@
     document.getElementById('result-menu').hidden = false;
     nextButton.hidden = level.id === LevelSystem.campaign.length;
     document.getElementById('result-endless').hidden = !nextButton.hidden;
-    status.textContent = nextButton.hidden ? 'Campaign complete. Try Endless Orbit or replay for stars.' : 'Level complete. Next level unlocked.';
+    status.textContent = nextButton.hidden ? 'Available missions complete. More World One missions are coming. Try Endless Orbit or replay for stars.' : 'Level complete. Next level unlocked.';
     refreshCampaign();
   }
 
@@ -402,7 +402,7 @@
   }
 
   function updateHud() {
-    const stars = LevelSystem.rating(level, { bank, bankedObjects });
+    const stars = LevelSystem.rating(level, { bank, bankedObjects, bankedTypes });
     document.getElementById('flight-title').textContent = level.contract ? level.name : level.objective ? `${level.id}. ${level.name}` : level.name;
     missionDisplay.textContent = level.objective ? `BANK ${LevelSystem.criterionLabel(level.objective).toUpperCase()}` : `PERSONAL BEST $${sessionBests[scoreKey()] || 0}`;
     const goal = document.getElementById('goal-progress');
@@ -414,12 +414,12 @@
     const objectProgress = document.getElementById('object-progress');
     objectProgress.hidden = level.objective?.type !== 'bank_objects';
     objectProgress.textContent = `${bankedObjects} / ${level.objective?.target || 0} banked · ${carriedObjects} carried${bankedObjects < (level.objective?.target || 0) && bankedObjects + carriedObjects >= (level.objective?.target || 0) ? ' · Return to bank' : ''}`;
-    if (level.contract) {
+    if (level.contract || level.objective?.type === 'bank_type') {
       const count = level.objective.type === 'bank_type' ? (bankedTypes[level.objective.salvageType] || 0) : level.objective.type === 'bank_objects' ? bankedObjects : bank;
       const carried = level.objective.type === 'bank_type' ? (carriedTypes[level.objective.salvageType] || 0) : level.objective.type === 'bank_objects' ? carriedObjects : haul;
       goal.value = Math.min(count, goal.max);
       objectProgress.hidden = false;
-      objectProgress.textContent = `${count}/${goal.max} banked · ${carried} carried · ${contractCompleted ? 'Bonus paid' : `Bonus $${level.bonus}`}${!contractCompleted && count + carried >= goal.max ? ' · Return to bank' : ''}`;
+      objectProgress.textContent = `${count}/${goal.max} banked · ${carried} carried${level.contract ? ` · ${contractCompleted ? 'Bonus paid' : `Bonus $${level.bonus}`}` : ''}${!contractCompleted && count + carried >= goal.max ? ' · Return to bank' : ''}`;
     }
     document.getElementById('star-goals').hidden = !level.objective || level.contract;
     if (level.objective) level.stars.forEach((criterion, index) => {
@@ -499,7 +499,7 @@
     if (object.hit) return;
     object.hit = true;
     const relativeSpeed = Math.max(1, object.speed / 40);
-    const damage = Math.round((object.type === "SAT" ? 18 : object.type === "PANEL" ? 11 : 7) * relativeSpeed * 0.55);
+    const damage = Math.round(({ SAT: 18, PANEL: 11, SCRAP: 7, TOOL: 13, ROCKET: 22 }[object.type] || 7) * relativeSpeed * 0.55);
     integrity = clamp(integrity - damage, 0, 100);
     player.velocityY += (object.y - player.y) * 0.18 + random(-20, 20);
     player.flash = 0.25;
@@ -643,9 +643,16 @@
     const objectY = tether && tether.object === object ? object.y : object.y + Math.sin(object.wobble) * 4;
     context.save();
     context.translate(object.x, objectY);
-    const dimensions = object.type === 'SCRAP' ? [14, 14] : object.type === 'PANEL' ? [28, 14] : [50, 28];
+    const dimensions = { SCRAP: [14, 14], PANEL: [28, 14], SAT: [50, 28], TOOL: [40, 40], ROCKET: [44, 44] }[object.type] || [28, 28];
     if (GameArt.sprite(context, object.type, 0, 0, ...dimensions)) {
       // The configured collision size remains unchanged.
+    } else if (object.type === 'TOOL') {
+      context.fillStyle = '#eee6d5'; context.fillRect(-12, -9, 24, 18);
+      context.strokeStyle = '#17283e'; context.strokeRect(-5, -13, 10, 5);
+      context.fillStyle = '#64efb1'; context.fillRect(-8, -3, 4, 5); context.fillRect(4, -3, 4, 5);
+    } else if (object.type === 'ROCKET') {
+      context.rotate(0.7); context.fillStyle = '#eee6d5'; context.fillRect(-9, -16, 18, 25);
+      context.fillStyle = '#536072'; context.fillRect(-12, 9, 24, 10);
     } else if (object.type === "SCRAP") {
       context.fillStyle = "#c7cbce"; context.fillRect(-5, -3, 10, 6); context.fillRect(-2, -6, 4, 12);
     } else if (object.type === "PANEL") {

@@ -461,8 +461,8 @@ assert.equal(elements.get('star-3').textContent, '★★★ $1000');
 deposit(350);
 qa.finishLevel();
 assert.equal(qa.state.progress.best[5], 1);
-assert.equal(elements.get('next-level').hidden, true);
-assert.equal(elements.get('result-endless').hidden, false);
+assert.equal(elements.get('next-level').hidden, false);
+assert.equal(elements.get('result-endless').hidden, true);
 qa.start();
 deposit(650);
 qa.finishLevel();
@@ -596,7 +596,7 @@ for (const config of vm.runInContext('LevelSystem.campaign', sandbox)) {
   assert.equal(config.player.suitIntegrity, 100);
   assert.deepEqual(Array.from(config.station.returnOffset), config.id === 1 ? [120,180] : [420,620]);
 }
-assert.deepEqual(Array.from(vm.runInContext('LevelSystem.campaign.map(c=>c.objective.target)', sandbox)), [60,150,150,10,350]);
+assert.deepEqual(Array.from(vm.runInContext('LevelSystem.campaign.map(c=>c.objective.target)', sandbox)), [60,150,150,10,350,5,3]);
 console.log('Orbital Cleanup v0.11 acceptance checks passed.');
 
 // Contract deposits, type tracking, once-per-run bonuses, and career purchases.
@@ -717,7 +717,7 @@ for (const contract of careerSystem.contracts) {
 elements.get('endless').listeners.click();
 deposit(100);
 assert.equal(elements.get('result-contracts').hidden, true, 'contract action does not carry into endless results');
-console.log('All nine contract objectives and payouts passed.');
+console.log('All eleven contract objectives and payouts passed.');
 
 launchContract('first-shift');
 const partialWallet = careerSystem.career.wallet;
@@ -746,3 +746,50 @@ assert.equal(careerSystem.career.wallet, partialWallet + 100);
 qa.end('SUIT');
 assert.equal(careerSystem.career.wallet, partialWallet + 100, 'failure retains received items only');
 console.log('Per-item deposit display, interruption, and retained earnings checks passed.');
+
+// New targeted campaign missions use deposited type counts for all star tiers.
+elements.get('result-menu').listeners.click();
+assert.equal(elements.get('level-6').disabled, false, 'existing Level 5 completion unlocks Level 6');
+assert.equal(elements.get('level-7').disabled, true);
+for (const id of [6, 7]) {
+  elements.get(`level-${id}`).listeners.click();
+  qa.start();
+  const config = qa.state.level;
+  const type = config.objective.salvageType;
+  const wallet = careerSystem.career.wallet;
+  assert.ok(config.debris.bands.some(b => b.type === type && b.weight > 0));
+  assert.match(elements.get('level-description').textContent, id === 6 ? /tool crates/ : /rocket fragments/);
+  for (let i = 0; i < config.objective.target; i++) qa.collect({ type, value: 70, mass: id === 6 ? 8 : 18, size: 12 });
+  qa.draw();
+  assert.equal(qa.state.pendingResult, false);
+  assert.equal(elements.get('goal-progress').value, 0);
+  assert.match(elements.get('object-progress').textContent, /Return to bank/);
+  assert.ok(!elements.get('object-progress').textContent.includes('Bonus'));
+  deposit(qa.state.haul);
+  assert.equal(qa.state.pendingResult, true);
+  assert.equal(elements.get('goal-progress').value, config.objective.target);
+  assert.ok(elements.get('star-1').classList.contains('earned'));
+  qa.finishLevel();
+  assert.equal(qa.state.progress.best[id], 1);
+  assert.equal(careerSystem.career.wallet, wallet, 'campaign does not pay contract wallet');
+  qa.start();
+  deposit(config.stars[2].target);
+  assert.equal(qa.state.pendingResult, false, 'money without target items cannot complete a targeted mission');
+  for (let i = 0; i < config.objective.target; i++) qa.collect({ type, value: 70, mass: 8, size: 12 });
+  deposit(qa.state.haul);
+  qa.finishLevel();
+  assert.equal(qa.state.progress.best[id], 3);
+  assert.equal(vm.runInContext(`LevelSystem.readProgress().best[${id}]`, sandbox), 3);
+}
+assert.equal(elements.get('next-level').hidden, true);
+assert.equal(elements.get('result-endless').hidden, false);
+assert.match(elements.get('status').textContent, /More World One missions are coming/);
+for (const [at, type] of [[150, 'TOOL'], [300, 'ROCKET']]) {
+  const config = vm.runInContext(`LevelSystem.phaseFor(LevelSystem.endless, ${at})`, sandbox);
+  assert.ok(config.debris.bands.some(b => b.type === type && b.weight > 0));
+}
+for (const name of ['tool-crate', 'rocket-fragment']) {
+  assert.ok(cachedPaths.includes(`./src/art/${name}.png`));
+  assert.ok(fs.existsSync(new URL(`../src/art/${name}.png`, import.meta.url)));
+}
+console.log('Levels 6–7, targeted stars, save compatibility, new Endless salvage, and offline assets passed.');

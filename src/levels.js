@@ -11,6 +11,8 @@ const LevelSystem = (() => {
     objective: { type: 'bank_value', target },
     stars: [{ type: 'complete_objective' }, { type: 'bank_value', target: two }, { type: 'bank_value', target: three }]
   });
+  const toolCrates = band(0.5, [185, 260], [30, 42], [60, 80], 8, 12, 'TOOL');
+  const rocketFragments = band(0.45, [145, 205], [24, 34], [130, 170], 18, 16, 'ROCKET');
   const campaign = [
     level(1, 'First Haul', 'Collect, return, bank. Only banked salvage counts.', 60, 120, 200, {
       count: 5, spacing: 95, bands: [band(1, [185, 265], [24, 34], [30, 40], 5, 10, 'PANEL')]
@@ -40,7 +42,16 @@ const LevelSystem = (() => {
         band(0.75, [190, 265], [38, 54], [40, 60], 5, 10, 'PANEL'),
         band(0.25, [108, 135], [22, 34], [150, 200], 10, 14, 'SAT')
       ]
-    })
+    }),
+    { ...level(6, 'Lost Equipment', 'Recover 5 tool crates. Look for the cream cases with mint latches; bank them across as many trips as needed.', 5, 550, 850, {
+      count: 8, spacing: 90, bands: [toolCrates,
+        band(0.3, [190, 265], [38, 48], [35, 50], 5, 10, 'PANEL'),
+        band(0.2, [265, 310], [45, 65], [20, 35], 2, 7, 'SCRAP')]
+    }), objective: { type: 'bank_type', salvageType: 'TOOL', target: 5 } },
+    { ...level(7, 'Heavy Metal', 'Bank 3 rocket fragments. Heavy engine sections slow your reel and add cargo mass; shorter trips keep the load manageable.', 3, 750, 1100, {
+      count: 8, spacing: 100, bands: [rocketFragments, { ...toolCrates, weight: 0.25 },
+        band(0.3, [195, 270], [38, 48], [35, 50], 5, 10, 'PANEL')]
+    }), objective: { type: 'bank_type', salvageType: 'ROCKET', target: 3 } }
   ];
   const scrapPocket = {
     count: 3, spacing: 32, ySpread: 12,
@@ -68,10 +79,10 @@ const LevelSystem = (() => {
   endless.milestoneStep = 250;
   endless.phases = [
     { name: 'Open field', at: 0, description: 'Room to choose your haul.', debris: endless.debris },
-    { name: 'Scrap pockets', at: 150, description: 'Light scraps arrive in clusters.',
-      debris: { ...endless.debris, pocket: scrapPocket } },
-    { name: 'High-value passes', at: 300, description: 'Valuable satellites arrive just before the station.',
-      debris: { ...endless.debris, encounter: valuablePass } },
+    { name: 'Scrap pockets', at: 150, description: 'Light scraps arrive in clusters, with tool crates mixed into the field.',
+      debris: { ...endless.debris, bands: [...endless.debris.bands, { ...toolCrates, weight: 0.3 }], pocket: scrapPocket } },
+    { name: 'High-value passes', at: 300, description: 'Heavy rocket fragments cross the field; valuable satellites arrive just before the station.',
+      debris: { ...endless.debris, bands: [...endless.debris.bands, { ...rocketFragments, weight: 0.25 }], encounter: valuablePass } },
     { name: 'Recovery stretch', at: 500, description: 'A quieter mid-orbit field for lighter trips.',
       debris: { count: 5, spacing: 110, bands: [band(1, [195, 260], [38, 44], [30, 40], 2, 7, 'SCRAP')] } }
   ];
@@ -99,7 +110,7 @@ const LevelSystem = (() => {
     stars === index && meets(criterion, stats, config.objective) ? stars + 1 : stars, 0);
   function criterionLabel(criterion, objective) {
     if (criterion.type === 'complete_objective') return criterionLabel(objective);
-    if (criterion.type === 'bank_type') return `${criterion.target} ${criterion.salvageType === 'SAT' ? 'satellites' : 'panels'}`;
+    if (criterion.type === 'bank_type') return `${criterion.target} ${({ SAT: 'satellites', PANEL: 'panels', SCRAP: 'scraps', TOOL: 'tool crates', ROCKET: 'rocket fragments' })[criterion.salvageType] || 'items'}`;
     return criterion.type === 'bank_objects' ? `${criterion.target} objects` : `$${criterion.target}`;
   }
   const key = 'orbital-cleanup-progress-v1';

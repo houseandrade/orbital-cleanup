@@ -15,7 +15,9 @@ const ContractSystem = (() => {
     ['payday', 'Payday', 'Medium', 'bank_value', 850, 650],
     ['orbital-overhaul', 'Orbital Overhaul', 'Hard', 'bank_objects', 22, 1400],
     ['satellite-ten', 'Satellite Ten', 'Hard', 'bank_type', 10, 1800, 'SAT'],
-    ['big-ticket', 'Big Ticket', 'Hard', 'bank_value', 1800, 1500]
+    ['big-ticket', 'Big Ticket', 'Hard', 'bank_value', 1800, 1500],
+    ['equipment-return', 'Equipment Return', 'Medium', 'bank_type', 5, 500, 'TOOL'],
+    ['engine-recovery', 'Engine Recovery', 'Hard', 'bank_type', 3, 700, 'ROCKET']
   ];
   const contracts = definitions.map(([id, name, difficulty, type, target, bonus, salvageType]) => {
     const rank = ['Easy', 'Medium', 'Hard'].indexOf(difficulty);
@@ -25,6 +27,10 @@ const ContractSystem = (() => {
     if (salvageType === 'SAT') { bands[0].weight = 0.5; bands[1].weight = 0.3; bands[2].weight = 0.2; }
     if (rank === 0) { bands[0].y = [145, 175]; bands[2].y = [265, 300]; bands[2].speed = [45, 65]; }
     if (rank === 2) { bands[0].y = [108, 140]; bands[2].speed = [85, 112]; }
+    if (salvageType === 'TOOL' || salvageType === 'ROCKET') {
+      const source = LevelSystem.campaign[salvageType === 'TOOL' ? 5 : 6].debris.bands;
+      bands.splice(0, bands.length, ...source.map(band => ({ ...band })));
+    }
     const objective = { type, target, salvageType };
     return { ...base, id, name, difficulty, bonus, contract: true, objective, stars: [],
       description: `Bank ${LevelSystem.criterionLabel(objective)} for a $${bonus} bonus. Only deposited salvage counts.`,
