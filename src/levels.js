@@ -80,10 +80,10 @@ const LevelSystem = (() => {
   endless.milestoneStep = 250;
   endless.phases = [
     { name: 'Open field', at: 0, description: 'Room to choose your haul.', debris: endless.debris },
-    { name: 'Scrap pockets', at: 150, description: 'Light scraps arrive in clusters, with tool crates mixed into the field.',
-      debris: { ...endless.debris, bands: [...endless.debris.bands, { ...toolCrates, weight: 0.3 }], pocket: scrapPocket } },
-    { name: 'High-value passes', at: 300, description: 'Heavy rocket fragments cross the field; valuable satellites arrive just before the station.',
-      debris: { ...endless.debris, bands: [...endless.debris.bands, { ...rocketFragments, weight: 0.25 }], encounter: valuablePass } },
+    { name: 'Scrap pockets', at: 150, description: 'Light scraps arrive in clusters; occasional tool crates pass one at a time.',
+      debris: { ...endless.debris, arrival: { band: toolCrates, interval: 18, speed: 30 }, pocket: scrapPocket } },
+    { name: 'High-value passes', at: 300, description: 'Rare rocket fragments pass one at a time; valuable satellites arrive just before the station.',
+      debris: { ...endless.debris, arrival: { band: rocketFragments, interval: 24, speed: 30 }, encounter: valuablePass } },
     { name: 'Recovery stretch', at: 500, description: 'A quieter mid-orbit field for lighter trips.',
       debris: { count: 5, spacing: 110, bands: [band(1, [195, 260], [38, 44], [30, 40], 2, 7, 'SCRAP')] } }
   ];

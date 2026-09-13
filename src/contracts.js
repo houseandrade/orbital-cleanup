@@ -27,15 +27,17 @@ const ContractSystem = (() => {
     if (salvageType === 'SAT') { bands[0].weight = 0.5; bands[1].weight = 0.3; bands[2].weight = 0.2; }
     if (rank === 0) { bands[0].y = [145, 175]; bands[2].y = [265, 300]; bands[2].speed = [45, 65]; }
     if (rank === 2) { bands[0].y = [108, 140]; bands[2].speed = [85, 112]; }
+    let arrival;
     if (salvageType === 'TOOL' || salvageType === 'ROCKET') {
       const config = LevelSystem.campaign[salvageType === 'TOOL' ? 5 : 6].debris;
-      const source = [config.limited.band, ...config.bands];
+      const source = config.bands;
+      arrival = { band: config.limited.band, interval: salvageType === 'TOOL' ? 12 : 16, speed: 30 };
       bands.splice(0, bands.length, ...source.map(band => ({ ...band })));
     }
     const objective = { type, target, salvageType };
     return { ...base, id, name, difficulty, bonus, contract: true, objective, stars: [],
       description: `Bank ${LevelSystem.criterionLabel(objective)} for a $${bonus} bonus. Only deposited salvage counts.`,
-      debris: { count: 8, spacing: 85, bands } };
+      debris: { count: 8, spacing: 85, bands, ...(arrival ? { arrival } : {}) } };
   });
   let career = { wallet: 0, completed: [], upgrades: { reel: 0, thrust: 0 } };
   let persistent = true;

@@ -88,6 +88,7 @@ source = source.replace(/\}\)\(\);\s*$/, `
     fillDebris, scheduleEncounter, collect, draw, stationMessage, start, end, finishLevel, resumeLevel, update, fireTether, collide, thrustEffectiveness,
     get state() { return { phase, queuedPhase, nextStation, elapsed, carriedObjects, bankedObjects, level, progress, pendingResult, running, haul, bank, mass, integrity, tether, junk, player, station, depositing, cargo }; },
     set scenario(value) {
+      if (value.elapsed !== undefined) elapsed = value.elapsed;
       if (value.running !== undefined) running = value.running;
       if (value.carriedObjects !== undefined) carriedObjects = value.carriedObjects;
       if (value.bankedObjects !== undefined) bankedObjects = value.bankedObjects;
@@ -786,7 +787,8 @@ assert.equal(elements.get('result-endless').hidden, false);
 assert.match(elements.get('status').textContent, /More World One missions are coming/);
 for (const [at, type] of [[150, 'TOOL'], [300, 'ROCKET']]) {
   const config = vm.runInContext(`LevelSystem.phaseFor(LevelSystem.endless, ${at})`, sandbox);
-  assert.ok(config.debris.bands.some(b => b.type === type && b.weight > 0));
+  assert.equal(config.debris.arrival.band.type, type);
+  assert.ok(config.debris.bands.every(b => b.type !== type));
 }
 for (const name of ['tool-crate', 'rocket-fragment']) {
   assert.ok(cachedPaths.includes(`./src/art/${name}.png`));
@@ -826,3 +828,55 @@ for (const id of [6, 7]) {
   assert.equal(qa.state.junk.filter(o => o.limited).length, pool.count, 'replay restores the finite pool');
 }
 console.log('Finite campaign salvage pools, spacing, missed-item orbits, and replay checks passed.');
+
+function verifyRareArrivals(type, interval) {
+  assert.equal(qa.state.junk.filter(o => o.scheduledSalvage).length, 0);
+  qa.scenario = { elapsed: 7 };
+  qa.fillDebris();
+  assert.equal(qa.state.junk.filter(o => o.scheduledSalvage).length, 0, 'no opening cluster');
+  qa.scenario = { elapsed: 20 };
+  qa.fillDebris();
+  const first = qa.state.junk.find(o => o.scheduledSalvage);
+  assert.equal(first.type, type);
+  qa.collect(first);
+  qa.scenario = { elapsed: 20 + interval - 0.01 };
+  qa.fillDebris();
+  assert.equal(qa.state.junk.filter(o => o.scheduledSalvage).length, 0, 'collecting does not bypass cooldown');
+  qa.scenario = { elapsed: 20 + interval };
+  qa.fillDebris();
+  const second = qa.state.junk.find(o => o.scheduledSalvage);
+  assert.equal(second.type, type);
+  qa.scenario = { elapsed: 20 + interval * 4 };
+  qa.fillDebris();
+  assert.equal(qa.state.junk.filter(o => o.scheduledSalvage).length, 1, 'late updates never create catch-up clusters');
+  assert.equal(qa.state.junk.find(o => o.scheduledSalvage), second);
+}
+for (const [id, type, interval] of [['equipment-return', 'TOOL', 12], ['engine-recovery', 'ROCKET', 16]]) {
+  launchContract(id);
+  assert.ok(qa.state.level.debris.bands.every(b => !['TOOL', 'ROCKET'].includes(b.type)));
+  verifyRareArrivals(type, interval);
+  qa.start();
+  assert.equal(qa.state.junk.filter(o => o.scheduledSalvage).length, 0, 'replay resets arrival timing');
+}
+for (const [bank, type, interval] of [[150, 'TOOL', 18], [300, 'ROCKET', 24]]) {
+  elements.get('endless').listeners.click();
+  deposit(bank);
+  qa.resumeLevel();
+  verifyRareArrivals(type, interval);
+}
+// An item already in flight survives a phase change and blocks another rare item.
+elements.get('endless').listeners.click();
+deposit(150); qa.resumeLevel();
+qa.scenario = { elapsed: 20 }; qa.fillDebris();
+const inFlightCrate = qa.state.junk.find(o => o.scheduledSalvage);
+deposit(150);
+qa.scenario = { junk: [inFlightCrate] };
+qa.resumeLevel();
+qa.scenario = { elapsed: 100 }; qa.fillDebris();
+assert.equal(qa.state.junk.filter(o => o.scheduledSalvage).length, 1);
+assert.ok(qa.state.junk.includes(inFlightCrate));
+qa.collect(inFlightCrate);
+qa.fillDebris();
+assert.equal(qa.state.junk.filter(o => o.scheduledSalvage).length, 1);
+assert.equal(qa.state.junk.find(o => o.scheduledSalvage).type, 'ROCKET');
+console.log('Contract and Endless rare-item intervals, single-item caps, and phase transitions passed.');

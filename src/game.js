@@ -77,6 +77,7 @@
   let shake = 0;
   let impactText = 0;
   let elapsed = 0;
+  let nextSalvageArrival = 8;
 
   const random = (min, max) => min + Math.random() * (max - min);
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -120,14 +121,20 @@
 
   function fillDebris(initial = false) {
     const config = debrisConfig();
-    const limit = config.count - (config.encounter ? 1 : 0);
-    const missing = limit - junk.filter(object => !object.special && !object.encounter && !object.limited).length;
+    const limit = config.count - (config.encounter ? 1 : 0) - (config.arrival ? 1 : 0);
+    const missing = limit - junk.filter(object => !object.special && !object.encounter && !object.limited && !object.scheduledSalvage).length;
     if (initial && config.limited) {
       const pool = config.limited;
       for (let i = 0; i < pool.count; i++) {
         makeJunk(i * pool.spacing, pool.band);
         Object.assign(junk.at(-1), { limited: true, speed: pool.speed, orbitLength: pool.count * pool.spacing });
       }
+    }
+    // Reserve a single rare-salvage slot. Collection never resets its cooldown.
+    if (config.arrival && elapsed >= nextSalvageArrival && !junk.some(object => object.scheduledSalvage)) {
+      makeJunk(0, config.arrival.band);
+      Object.assign(junk.at(-1), { scheduledSalvage: true, speed: config.arrival.speed });
+      nextSalvageArrival = elapsed + config.arrival.interval;
     }
     const pocket = config.pocket;
     const livePockets = junk.filter(object => object.pocket).length;
@@ -287,7 +294,10 @@
   function resumeLevel() {
     if (!pendingResult) return;
     pendingResult = false;
-    if (queuedPhase) { phase = queuedPhase; queuedPhase = null; }
+    if (queuedPhase) {
+      if (queuedPhase !== phase) nextSalvageArrival = Math.max(nextSalvageArrival, elapsed + 8);
+      phase = queuedPhase; queuedPhase = null;
+    }
     resultScreen.classList.remove('overlay--visible');
     resultScreen.setAttribute('aria-hidden', 'true');
     running = true;
@@ -334,6 +344,7 @@
     shake = 0;
     impactText = 0;
     elapsed = 0;
+    nextSalvageArrival = 8;
     thrusting = false;
     depositing = false;
     phase = LevelSystem.phaseFor(level, 0);
@@ -499,7 +510,7 @@
     // Collected finite mission targets never replenish during the run.
     if (!object.limited) {
       if (object.special) specialCollected = true;
-      else if (debrisConfig().pocket || debrisConfig().encounter || level.phases) fillDebris();
+      else if (debrisConfig().pocket || debrisConfig().encounter || debrisConfig().arrival || level.phases) fillDebris();
       else makeJunk(random(150, 320));
     }
     status.textContent = `+${object.value} • ${orbitZone(player.y)} ORBIT • ${mass}kg`;

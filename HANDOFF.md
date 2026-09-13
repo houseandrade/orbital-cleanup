@@ -137,3 +137,10 @@ Adds Equipment Return (5 crates, $500 bonus) and Engine Recovery (3 fragments, $
 Brian found new items too common and clustered, allowing Heavy Metal to finish at the first station pass. Campaign target pools now contain the objective count plus two spares: seven TOOL items spaced 360px apart (12s at 30px/s) and five ROCKET items spaced 480px apart (16s at 30px/s). Shared speeds preserve spacing, and missed objects wrap by the pool circumference. Normal debris has five slots and contains only panels/scrap in these missions; collecting a limited target does not spawn a replacement. Replay restores the pool. Contracts retain repeatable weighted target spawns and Endless is unchanged.
 
 Brian also found per-item deposits slow. Transfer times are reduced 20% (0.3s cap to 0.24s, mass rate 18 to 22.5kg/s). Credit, dot removal, and target count updates still happen together for each item. Acceptance checks cover finite counts, gaps, first-pass quota limits, wrapping, no replenishment, replay reset, and interrupted banking.
+
+
+### v0.12 playtest adjustment — salvage3
+
+Brian approved the revised campaign pacing but found the new contract and Endless items too dense and frequent. Equipment Return and Engine Recovery now exclude new items from random bands and reserve one scheduled-salvage slot. Minimum spawn intervals are 12s for crates and 16s for fragments. Endless uses the same single-item cap with 18s/24s intervals in Scrap pockets/High-value passes. The first spawn waits 8s, travels at 30px/s, and takes another 6s to reach the astronaut. A live scheduled item blocks another across type/phase changes; collected items do not reset the spawn clock. Missed items leave the field and later arrivals remain available. Phase changes preserve existing items and impose at least an 8s delay before new rare spawns; missed intervals never produce catch-up clusters. Normal debris fills the other slots.
+
+Campaign finite pools and salvage2 deposit speed remain unchanged. Tests cover cooldowns, single-item caps, replay, preserved in-flight salvage across Endless phases, and all prior acceptance scenarios. Initial timing remains subject to user playtest.
