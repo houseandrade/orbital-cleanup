@@ -1017,3 +1017,21 @@ try {
   }
 } finally { sandbox.Math.random = capsuleRandom; }
 console.log('Delayed capsule arrival and upper/lower boundary placement passed.');
+for (const config of vm.runInContext('LevelSystem.campaign.slice(5)', sandbox)) {
+  for (const debris of [config.debris, ...(config.assignments || []).map(a => a.debris)]) {
+    const satellite = debris.bands.find(b => b.type === 'SAT');
+    assert.equal(satellite.maxActive, 2);
+    assert.equal(satellite.zones.length, 3);
+  }
+}
+elements.get('level-6').listeners.click(); qa.start();
+qa.scenario = {junk: []};
+const savedSatelliteRandom = sandbox.Math.random;
+try {
+  sandbox.Math.random = () => 0.99;
+  for (let i = 0; i < 5; i++) qa.makeJunk(i * 110);
+  assert.equal(qa.state.junk.filter(o => o.type === 'SAT').length, 2, 'satellite variety cannot form a large cluster');
+  qa.collect(qa.state.junk.find(o => o.type === 'SAT'));
+  assert.equal(qa.state.junk.filter(o => o.type === 'SAT').length, 2, 'satellites remain available after collection');
+} finally { sandbox.Math.random = savedSatelliteRandom; }
+console.log('Late-campaign satellite altitude variety and active-count cap passed.');

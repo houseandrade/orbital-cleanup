@@ -91,6 +91,17 @@ const LevelSystem = (() => {
   ];
   campaign.push({ ...level(10, 'Final Sweep', 'Three assignments, saved checkpoints, and one final recovery. Complete World One for a one-time $2,000 reward.',
     1, 1200, 1800, assignments[0].debris), objective: assignments[0].objective, assignments });
+  const varietySatellite = { ...band(0.1, [175, 270], [26, 34], [70, 100], 10, 14, 'SAT'), maxActive: 2, zones: [
+    { weight: 0.25, y: [110, 145], value: [90, 100], risky: true },
+    { weight: 0.5, y: [175, 270], value: [70, 89] },
+    { weight: 0.25, y: [305, 330], value: [90, 100], risky: true }
+  ] };
+  const withSatelliteVariety = debris => ({ ...debris,
+    bands: [...debris.bands.filter(entry => entry.type !== 'SAT'), varietySatellite] });
+  for (const config of campaign.slice(5)) {
+    config.debris = withSatelliteVariety(config.debris);
+    if (config.assignments) config.assignments = config.assignments.map(assignment => ({ ...assignment, debris: withSatelliteVariety(assignment.debris) }));
+  }
   const scrapPocket = {
     count: 3, spacing: 32, ySpread: 12,
     band: band(1, [205, 250], [38, 44], [15, 25], 2, 7, 'SCRAP')
