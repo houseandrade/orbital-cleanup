@@ -81,10 +81,13 @@ const LevelSystem = (() => {
       objective: { type: 'bank_group', types: ['SCRAP', 'PANEL', 'SAT'], target: 6 }, debris: campaign[1].debris },
     { name: 'Recover equipment', description: 'Bank 3 tool crates and 2 rocket fragments.',
       objective: all(typed('TOOL', 3), typed('ROCKET', 2)), debris: mixedField() },
-    { name: 'Retrieve the capsule', description: 'Recover the survey capsule and bank it at the station. Missed capsules circle back.',
+    { name: 'Retrieve the capsule', description: 'The capsule arrives after the first station pass, near the upper or lower orbit boundary. Recover it and return safely; missed capsules circle back.',
       objective: typed('CAPSULE', 1), debris: { count: 5, spacing: 110, bands: campaign[5].debris.bands,
-        limited: { count: 1, spacing: 900, speed: 30,
-          band: band(1, [125, 160], [30, 30], [300, 300], 14, 15, 'CAPSULE') } } }
+        limited: { count: 1, spacing: 900, offset: 840, speed: 30,
+          band: { ...band(1, [98, 110], [30, 30], [300, 300], 14, 15, 'CAPSULE'), zones: [
+            { weight: 0.5, y: [98, 110], value: [300, 300], risky: true },
+            { weight: 0.5, y: [325, 336], value: [300, 300], risky: true }
+          ] } } } }
   ];
   campaign.push({ ...level(10, 'Final Sweep', 'Three assignments, saved checkpoints, and one final recovery. Complete World One for a one-time $2,000 reward.',
     1, 1200, 1800, assignments[0].debris), objective: assignments[0].objective, assignments });

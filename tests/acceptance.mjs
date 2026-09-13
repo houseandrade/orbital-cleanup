@@ -950,6 +950,12 @@ assert.equal(qa.state.progress.finale.stage, 2);
 qa.finishLevel();
 assert.match(qa.state.level.name, /3\/3/);
 assert.equal(qa.state.junk.filter(o => o.type === 'CAPSULE').length, 1);
+const finalCapsule = qa.state.junk.find(o => o.type === 'CAPSULE');
+assert.equal(finalCapsule.x, 1200);
+assert.equal((finalCapsule.x - 360) / finalCapsule.speed, 28, 'capsule enters view after 28 seconds');
+assert.ok((finalCapsule.x - 180 - 82) / finalCapsule.speed > (qa.state.station.x - 90) / qa.state.station.speed, 'capsule cannot be tethered during first station pass');
+assert.ok(finalCapsule.y <= 110 || finalCapsule.y >= 325, 'capsule stays near an orbit boundary');
+assert.equal(finalCapsule.valuable, true);
 const finalCheckpointBank = qa.state.bank;
 qa.collect(qa.state.junk.find(o => o.type === 'CAPSULE'));
 qa.end('REENTRY');
@@ -998,3 +1004,16 @@ for (const [id, types, target] of [[8, {TOOL:3,ROCKET:2}, 1200], [9, {ROCKET:4},
   assert.equal(vm.runInContext(`LevelSystem.rating(LevelSystem.campaign[${id - 1}], {bank:${target},bankedTypes:${JSON.stringify(types)}})`, sandbox), 3);
   assert.equal(vm.runInContext(`LevelSystem.rating(LevelSystem.campaign[${id - 1}], {bank:${target},bankedTypes:{}})`, sandbox), 0);
 }
+
+const capsuleBand = vm.runInContext('LevelSystem.campaign[9].assignments[2].debris.limited.band', sandbox);
+const capsuleRandom = sandbox.Math.random;
+try {
+  for (const value of [0.1, 0.9]) {
+    sandbox.Math.random = () => value;
+    qa.makeJunk(840, capsuleBand);
+    const item = qa.state.junk.at(-1);
+    assert.ok(value < 0.5 ? item.y >= 98 && item.y <= 110 : item.y >= 325 && item.y <= 336);
+    assert.ok(item.y - item.size - 4 > 75 && item.y + item.size + 4 < 360, 'boundary approach is risky but reachable');
+  }
+} finally { sandbox.Math.random = capsuleRandom; }
+console.log('Delayed capsule arrival and upper/lower boundary placement passed.');
