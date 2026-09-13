@@ -1,5 +1,7 @@
 # Orbital Cleanup — Handoff
 
+For version-by-version changes, see [Release notes](RELEASE-NOTES.md).
+
 ## Current state
 
 `main` contains approved production v0.15.5 (PR #22, commit 330d7a6). Deployment 34779457553 succeeded and the public release was verified. Earth and Moon each have ten campaign missions; lunar Contracts and world-aware Endless are deployed alongside shared upgrades, concise inline briefings, and the stable responsive flight header. Mars v0.16 is the next planning focus; see ROADMAP.md for the proposed art, salvage, mechanics, upgrades, and first three missions. These Mars proposals are not implemented or individually approved.
@@ -50,6 +52,8 @@ Preserve these decisions unless a later product decision explicitly changes them
 - Replace the placeholder icons before a polished public release.
 
 ## Repository workflow
+
+Maintain RELEASE-NOTES.md with each release: implemented changes under Unreleased or In review, then Released only after successful approved deployment. Keep roadmap proposals separate from shipped features.
 
 The canonical repository is `https://github.com/houseandrade/orbital-cleanup`.
 

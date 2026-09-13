@@ -1,5 +1,7 @@
 # Orbital Cleanup — Roadmap
 
+For version-by-version changes, see [Release notes](RELEASE-NOTES.md).
+
 ## Current roadmap — September 13, 2026
 
 1. **Earth / World One: complete and deployed.** Ten campaign missions, checkpointed finale, Contracts, and Endless Orbit are available. Shared upgrades include reel motor, thruster power, and deposit speed.
@@ -144,6 +146,8 @@ Possible later backlog includes combos, additional debris classes, rare or dange
 - Refine the title and game-over presentation
 
 ## Delivery workflow
+
+Maintain RELEASE-NOTES.md for each review build and release, following its history workflow. Record implemented changes and verified deployment status; keep future ideas here.
 
 Each new iteration starts on a feature branch. When it is ready for testing, commit it clearly and open a pull request against `main`. Keep `main` on the latest explicitly approved stable playtest build; do not merge without explicit approval.
 
