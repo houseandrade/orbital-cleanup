@@ -1,4 +1,4 @@
-# Orbital Cleanup v0.15.1
+# Orbital Cleanup v0.15.2
 
 A mobile-first, standalone PWA build of the v0.532 canvas prototype. Collect debris, manage the added cargo mass, and bank the haul at the cleanup station before the run ends.
 
@@ -176,3 +176,12 @@ Brian clarified that World One's object-density principle should carry between w
 Completing Tank Sweep unlocks Field Research, including on existing saves. The available campaign ends at 2-6; missions 2-7–2-10 remain future work. Lunar Contracts and world-aware Endless follow the complete Moon campaign, with Mars next.
 
 Validation: full acceptance suite covers finite target counts/spacing, looping missed targets, failure and replay, typed and mixed quotas across deposits, star gating, save progression, and no premature world reward. Prices and star thresholds are initial playtest values. Local helper: previews/v0151/playtest.html on localhost:8085. No deployment without approval.
+
+
+## v0.15.2 — Stable flight header
+
+The flight header previously sized itself to its status text. At mission launch it displayed the full briefing; the first empty Tether attempt replaced that with a short message, shrinking the header and enlarging the flex-sized canvas. At 375×667, Workshop Delivery's header changed from 77.5px to 55px, and its canvas from 312.6px to 335.1px.
+
+The header now reserves 60px (55px in the existing short-screen layout), with a single-line mission title and a fixed two-line status area. Text cannot grow the header horizontally or vertically. Full mission details remain available in the mission briefing. No flight physics or controls changed.
+
+Validation: browser reproduction before/after confirms the fixed canvas stays at 330.1px through the Tether status change, with a constant 60px header at 375×667. No browser warnings/errors; full acceptance suite and whitespace checks pass. Ready for device playtesting, not deployed.
