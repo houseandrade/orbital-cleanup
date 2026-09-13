@@ -210,7 +210,7 @@
     document.getElementById('previous-world').disabled = selectedWorld === 1;
     document.getElementById('next-world').disabled = selectedWorld === LevelSystem.worlds.length;
     document.getElementById('world-note').textContent = selectedWorld === 2
-      ? `${progress.best[10] ? `First ${missions.length} missions available.` : 'Complete World One to unlock the Moon.'} ${missions.length === 9 ? 'Final mission 2-10 is coming later.' : `Missions 2-${missions.length + 1} through 2-10 are coming later.`}` : '';
+      ? progress.best[10] ? 'Ten Moon missions available.' : 'Complete World One to unlock the Moon.' : '';
     root.classList.toggle('moon-menu', selectedWorld === 2);
     LevelSystem.campaign.forEach(config => {
       const button = document.getElementById(`level-${config.id}`);
@@ -228,15 +228,16 @@
     const isEndless = level.id === 'endless';
     document.getElementById('start-score-label').textContent = level.contract ? 'CONTRACT BEST' : isEndless ? 'ENDLESS BEST' : 'CAMPAIGN HIGH SCORE';
     document.getElementById('over-score-label').textContent = level.contract ? 'CONTRACT BEST' : isEndless ? 'ENDLESS BEST' : 'CAMPAIGN HIGH SCORE';
-    startButton.textContent = level.assignments && progress.finale ? `▶ RESUME ASSIGNMENT ${progress.finale.stage + 1}` : isEndless ? '▶ START ENDLESS ORBIT' : '▶ START MISSION';
+    startButton.textContent = level.assignments && progress[level.checkpointKey] ? `▶ RESUME ASSIGNMENT ${progress[level.checkpointKey].stage + 1}` : isEndless ? '▶ START ENDLESS ORBIT' : '▶ START MISSION';
     document.getElementById('world-one-badge').hidden = !progress.best[10];
+    document.getElementById('world-two-badge').hidden = !progress.best[20];
     setHighScore(getHighScore());
     const briefing = document.getElementById('mission-briefing');
     briefing.hidden = isEndless || Boolean(level.contract) || level.world !== selectedWorld;
     if (!briefing.hidden) {
       document.getElementById(`level-${level.id}`).insertAdjacentElement('afterend', briefing);
       document.getElementById('level-description').textContent = level.assignments
-        ? `Complete three assignments. Each completed assignment saves a checkpoint. ${progress.finale ? `Resume assignment ${progress.finale.stage + 1} with $${progress.finale.bank} banked.` : 'Start with assignment 1.'}`
+        ? `Complete three assignments. Each completed assignment saves a checkpoint. ${progress[level.checkpointKey] ? `Resume assignment ${progress[level.checkpointKey].stage + 1} with $${progress[level.checkpointKey].bank} banked.` : 'Start with assignment 1.'}`
         : level.description;
       // Split combined quotas into separate bullets, retaining every required criterion.
       const objectiveItems = criterion => criterion.type === 'all'
@@ -293,8 +294,8 @@
     document.getElementById('result-endless').hidden = true;
     document.getElementById('result-menu').hidden = true;
     document.getElementById('result-contracts').hidden = true;
-    if (level.assignments && assignmentIndex < 2) {
-      progress.finale = { stage: assignmentIndex + 1, bank };
+    if (level.assignments && assignmentIndex < level.assignments.length - 1) {
+      progress[level.checkpointKey] = { stage: assignmentIndex + 1, bank };
       const checkpointSaved = LevelSystem.saveProgress(progress);
       resultTitle.textContent = 'ASSIGNMENT COMPLETE';
       resultStats.textContent = `${checkpointSaved ? 'Checkpoint saved' : 'Checkpoint kept for this session; saving unavailable'} · $${bank} banked. Next: ${level.assignments[assignmentIndex + 1].description}`;
@@ -308,7 +309,7 @@
   function finishLevel() {
     if (!pendingResult) return;
     pendingResult = false;
-    if (level.assignments && assignmentIndex < 2) { start(); return; }
+    if (level.assignments && assignmentIndex < level.assignments.length - 1) { start(); return; }
     if (level.contract) {
       resultTitle.textContent = 'CONTRACT COMPLETE';
       document.getElementById('result-contracts').hidden = false;
@@ -335,11 +336,11 @@
     setHighScore(bank);
     resultTitle.textContent = 'LEVEL COMPLETE';
     if (level.assignments) {
-      delete progress.finale;
+      delete progress[level.checkpointKey];
       LevelSystem.saveProgress(progress);
-      const rewarded = ContractSystem.rewardWorldOne();
-      resultTitle.textContent = 'WORLD ONE COMPLETE';
-      resultStats.textContent = `Survey capsule secured · ${LevelSystem.campaign.filter(config => config.world === 1).reduce((sum, config) => sum + (progress.best[config.id] || 0), 0)}/30 campaign stars · ${rewarded ? '$2,000 completion reward added to your wallet' : 'Completion reward already claimed'}`;
+      const rewarded = ContractSystem.rewardWorld(level.world);
+      resultTitle.textContent = level.completion.title;
+      resultStats.textContent = `${level.completion.salvage} · ${LevelSystem.campaign.filter(config => config.world === level.world).reduce((sum, config) => sum + (progress.best[config.id] || 0), 0)}/30 campaign stars · ${rewarded ? '$2,000 completion reward added to your wallet' : 'Completion reward already claimed'}`;
     }
     finishButton.hidden = continueButton.hidden = true;
     replayButton.hidden = false;
@@ -347,7 +348,7 @@
     nextButton.hidden = level.id === LevelSystem.campaign.length;
     document.getElementById('result-endless').hidden = !nextButton.hidden;
     nextButton.textContent = level.id === 10 ? 'CONTINUE TO THE MOON' : 'NEXT LEVEL';
-    status.textContent = nextButton.hidden ? 'Moon prototype complete. More missions are coming; replay for stars or try Endless Orbit.' : level.id === 10 ? 'World One complete. The Moon is unlocked!' : 'Level complete. Next level unlocked.';
+    status.textContent = nextButton.hidden ? 'Moon campaign complete. Rover recovered! Replay for stars or try Endless Orbit.' : level.id === 10 ? 'World One complete. The Moon is unlocked!' : 'Level complete. Next level unlocked.';
     refreshCampaign();
   }
 
@@ -367,10 +368,10 @@
 
   function reset() {
     if (level.assignments) {
-      const base = LevelSystem.campaign[9];
-      assignmentIndex = progress.finale?.stage || 0;
+      const base = LevelSystem.campaign.find(config => config.id === level.id);
+      assignmentIndex = progress[level.checkpointKey]?.stage || 0;
       const assignment = base.assignments[assignmentIndex];
-      level = { ...base, ...assignment, id: 10, name: `Final Sweep · ${assignmentIndex + 1}/3 · ${assignment.name}` };
+      level = { ...base, ...assignment, name: `${base.name} · ${assignmentIndex + 1}/${base.assignments.length} · ${assignment.name}` };
     }
     releaseControls();
     cancelAnimationFrame(animationFrame);
@@ -393,7 +394,7 @@
     particles = [];
     tether = null;
     haul = 0;
-    bank = level.assignments ? (progress.finale?.bank || 0) : 0;
+    bank = level.assignments ? (progress[level.checkpointKey]?.bank || 0) : 0;
     carriedObjects = 0;
     bankedObjects = 0;
     carriedTypes = {};
@@ -518,7 +519,7 @@
       objectProgress.hidden = false;
       objectProgress.textContent = criteria.map(c => `${LevelSystem.criterionLabel(c)}: ${Math.min(countFor(c), c.target)}/${c.target}`).join(' · ');
     }
-    document.getElementById('star-goals').hidden = !level.objective || level.contract || (level.assignments && assignmentIndex < 2);
+    document.getElementById('star-goals').hidden = !level.objective || level.contract || (level.assignments && assignmentIndex < level.assignments.length - 1);
     if (level.objective) level.stars.forEach((criterion, index) => {
       const star = document.getElementById(`star-${index + 1}`);
       star.textContent = `${'★'.repeat(index + 1)} ${LevelSystem.criterionLabel(criterion, level.objective)}`;
@@ -599,7 +600,7 @@
     if (object.hit) return;
     object.hit = true;
     const relativeSpeed = Math.max(1, object.speed / 40);
-    const damage = Math.round(({ SAT: 18, PANEL: 11, SCRAP: 7, TOOL: 13, ROCKET: 22, CAPSULE: 15, WHEEL: 12, TANK: 10, INSTRUMENT: 12, LEG: 22 }[object.type] || 7) * relativeSpeed * 0.55);
+    const damage = Math.round(({ SAT: 18, PANEL: 11, SCRAP: 7, TOOL: 13, ROCKET: 22, CAPSULE: 15, WHEEL: 12, TANK: 10, INSTRUMENT: 12, LEG: 22, ROVER: 25 }[object.type] || 7) * relativeSpeed * 0.55);
     integrity = clamp(integrity - damage, 0, 100);
     player.velocityY += (object.y - player.y) * 0.18 + random(-20, 20);
     player.flash = 0.25;
@@ -761,9 +762,13 @@
     const objectY = debrisY(object);
     context.save();
     context.translate(object.x, objectY);
-    const dimensions = { SCRAP: [14, 14], PANEL: [28, 14], SAT: [50, 28], TOOL: [40, 40], ROCKET: [44, 44], CAPSULE: [44, 44], WHEEL: [36, 36], TANK: [34, 34], INSTRUMENT: [40, 40], LEG: [44, 44] }[object.type] || [28, 28];
+    const dimensions = { SCRAP: [14, 14], PANEL: [28, 14], SAT: [50, 28], TOOL: [40, 40], ROCKET: [44, 44], CAPSULE: [44, 44], WHEEL: [36, 36], TANK: [34, 34], INSTRUMENT: [40, 40], LEG: [44, 44], ROVER: [52, 44] }[object.type] || [28, 28];
     if (GameArt.sprite(context, object.type, 0, 0, ...dimensions)) {
       // The configured collision size remains unchanged.
+    } else if (object.type === 'ROVER') {
+      context.fillStyle = '#eee6d5'; context.fillRect(-18, -10, 36, 20);
+      context.fillStyle = '#d9ac43'; context.fillRect(-10, -5, 20, 8);
+      context.fillStyle = '#929da5'; context.fillRect(-22, 8, 12, 8); context.fillRect(10, 8, 12, 8);
     } else if (object.type === 'INSTRUMENT') {
       context.fillStyle = '#eee6d5'; context.fillRect(-10, -6, 20, 16);
       context.fillStyle = '#929da5'; context.fillRect(-1, -16, 2, 10); context.fillRect(-6, -16, 12, 2);

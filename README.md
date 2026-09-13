@@ -200,3 +200,14 @@ Validation: full acceptance suite passes, including bounded drift, shared tether
 v0.15.2 (stable flight header) was approved, merged via PR #19, and successfully deployed; the public page was verified. v0.15.3 remains a separate playtest build pending approval.
 
 Briefing copy follows Heavy Metal’s concise style: state the goal, relevant cargo behavior, and missed-item recovery rules without revealing exact timing, altitude, or spawn patterns. Applied across Earth and Moon, including the Earth finale, with matching cleanup for Contracts and Endless phase text. Off Course and Catch the Window use Brian’s requested wording. Gameplay tuning and objectives are unchanged.
+
+
+## v0.15.4 — Last Rover (playtest)
+
+v0.15.3, including Moon missions 7–9 and concise briefings across all missions, is approved and deployed via PR #20. Deployment 34778688455 succeeded; production briefing copy was verified.
+
+Last Rover completes the ten-mission Moon campaign with three checkpointed assignments: bank six oxygen tanks and three wheels; bank two lander legs and two instruments; recover one rover chassis. Every stage retains five support slots with capped satellites. Mixed finite pools include two spare targets per type and deliberate spacing. The unique rover returns when missed, weighs 22kg, and uses the approved sprite. It can be recovered with standard gear.
+
+Moon checkpoints are independent of Earth checkpoints, including replay saves. Failure rolls back the current assignment only. Completion awards a separate Moon badge and one-time $2,000 wallet reward, preserving Earth reward claims. Initial higher-star thresholds are $1,800/$2,400 across assignments. Briefings state goals and recovery rules without exact timing, altitude, or spawn hints.
+
+Acceptance coverage includes mixed quotas, checkpoint persistence/isolation, failed-stage rollback, finite density, normal rover tethering, missed/lost rover return, replay, and reward isolation/idempotence. Review locally via previews/v0154/playtest.html on localhost:8086. v0.15.4 is not deployed; pacing and star targets await playtesting. Lunar Contracts and world-aware Endless follow Moon campaign approval, then Mars.

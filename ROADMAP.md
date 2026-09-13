@@ -4,15 +4,15 @@
 
 1. **Earth / World One: complete.** Ten campaign missions, checkpointed finale, Contracts, upgrades, and Endless Orbit are available. v0.14 added inline mission briefings and automatic contract difficulty sorting.
 2. **Moon / World Two: in progress.** v0.15 is approved and deployed, adding the world selector and missions 2-1 Lunar Arrival, 2-2 Spare Parts, and 2-3 Tank Sweep. All lunar artwork is approved.
-3. **Finish the Moon campaign.** Missions 2-4 through 2-6 are approved and deployed. Missions 2-7 Off Course, 2-8 Catch the Window, and 2-9 Heavy Recovery are implemented for playtesting in v0.15.3. Mission 2-10 remains to be implemented. The progression covers: instrument recovery, lander legs, mixed workshop orders, a gentle-drift experiment, station-timed recovery, heavy salvage, and a checkpointed rover finale. Counts and balance are proposals, not final values. See [Moon campaign plan](MOON-CAMPAIGN-PLAN.md).
+3. **Finish the Moon campaign.** Missions 2-4 through 2-6 are approved and deployed. Missions 2-7 Off Course, 2-8 Catch the Window, and 2-9 Heavy Recovery are approved and deployed in v0.15.3. Mission 2-10 Last Rover is implemented for playtesting in v0.15.4 with independent checkpoints, a Moon badge, and a one-time $2,000 reward. The progression covers: instrument recovery, lander legs, mixed workshop orders, a gentle-drift experiment, station-timed recovery, heavy salvage, and a checkpointed rover finale. Counts and balance are proposals, not final values. See [Moon campaign plan](MOON-CAMPAIGN-PLAN.md).
 4. **Complete Moon mode support.** After the full Moon campaign is complete, add lunar Contracts and make Endless Orbit take place on the Moon while the player is actively progressing through Moon missions. Show its destination before launch; preserve Earth scores and use separate best scores per world. Exact active-world behavior remains a design detail to finalize.
 5. **Mars / World Three: next destination.** Begin Mars after the Moon campaign and its mode support are complete. Continue the ten-mission-per-world structure and world selector. Mars salvage, environmental behavior, artwork, and mission details are not yet defined.
 
 Preserve manageable object density across worlds: spaced mission targets, bounded support fields, capped valuable support items, and no random clusters of mission targets. Exact tuning may vary by world.
 
-Keep mission briefings concise across every world: goals, relevant cargo behavior, and recovery rules, without exact timing, altitude, or spawn-pattern hints. This copy cleanup is included in the v0.15.3 playtest before production and mission 2-10.
+Keep mission briefings concise across every world: goals, relevant cargo behavior, and recovery rules, without exact timing, altitude, or spawn-pattern hints. This copy cleanup is approved and deployed in v0.15.3; apply the same guideline to every future mission.
 
-Suggested Moon batches: playtest missions 2-7–2-9; mission 2-10 with per-world checkpoints/rewards and campaign balance; then lunar Contracts and world-aware Endless. Mars planning follows this work.
+Suggested Moon batches: playtest mission 2-10 and campaign balance; then lunar Contracts and world-aware Endless. Mars planning follows this work.
 
 The sections below are historical delivery notes. This current roadmap supersedes older statements about available missions, deployment state, and deferred modes.
 

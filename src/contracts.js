@@ -40,12 +40,13 @@ const ContractSystem = (() => {
       description: `Bank ${LevelSystem.criterionLabel(objective)} for a $${bonus} bonus. Only deposited salvage counts.`,
       debris: { count: 8, spacing: 85, bands, ...(arrival ? { arrival } : {}) } };
   });
-  let career = { wallet: 0, completed: [], upgrades: { reel: 0, thrust: 0, deposit: 0 }, worldOneReward: false };
+  let career = { wallet: 0, completed: [], upgrades: { reel: 0, thrust: 0, deposit: 0 }, worldOneReward: false, worldTwoReward: false };
   let persistent = true;
   try {
     const saved = JSON.parse(localStorage.getItem(key));
     if (saved) {
       career.worldOneReward = saved.worldOneReward === true;
+      career.worldTwoReward = saved.worldTwoReward === true;
       if (Number.isSafeInteger(saved.wallet) && saved.wallet >= 0) career.wallet = saved.wallet;
       career.completed = contracts.filter(c => Array.isArray(saved.completed) && saved.completed.includes(c.id)).map(c => c.id);
       for (const id of Object.keys(upgrades)) {
@@ -64,13 +65,15 @@ const ContractSystem = (() => {
     save();
     return true;
   }
-  function rewardWorldOne() {
-    if (career.worldOneReward || !Number.isSafeInteger(career.wallet + 2000)) return false;
+  function rewardWorld(world) {
+    const key = ({ 1: 'worldOneReward', 2: 'worldTwoReward' })[world];
+    if (!key || career[key] || !Number.isSafeInteger(career.wallet + 2000)) return false;
     career.wallet += 2000;
-    career.worldOneReward = true;
+    career[key] = true;
     save();
     return true;
   }
+  const rewardWorldOne = () => rewardWorld(1);
   function complete(id) {
     if (!contracts.some(c => c.id === id)) return;
     if (!career.completed.includes(id)) career.completed.push(id);
@@ -87,6 +90,6 @@ const ContractSystem = (() => {
     return true;
   }
   const effect = id => upgrades[id].effects[career.upgrades[id]];
-  return { contracts, upgrades, requirements, credit, complete, purchase, effect, rewardWorldOne,
+  return { contracts, upgrades, requirements, credit, complete, purchase, effect, rewardWorldOne, rewardWorld,
     get career() { return structuredClone(career); }, get persistent() { return persistent; } };
 })();

@@ -28,7 +28,7 @@ Objective counts are initial design suggestions, not approved balance values. Re
 
 ## Finale and rewards
 
-Reuse checkpoint behavior, generalized per world: bank totals and assignment progress persist at assignment boundaries; failure discards only the current assignment. The unique rover appears after an initial station pass, returns if missed, and returns on checkpoint retry. Do not reuse Earth-only finale assumptions or World One's reward claim flag. Give Moon completion its own badge, a one-time wallet reward with a separate claim flag, and a short completion beat. Reward amount and ending presentation remain design choices.
+Reuse checkpoint behavior, generalized per world: bank totals and assignment progress persist at assignment boundaries; failure discards only the current assignment. The unique rover appears after an initial station pass, returns if missed, and returns on checkpoint retry. Do not reuse Earth-only finale assumptions or World One's reward claim flag. Give Moon completion its own badge, a one-time wallet reward with a separate claim flag, and a short completion beat. The v0.15.4 playtest uses a $2,000 reward and a rover-secured completion result with a Moon badge.
 
 ## Subsequent mode update
 
@@ -48,7 +48,7 @@ The exact active-world rule is a recommendation for review. The user has request
 - Third: 2-10, per-world checkpoint/reward handling, completion presentation, and a full ten-mission balance pass.
 - Then: lunar Contracts and world-aware Endless Orbit.
 
-Missions 2-4 through 2-6 are approved and deployed. Missions 2-7 through 2-9 are now implemented for playtesting in v0.15.3. Mission 2-10 and mode changes remain planned.
+Missions 2-4 through 2-6 are approved and deployed. Missions 2-7 through 2-9 are approved and deployed in v0.15.3. Mission 2-10 is implemented for playtesting in v0.15.4, using the three assignments above, a 22kg rover, $1,800/$2,400 higher-star targets, and an independent one-time $2,000 reward. Mode changes remain planned.
 
 ## Next destination: Mars
 
@@ -57,3 +57,7 @@ Brian confirmed Mars as World Three after the Moon is complete. Finish the Moon 
 ## Density principle
 
 Carry World One’s manageable object density across worlds, while allowing different exact values. Prefer small support fields, capped satellites, finite spaced mission pools with spare targets, and staggered mixed types. Avoid random clusters of mission targets.
+
+## Briefing guideline
+
+Use Heavy Metal’s concise style: clear goals, relevant cargo behavior, and missed-item recovery rules. Do not reveal exact timing, altitude, or spawn patterns. Detailed tuning belongs in developer notes, not player briefings.
