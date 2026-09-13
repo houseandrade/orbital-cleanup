@@ -32,7 +32,7 @@ const LevelSystem = (() => {
         band(0.38, [282, 342], [76, 112], [20, 60], 2, 7, 'SCRAP')
       ]
     }),
-    level(3, 'High Roller', 'Optional $300 satellite in high orbit. Ordinary salvage is enough.', 150, 350, 600, {
+    level(3, 'High Roller', 'Recover valuable satellites or build your haul from ordinary salvage.', 150, 350, 600, {
       count: 7, spacing: 85, bands: [
         band(0.65, [190, 265], [38, 54], [30, 50], 5, 10, 'PANEL'),
         band(0.35, [282, 330], [65, 90], [30, 60], 2, 7, 'SCRAP')
@@ -45,18 +45,18 @@ const LevelSystem = (() => {
         band(0.25, [110, 165], [22, 34], [70, 100], 10, 14, 'SAT')
       ]
     }), objective: { type: 'bank_objects', target: 10 } },
-    level(5, 'Temptation', 'Safer mid-orbit salvage or recurring high-value targets near the edge?', 350, 650, 1000, {
+    level(5, 'Temptation', 'Bank $350. Decide when to return and when to keep salvaging.', 350, 650, 1000, {
       count: 8, spacing: 85, bands: [
         band(0.75, [190, 265], [38, 54], [40, 60], 5, 10, 'PANEL'),
         band(0.25, [108, 135], [22, 34], [150, 200], 10, 14, 'SAT')
       ]
     }),
-    { ...level(6, 'Lost Equipment', 'Recover 5 tool crates. Look for the cream cases with mint latches; Seven crates travel at varied altitudes. Edge-of-orbit crates pay more; missed crates return.', 5, 550, 850, {
+    { ...level(6, 'Lost Equipment', 'Bank 5 tool crates. Missed crates return on a later pass.', 5, 550, 850, {
       count: 5, spacing: 110, limited: { count: 7, spacing: 360, speed: 30, band: toolCrates }, bands: [
         band(0.3, [160, 290], [38, 48], [35, 50], 5, 10, 'PANEL'),
         band(0.2, [115, 325], [45, 65], [20, 35], 2, 7, 'SCRAP')]
     }), objective: { type: 'bank_type', salvageType: 'TOOL', target: 5 } },
-    { ...level(7, 'Heavy Metal', 'Bank 3 rocket fragments. Heavy engine sections slow your reel and add cargo mass; Five fragments travel at varied altitudes. Edge-of-orbit fragments pay more; missed fragments return.', 3, 750, 1100, {
+    { ...level(7, 'Heavy Metal', 'Bank 3 rocket fragments. Shorter trips keep heavy cargo manageable. Missed fragments return on a later pass.', 3, 750, 1100, {
       count: 5, spacing: 110, limited: { count: 5, spacing: 480, speed: 30, band: rocketFragments }, bands: [
         band(0.2, [115, 325], [45, 65], [20, 35], 2, 7, 'SCRAP'),
         band(0.3, [160, 290], [38, 48], [35, 50], 5, 10, 'PANEL')]
@@ -81,7 +81,7 @@ const LevelSystem = (() => {
       objective: { type: 'bank_group', types: ['SCRAP', 'PANEL', 'SAT'], target: 6 }, debris: campaign[1].debris },
     { name: 'Recover equipment', description: 'Bank 3 tool crates and 2 rocket fragments.',
       objective: all(typed('TOOL', 3), typed('ROCKET', 2)), debris: mixedField() },
-    { name: 'Retrieve the capsule', description: 'The capsule arrives after the first station pass, near the upper or lower orbit boundary. Recover it and return safely; missed capsules circle back.',
+    { name: 'Retrieve the capsule', description: 'Recover and bank the survey capsule. Missed capsules return on a later pass.',
       objective: typed('CAPSULE', 1), debris: { count: 5, spacing: 110, bands: campaign[5].debris.bands,
         limited: { count: 1, spacing: 900, offset: 840, speed: 30,
           band: { ...band(1, [98, 110], [30, 30], [300, 300], 14, 15, 'CAPSULE'), zones: [
@@ -135,26 +135,39 @@ const LevelSystem = (() => {
   const lunarStation = { ...defaults.station, startX: 520, returnOffset: [280, 380], returnY: [205, 245] };
   const moon = (config, missionNumber) => ({ ...config, world: 2, missionNumber, station: lunarStation });
   campaign.push(
-    moon(level(11, 'Lunar Arrival', 'Your first shift above the Moon. Recover familiar panels, scraps, and satellites. Keep clear of the lunar surface and bank your haul at the station.', 200, 400, 650,
+    moon(level(11, 'Lunar Arrival', 'Begin your lunar cleanup. Recover familiar salvage and bank your haul.', 200, 400, 650,
       { count: 6, spacing: 105, bands: lunarSupport }), 1),
-    moon({ ...level(12, 'Spare Parts', 'Recover rover wheels for the lunar workshop. Seven wheels pass one at a time; missed wheels circle back. Higher and lower passes pay more.', 5, 550, 800,
+    moon({ ...level(12, 'Spare Parts', 'Bank 5 rover wheels for the lunar workshop. Missed wheels return on a later pass.', 5, 550, 800,
       { count: 5, spacing: 110, bands: lunarSupport, limited: { count: 7, spacing: 420, speed: 30, band: roverWheel } }),
       objective: typed('WHEEL', 5) }, 2),
-    moon({ ...level(13, 'Tank Sweep', 'Collect spent oxygen tanks in small pockets among familiar salvage. These empty tanks are safe to recover; bank them over as many trips as you need.', 8, 550, 850,
+    moon({ ...level(13, 'Tank Sweep', 'Bank 8 spent oxygen tanks. Return to the station over as many trips as you need.', 8, 550, 850,
       { count: 7, spacing: 105, bands: lunarSupport, pocket: { count: 2, spacing: 40, ySpread: 14,
         band: band(1, [185, 260], [32, 38], [35, 45], 4, 10, 'TANK') } }),
       objective: typed('TANK', 8) }, 3),
-    moon({ ...level(14, 'Field Research', 'Recover 3 lunar instrument packages. Look for the antenna boxes in the middle of the field. Five packages pass at spaced intervals; missed packages circle back.', 3, 550, 800,
+    moon({ ...level(14, 'Field Research', 'Bank 3 instrument packages. Missed packages return on a later pass.', 3, 550, 800,
       { count: 5, spacing: 110, bands: lunarRecoverySupport, limited: { count: 5, spacing: 420, speed: 30, band: lunarInstrument } }),
       objective: typed('INSTRUMENT', 3) }, 4),
-    moon({ ...level(15, 'Landing Debris', 'Recover 3 lander legs. The gold struts are heavy: try shorter trips and leave time to reel them in. Five legs pass through the middle of the field; missed legs return.', 3, 650, 950,
+    moon({ ...level(15, 'Landing Debris', 'Bank 3 lander legs. Shorter trips keep heavy cargo manageable. Missed legs return on a later pass.', 3, 650, 950,
       { count: 5, spacing: 110, bands: lunarRecoverySupport, limited: { count: 5, spacing: 480, speed: 30, band: landerLeg } }),
       objective: typed('LEG', 3) }, 5),
-    moon({ ...level(16, 'Workshop Delivery', 'Deliver rover wheels and tool crates to the lunar workshop. Check which types you still need before adding cargo. Five wheels and four crates pass in staggered groups; missed items circle back.', 1, 650, 950,
+    moon({ ...level(16, 'Workshop Delivery', 'Bank 3 rover wheels and 2 tool crates. Choose the types you still need. Missed items return on a later pass.', 1, 650, 950,
       { count: 5, spacing: 110, bands: lunarRecoverySupport, pools: [
         { count: 5, spacing: 480, speed: 30, band: roverWheel },
         { count: 4, spacing: 480, offset: 240, speed: 30, band: toolCrates }
-      ] }), objective: all(typed('WHEEL', 3), typed('TOOL', 2)) }, 6)
+      ] }), objective: all(typed('WHEEL', 3), typed('TOOL', 2)) }, 6),
+    moon({ ...level(17, 'Off Course', 'Bank 3 instrument packages that drift gently up and down. Follow their movement before tethering. Missed packages return on a later pass.', 3, 650, 950,
+      { count: 5, spacing: 110, bands: lunarRecoverySupport, limited: { count: 5, spacing: 480, speed: 30,
+        band: { ...lunarInstrument, y: [180, 265], drift: { speed: 7, minY: 140, maxY: 300 } } } }),
+      objective: typed('INSTRUMENT', 3) }, 7),
+    moon({ ...level(18, 'Catch the Window', 'Bank 4 instrument packages. Missed packages return on a later pass; up to six can be recovered.', 4, 800, 1150,
+      { count: 6, spacing: 110, bands: lunarRecoverySupport, encounter: { leadSeconds: 4, finiteCount: 6,
+        band: { ...lunarInstrument, y: [195, 250] } } }),
+      objective: typed('INSTRUMENT', 4) }, 8),
+    moon({ ...level(19, 'Heavy Recovery', 'Bank 3 lander legs and 2 rocket fragments. Shorter trips keep heavy cargo manageable. Missed items return on a later pass.', 1, 1100, 1500,
+      { count: 5, spacing: 110, bands: lunarRecoverySupport, pools: [
+        { count: 5, spacing: 480, speed: 30, band: { ...landerLeg, y: [160, 290] } },
+        { count: 4, spacing: 480, offset: 240, speed: 30, band: rocketFragments }
+      ] }), objective: all(typed('LEG', 3), typed('ROCKET', 2)) }, 9)
   );
   const endless = {
     ...defaults, id: 'endless', name: 'Endless Orbit',
@@ -170,11 +183,11 @@ const LevelSystem = (() => {
   endless.milestoneStep = 250;
   endless.phases = [
     { name: 'Open field', at: 0, description: 'Room to choose your haul.', debris: endless.debris },
-    { name: 'Scrap pockets', at: 150, description: 'Light scraps arrive in clusters; occasional tool crates pass one at a time.',
+    { name: 'Scrap pockets', at: 150, description: 'Recover light scraps and occasional tool crates.',
       debris: { ...endless.debris, arrival: { band: toolCrates, interval: 18, speed: 30 }, pocket: scrapPocket } },
-    { name: 'High-value passes', at: 300, description: 'Rare rocket fragments pass one at a time; valuable satellites arrive just before the station.',
+    { name: 'High-value passes', at: 300, description: 'Recover valuable satellites and occasional rocket fragments.',
       debris: { ...endless.debris, arrival: { band: rocketFragments, interval: 24, speed: 30 }, encounter: valuablePass } },
-    { name: 'Recovery stretch', at: 500, description: 'A quieter mid-orbit field for lighter trips.',
+    { name: 'Recovery stretch', at: 500, description: 'A chance to return with a lighter haul.',
       debris: { count: 5, spacing: 110, bands: [band(1, [195, 260], [38, 44], [30, 40], 2, 7, 'SCRAP')] } }
   ];
   endless.phaseCycleValue = 750;

@@ -1179,10 +1179,108 @@ deposit(150);
 assert.equal(qa.state.pendingResult, true);
 qa.finishLevel();
 assert.equal(qa.state.progress.best[16], 1);
-assert.equal(elements.get('next-level').hidden, true);
+assert.equal(elements.get('next-level').hidden, false);
+assert.equal(elements.get('level-17').disabled, false);
 assert.equal(elements.get('result-title').textContent, 'LEVEL COMPLETE');
 assert.equal(careerSystem.career.wallet, newMoonWallet, 'no premature world reward');
-assert.match(elements.get('world-note').textContent, /First 6 missions available/);
-assert.match(elements.get('world-note').textContent, /2-7 through 2-10/);
+assert.match(elements.get('world-note').textContent, /First 9 missions available/);
+assert.match(elements.get('world-note').textContent, /2-10/);
 for (const type of ['instrument-package','lander-leg']) assert.ok(cachedPaths.includes(`./src/art/lunar/${type}.png`));
 console.log('Moon 4–6 density, spaced finite pools, missed targets, failure/retry, multi-trip quotas, mixed delivery, save progression, and star gating passed.');
+
+// Off Course: gentle bounded motion, with the same target position in the tether.
+elements.get('next-level').listeners.click();
+assert.equal(qa.state.level.id, 17);
+assert.equal(qa.state.junk.filter(item => item.drift).length, 5);
+assert.equal(qa.state.level.debris.count, 5);
+assert.equal(qa.state.level.debris.bands.some(b => b.drift), false);
+const drifting = qa.state.junk.find(item => item.drift);
+Object.assign(drifting, {x:340,y:225,speed:0,driftDirection:1});
+qa.scenario = {junk:[drifting],player:{y:225,velocityY:0,flash:0}};
+qa.update(0.1);
+assert.ok(Math.abs(drifting.y - 225.7) < 0.001);
+for (let i = 0; i < 600; i++) {
+  qa.scenario = {player:{y:225,velocityY:0,flash:0}};
+  qa.update(0.1);
+  assert.ok(drifting.y >= 140 && drifting.y <= 300);
+  assert.ok(drifting.y - drifting.size > 75 && drifting.y + drifting.size < 360);
+}
+Object.assign(drifting, {x:261,y:237,wobble:Math.PI/2});
+qa.scenario = {junk:[drifting],player:{y:225,velocityY:0,flash:0}};
+qa.fireTether();
+assert.equal(qa.state.tether.object, drifting, 'acquisition uses actual drift altitude, not decorative wobble');
+assert.equal(qa.state.tether.startY, 237);
+qa.update(0.1);
+const releasedY = drifting.y;
+qa.fireTether();
+qa.update(0.01);
+assert.ok(Math.abs(drifting.y - releasedY) <= 0.071, 'cancel resumes drift without snapping');
+Object.assign(drifting, {x:340,y:320,speed:0});
+qa.scenario = {junk:[drifting],player:{y:225,velocityY:0,flash:0}};
+qa.update(0.1);
+assert.ok(Math.abs(drifting.y - 319.3) < 0.001, 'a target pulled outside its band drifts inward smoothly');
+qa.start();
+for (let i = 0; i < 3; i++) qa.collect({type:'INSTRUMENT',value:120,mass:6,size:12});
+deposit(360); qa.finishLevel();
+assert.equal(qa.state.progress.best[17], 1);
+assert.equal(elements.get('level-18').disabled, false);
+
+// Catch the Window: one recurring pass-aligned target, six recoveries maximum.
+elements.get('next-level').listeners.click();
+assert.equal(qa.state.level.id, 18);
+assert.equal(qa.state.junk.filter(item => item.encounter).length, 1);
+assert.equal(qa.state.junk.filter(item => !item.encounter).length, 5);
+let timed = qa.state.junk.find(item => item.encounter);
+const secondsToStation = (qa.state.station.x - 270) / qa.state.station.speed;
+assert.ok(Math.abs(secondsToStation - (timed.x - 180)/timed.speed - 4) < 0.0001);
+assert.equal(timed.drift, undefined, 'timing challenge does not also introduce drift');
+qa.scenario = {junk:[timed],player:{y:225,velocityY:0,flash:0},station:{x:-71,y:225,speed:25}};
+qa.update(0);
+timed = qa.state.junk.find(item => item.encounter);
+assert.equal(qa.state.junk.filter(item => item.encounter).length, 1, 'missed target returns without stacking');
+assert.ok(Math.abs((qa.state.station.x - 270)/25 - (timed.x - 180)/timed.speed - 4) < 0.0001);
+for (let i = 0; i < 6; i++) {
+  qa.collect(qa.state.junk.find(item => item.encounter));
+  qa.scenario = {player:{y:225,velocityY:0,flash:0},station:{x:-71,y:225,speed:25}};
+  qa.update(0);
+  assert.equal(qa.state.junk.filter(item => item.encounter).length, i < 5 ? 1 : 0);
+}
+qa.start();
+assert.equal(qa.state.junk.filter(item => item.encounter).length, 1, 'replay restores the scheduled pool');
+for (let trip = 0; trip < 2; trip++) {
+  for (let i=0;i<2;i++) qa.collect({type:'INSTRUMENT',value:120,mass:6,size:12});
+  deposit(240);
+  assert.equal(qa.state.pendingResult, trip === 1);
+}
+qa.finishLevel();
+assert.equal(qa.state.progress.best[18], 1);
+assert.equal(elements.get('level-19').disabled, false);
+
+// Heavy Recovery keeps staggered finite pools and both quotas behind completion.
+elements.get('next-level').listeners.click();
+assert.equal(qa.state.level.id, 19);
+const heavyLegs = qa.state.junk.filter(item => item.type === 'LEG');
+const heavyRockets = qa.state.junk.filter(item => item.type === 'ROCKET');
+assert.equal(heavyLegs.length, 5); assert.equal(heavyRockets.length, 4);
+assert.equal(heavyRockets[0].x-heavyLegs[0].x,240);
+assert.equal(heavyLegs[1].x-heavyLegs[0].x,480);
+assert.equal(heavyRockets[1].x-heavyRockets[0].x,480);
+assert.ok([...heavyLegs,...heavyRockets].every(item=>item.mass===18));
+assert.equal(qa.state.level.debris.count, 5);
+for(let i=0;i<3;i++) qa.collect({type:'LEG',value:170,mass:18,size:15});
+deposit(510); assert.equal(qa.state.pendingResult,false);
+for(let i=0;i<2;i++) qa.collect({type:'ROCKET',value:150,mass:18,size:16});
+deposit(300); assert.equal(qa.state.pendingResult,true);
+qa.finishLevel();
+assert.equal(qa.state.progress.best[19],1);
+assert.equal(elements.get('next-level').hidden,true);
+assert.equal(elements.get('result-title').textContent,'LEVEL COMPLETE');
+assert.equal(careerSystem.career.wallet,newMoonWallet,'no world reward before the finale');
+assert.match(elements.get('world-note').textContent,/Final mission 2-10 is coming later/);
+for(const [id,type,count] of [[17,'INSTRUMENT',3],[18,'INSTRUMENT',4]]) {
+  assert.equal(vm.runInContext(`LevelSystem.rating(LevelSystem.campaign[${id-1}],{bank:9999,bankedTypes:{${type}:${count-1}}})`,sandbox),0);
+  assert.equal(vm.runInContext(`LevelSystem.rating(LevelSystem.campaign[${id-1}],{bank:9999,bankedTypes:{${type}:${count}}})`,sandbox),3);
+}
+assert.equal(vm.runInContext('LevelSystem.rating(LevelSystem.campaign[18],{bank:9999,bankedTypes:{LEG:3}})',sandbox),0);
+assert.equal(vm.runInContext('LevelSystem.rating(LevelSystem.campaign[18],{bank:9999,bankedTypes:{LEG:3,ROCKET:2}})',sandbox),3);
+console.log('Moon 7–9 bounded drift, tether alignment/cancel, station timing, recovery cap, mixed heavy quotas, progression, and final-mission boundary passed.');

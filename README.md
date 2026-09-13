@@ -1,4 +1,4 @@
-# Orbital Cleanup v0.15.2
+# Orbital Cleanup v0.15.3
 
 A mobile-first, standalone PWA build of the v0.532 canvas prototype. Collect debris, manage the added cargo mass, and bank the haul at the cleanup station before the run ends.
 
@@ -185,3 +185,18 @@ The flight header previously sized itself to its status text. At mission launch 
 The header now reserves 60px (55px in the existing short-screen layout), with a single-line mission title and a fixed two-line status area. Text cannot grow the header horizontally or vertically. Full mission details remain available in the mission briefing. No flight physics or controls changed.
 
 Validation: browser reproduction before/after confirms the fixed canvas stays at 330.1px through the Tether status change, with a constant 60px header at 375×667. No browser warnings/errors; full acceptance suite and whitespace checks pass. Ready for device playtesting, not deployed.
+
+
+## v0.15.3 — Moon missions 7–9 (playtest)
+
+- **2-7 Off Course:** bank three instrument packages; $650/$950 for higher stars. Five finite targets spaced 16 seconds apart drift vertically at 7px/s between y140 and y300. Ordinary debris retains its existing motion. Drift pauses during reeling, resumes smoothly on cancellation, and shares one altitude between rendering, collisions, and target acquisition.
+- **2-8 Catch the Window:** bank four instrument packages; $800/$1,150 for higher stars. One target crosses four seconds ahead of each station window, with at most one scheduled target and up to six recoveries per run. Missed targets are offered again on subsequent passes, without stacking. The timed targets do not drift.
+- **2-9 Heavy Recovery:** bank three lander legs and two rocket fragments; $1,100/$1,500 for higher stars. Five legs and four fragments use 16-second same-type spacing with an eight-second offset between types. Both weigh 18kg. Missed targets loop; collected finite targets do not respawn.
+
+All three preserve five ordinary support slots and a two-satellite cap. Existing saves with Workshop Delivery complete unlock Off Course. Completing Heavy Recovery ends the currently available missions, without granting a Moon completion reward. Mission 2-10 and later modes remain deferred.
+
+Validation: full acceptance suite passes, including bounded drift, shared tether altitude, cancellation without snapping, station lead timing, single-target recurrence, six-recovery cap, replay, multi-deposit objectives, heavy mixed quotas, star gating, and progression. Browser QA checked briefings and mission launch at 375×667 with no warnings/errors. Initial pacing and rewards require playtesting. Helper: previews/v0153/playtest.html on localhost:8085.
+
+v0.15.2 (stable flight header) was approved, merged via PR #19, and successfully deployed; the public page was verified. v0.15.3 remains a separate playtest build pending approval.
+
+Briefing copy follows Heavy Metal’s concise style: state the goal, relevant cargo behavior, and missed-item recovery rules without revealing exact timing, altitude, or spawn patterns. Applied across Earth and Moon, including the Earth finale, with matching cleanup for Contracts and Endless phase text. Off Course and Catch the Window use Brian’s requested wording. Gameplay tuning and objectives are unchanged.
