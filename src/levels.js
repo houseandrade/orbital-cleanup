@@ -129,6 +129,9 @@ const LevelSystem = (() => {
     { weight: 0.6, y: [175, 275], value: [65, 79] },
     { weight: 0.2, y: [300, 325], value: [80, 85], risky: true }
   ] };
+  const lunarRecoverySupport = lunarSupport.map(entry => entry.type === 'SAT' ? { ...entry, maxActive: 2 } : entry);
+  const lunarInstrument = band(1, [185, 265], [30, 30], [110, 140], 6, 12, 'INSTRUMENT');
+  const landerLeg = band(1, [175, 275], [30, 30], [150, 190], 18, 15, 'LEG');
   const lunarStation = { ...defaults.station, startX: 520, returnOffset: [280, 380], returnY: [205, 245] };
   const moon = (config, missionNumber) => ({ ...config, world: 2, missionNumber, station: lunarStation });
   campaign.push(
@@ -140,7 +143,18 @@ const LevelSystem = (() => {
     moon({ ...level(13, 'Tank Sweep', 'Collect spent oxygen tanks in small pockets among familiar salvage. These empty tanks are safe to recover; bank them over as many trips as you need.', 8, 550, 850,
       { count: 7, spacing: 105, bands: lunarSupport, pocket: { count: 2, spacing: 40, ySpread: 14,
         band: band(1, [185, 260], [32, 38], [35, 45], 4, 10, 'TANK') } }),
-      objective: typed('TANK', 8) }, 3)
+      objective: typed('TANK', 8) }, 3),
+    moon({ ...level(14, 'Field Research', 'Recover 3 lunar instrument packages. Look for the antenna boxes in the middle of the field. Five packages pass at spaced intervals; missed packages circle back.', 3, 550, 800,
+      { count: 5, spacing: 110, bands: lunarRecoverySupport, limited: { count: 5, spacing: 420, speed: 30, band: lunarInstrument } }),
+      objective: typed('INSTRUMENT', 3) }, 4),
+    moon({ ...level(15, 'Landing Debris', 'Recover 3 lander legs. The gold struts are heavy: try shorter trips and leave time to reel them in. Five legs pass through the middle of the field; missed legs return.', 3, 650, 950,
+      { count: 5, spacing: 110, bands: lunarRecoverySupport, limited: { count: 5, spacing: 480, speed: 30, band: landerLeg } }),
+      objective: typed('LEG', 3) }, 5),
+    moon({ ...level(16, 'Workshop Delivery', 'Deliver rover wheels and tool crates to the lunar workshop. Check which types you still need before adding cargo. Five wheels and four crates pass in staggered groups; missed items circle back.', 1, 650, 950,
+      { count: 5, spacing: 110, bands: lunarRecoverySupport, pools: [
+        { count: 5, spacing: 480, speed: 30, band: roverWheel },
+        { count: 4, spacing: 480, offset: 240, speed: 30, band: toolCrates }
+      ] }), objective: all(typed('WHEEL', 3), typed('TOOL', 2)) }, 6)
   );
   const endless = {
     ...defaults, id: 'endless', name: 'Endless Orbit',
@@ -191,7 +205,7 @@ const LevelSystem = (() => {
     if (criterion.type === 'all') return criterion.criteria.map(c => criterionLabel(c)).join(' + ');
     if (criterion.type === 'bank_group') return `${criterion.target} ordinary objects`;
     if (criterion.type === 'complete_objective') return criterionLabel(objective);
-    if (criterion.type === 'bank_type') return `${criterion.target} ${({ SAT: 'satellites', PANEL: 'panels', SCRAP: 'scraps', TOOL: 'tool crates', ROCKET: 'rocket fragments', CAPSULE: 'survey capsule', WHEEL: 'rover wheels', TANK: 'oxygen tanks' })[criterion.salvageType] || 'items'}`;
+    if (criterion.type === 'bank_type') return `${criterion.target} ${({ SAT: 'satellites', PANEL: 'panels', SCRAP: 'scraps', TOOL: 'tool crates', ROCKET: 'rocket fragments', CAPSULE: 'survey capsule', WHEEL: 'rover wheels', TANK: 'oxygen tanks', INSTRUMENT: 'instrument packages', LEG: 'lander legs' })[criterion.salvageType] || 'items'}`;
     return criterion.type === 'bank_objects' ? `${criterion.target} objects` : `$${criterion.target}`;
   }
   const key = 'orbital-cleanup-progress-v1';

@@ -201,3 +201,21 @@ The Moon uses the approved horizon cropped below the flight boundary, with the d
 Validation: full acceptance suite covers existing gameplay plus world visibility, locked access, save compatibility, sequential Moon unlocks, multi-deposit tank quotas, finite wheels, recurring tank pockets, shared upgrades, reward isolation, and lunar failure labels. Local browser QA checked locked/unlocked world pages, inline briefings at 375×667 and 320×568, and the lunar flight composition; no warnings or errors were observed. Mission thresholds and spawn pacing are initial playtest settings.
 
 Local playtest helper: previews/v015/playtest.html runs only at localhost:8085 and seeds test campaign progress while preserving a backup. It never changes production progress and is excluded from the production Pages artifact. v0.14 is deployed in production; v0.15 requires playtest approval before merge/deployment.
+
+
+## Deployment and roadmap update
+
+v0.15 PR #17 was explicitly approved, merged, and successfully deployed to production. The next work is planning Moon missions 2-4 through 2-10, documented in MOON-CAMPAIGN-PLAN.md and the current section at the top of ROADMAP.md. After the full Moon campaign is complete, add lunar Contracts and ensure Endless follows active Moon campaign progression. Mars is confirmed as World Three after Moon work. These are planning updates; no additional campaign or mode changes have been implemented.
+
+
+## v0.15.1 — Moon missions 4–6 (playtest)
+
+Field Research (2-4) requires three instrument packages; higher stars additionally require $550/$800. Packages weigh 6kg, pay $110–$140, and spawn in a finite five-item pool spaced 14 seconds apart in the safe middle field. Landing Debris (2-5) requires three lander legs; higher stars require $650/$950. Legs weigh 18kg, pay $150–$190, and use a five-item pool spaced 16 seconds apart, also introduced at middle altitudes. Approved sprites and fallback drawings are integrated and cached offline.
+
+Workshop Delivery (2-6) requires three rover wheels and two tool crates, with $650/$950 for higher stars. Five wheels and four crates use 16-second same-type spacing, with the crate pool offset by eight seconds. Existing wheel/crate altitude and value rules apply. All targets circle back if missed and do not replenish after collection; replay restores their finite pools.
+
+Brian clarified that World One's object-density principle should carry between worlds, without requiring identical tuning. These three missions use five ordinary debris slots, a two-satellite support cap, spaced target pools, and two spare targets per type. New targets never appear in random support bands. Earlier missions retain their existing tuning.
+
+Completing Tank Sweep unlocks Field Research, including on existing saves. The available campaign ends at 2-6; missions 2-7–2-10 remain future work. Lunar Contracts and world-aware Endless follow the complete Moon campaign, with Mars next.
+
+Validation: full acceptance suite covers finite target counts/spacing, looping missed targets, failure and replay, typed and mixed quotas across deposits, star gating, save progression, and no premature world reward. Prices and star thresholds are initial playtest values. Local helper: previews/v0151/playtest.html on localhost:8085. No deployment without approval.

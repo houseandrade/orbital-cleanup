@@ -204,7 +204,7 @@
     document.getElementById('previous-world').disabled = selectedWorld === 1;
     document.getElementById('next-world').disabled = selectedWorld === LevelSystem.worlds.length;
     document.getElementById('world-note').textContent = selectedWorld === 2
-      ? `${progress.best[10] ? 'First 3 missions available.' : 'Complete World One to unlock the Moon.'} Missions 2-4 through 2-10 are coming later.` : '';
+      ? `${progress.best[10] ? `First ${missions.length} missions available.` : 'Complete World One to unlock the Moon.'} Missions 2-${missions.length + 1} through 2-10 are coming later.` : '';
     root.classList.toggle('moon-menu', selectedWorld === 2);
     LevelSystem.campaign.forEach(config => {
       const button = document.getElementById(`level-${config.id}`);
@@ -593,7 +593,7 @@
     if (object.hit) return;
     object.hit = true;
     const relativeSpeed = Math.max(1, object.speed / 40);
-    const damage = Math.round(({ SAT: 18, PANEL: 11, SCRAP: 7, TOOL: 13, ROCKET: 22, CAPSULE: 15, WHEEL: 12, TANK: 10 }[object.type] || 7) * relativeSpeed * 0.55);
+    const damage = Math.round(({ SAT: 18, PANEL: 11, SCRAP: 7, TOOL: 13, ROCKET: 22, CAPSULE: 15, WHEEL: 12, TANK: 10, INSTRUMENT: 12, LEG: 22 }[object.type] || 7) * relativeSpeed * 0.55);
     integrity = clamp(integrity - damage, 0, 100);
     player.velocityY += (object.y - player.y) * 0.18 + random(-20, 20);
     player.flash = 0.25;
@@ -745,9 +745,17 @@
     const objectY = tether && tether.object === object ? object.y : object.y + Math.sin(object.wobble) * 4;
     context.save();
     context.translate(object.x, objectY);
-    const dimensions = { SCRAP: [14, 14], PANEL: [28, 14], SAT: [50, 28], TOOL: [40, 40], ROCKET: [44, 44], CAPSULE: [44, 44], WHEEL: [36, 36], TANK: [34, 34] }[object.type] || [28, 28];
+    const dimensions = { SCRAP: [14, 14], PANEL: [28, 14], SAT: [50, 28], TOOL: [40, 40], ROCKET: [44, 44], CAPSULE: [44, 44], WHEEL: [36, 36], TANK: [34, 34], INSTRUMENT: [40, 40], LEG: [44, 44] }[object.type] || [28, 28];
     if (GameArt.sprite(context, object.type, 0, 0, ...dimensions)) {
       // The configured collision size remains unchanged.
+    } else if (object.type === 'INSTRUMENT') {
+      context.fillStyle = '#eee6d5'; context.fillRect(-10, -6, 20, 16);
+      context.fillStyle = '#929da5'; context.fillRect(-1, -16, 2, 10); context.fillRect(-6, -16, 12, 2);
+      context.fillStyle = '#64efb1'; context.fillRect(-4, -2, 8, 6);
+    } else if (object.type === 'LEG') {
+      context.save(); context.rotate(-0.45);
+      context.fillStyle = '#d9ac43'; context.fillRect(-3, -17, 6, 30);
+      context.fillStyle = '#929da5'; context.fillRect(-12, 12, 24, 5); context.restore();
     } else if (object.type === 'WHEEL') {
       context.strokeStyle = '#ddd8c9'; context.lineWidth = 4;
       context.beginPath(); context.arc(0, 0, 11, 0, Math.PI * 2); context.stroke();

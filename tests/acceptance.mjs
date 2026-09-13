@@ -1097,7 +1097,8 @@ for (let trip = 0; trip < 2; trip++) {
   assert.equal(qa.state.pendingResult, trip === 1, 'tank quota accumulates across deposits');
 }
 qa.finishLevel();
-assert.equal(elements.get('next-level').hidden, true);
+assert.equal(elements.get('next-level').hidden, false);
+assert.equal(elements.get('level-14').disabled, false);
 assert.equal(elements.get('result-title').textContent, 'LEVEL COMPLETE');
 assert.equal(careerSystem.career.wallet, walletBeforeMoon, 'Moon prototype gives no extra World One reward or contract pay');
 qa.start();
@@ -1114,3 +1115,74 @@ assert.equal(vm.runInContext('LevelSystem.readProgress().selectedWorld', sandbox
 storage.set('orbital-cleanup-progress-v1', moonSave);
 for (const asset of ['moon-background', 'rover-wheel', 'oxygen-tank']) assert.ok(cachedPaths.includes(`./src/art/lunar/${asset}.png`));
 console.log('Moon world navigation, unlocks, saves, objectives, finite wheels, recurring tank pockets, upgrades, rewards, and surface failure passed.');
+
+// Lunar recovery missions preserve sparse World One-style mission target pacing.
+elements.get('next-world').listeners.click();
+const newMoonWallet = careerSystem.career.wallet;
+for (const [id, type, gap, expectedMass] of [[14, 'INSTRUMENT', 420, 6], [15, 'LEG', 480, 18]]) {
+  assert.equal(elements.get(`level-${id}`).disabled, false);
+  elements.get(`level-${id}`).listeners.click(); qa.start();
+  const config = qa.state.level;
+  const targets = qa.state.junk.filter(item => item.type === type);
+  assert.equal(config.debris.count, 5);
+  assert.equal(config.debris.bands.find(b => b.type === 'SAT').maxActive, 2);
+  assert.equal(targets.length, 5, 'quota plus two spare targets');
+  assert.equal(targets[1].x - targets[0].x, gap);
+  assert.equal(targets[0].speed, 30);
+  assert.equal(targets[0].mass, expectedMass);
+  assert.ok(targets.every(item => item.y >= 175 && item.y <= 275));
+  assert.ok(targets.every(item => item.y - item.size - 4 > 75 && item.y + item.size + 4 < 360));
+  assert.equal(config.debris.bands.some(b => b.type === type), false, 'no random target clusters');
+  qa.scenario = {junk: [targets[0]], player:{y:225,velocityY:0,flash:0}};
+  targets[0].x = -41;
+  qa.update(0);
+  assert.equal(qa.state.junk.filter(item => item.type === type).length, 1);
+  assert.equal(targets[0].x, -41 + 5 * gap, 'missed target loops at its original spacing');
+  qa.start();
+  for (let i = 0; i < 3; i++) qa.collect({type:'PANEL',value:100,mass:5,size:10});
+  deposit(300);
+  assert.equal(qa.state.pendingResult, false, 'value alone cannot satisfy targeted recovery');
+  qa.start();
+  const target = qa.state.junk.find(item => item.type === type);
+  qa.collect(target);
+  assert.equal(qa.state.junk.filter(item => item.type === type).length, 4);
+  qa.end('SUIT');
+  assert.equal(qa.state.progress.best[id], undefined, 'lost cargo grants no completion');
+  qa.start();
+  assert.equal(qa.state.junk.filter(item => item.type === type).length, 5, 'retry restores finite target pool');
+  for (let i = 0; i < 3; i++) {
+    qa.collect({type,value:150,mass:expectedMass,size:12});
+    deposit(150);
+    assert.equal(qa.state.pendingResult, i === 2, 'target quota accumulates across trips');
+  }
+  qa.finishLevel();
+  assert.equal(qa.state.progress.best[id], 1);
+  assert.equal(elements.get(`level-${id+1}`).disabled, false);
+  assert.equal(vm.runInContext(`LevelSystem.readProgress().best[${id}]`, sandbox), 1);
+  assert.equal(vm.runInContext(`LevelSystem.rating(LevelSystem.campaign[${id-1}],{bank:9999,bankedTypes:{}})`, sandbox), 0);
+  assert.equal(vm.runInContext(`LevelSystem.rating(LevelSystem.campaign[${id-1}],{bank:9999,bankedTypes:{${type}:3}})`, sandbox), 3);
+}
+elements.get('level-16').listeners.click(); qa.start();
+assert.equal(qa.state.level.debris.count, 5);
+const deliveryWheels = qa.state.junk.filter(item => item.type === 'WHEEL');
+const deliveryCrates = qa.state.junk.filter(item => item.type === 'TOOL');
+assert.equal(deliveryWheels.length, 5);
+assert.equal(deliveryCrates.length, 4);
+assert.equal(deliveryCrates[0].x - deliveryWheels[0].x, 240, 'mixed targets stagger by eight seconds');
+assert.equal(deliveryWheels[1].x - deliveryWheels[0].x, 480);
+assert.equal(deliveryCrates[1].x - deliveryCrates[0].x, 480);
+for (let i = 0; i < 3; i++) qa.collect({type:'WHEEL',value:75,mass:7,size:12});
+deposit(225);
+assert.equal(qa.state.pendingResult, false, 'wheels alone do not complete the workshop order');
+for (let i = 0; i < 2; i++) qa.collect({type:'TOOL',value:75,mass:8,size:12});
+deposit(150);
+assert.equal(qa.state.pendingResult, true);
+qa.finishLevel();
+assert.equal(qa.state.progress.best[16], 1);
+assert.equal(elements.get('next-level').hidden, true);
+assert.equal(elements.get('result-title').textContent, 'LEVEL COMPLETE');
+assert.equal(careerSystem.career.wallet, newMoonWallet, 'no premature world reward');
+assert.match(elements.get('world-note').textContent, /First 6 missions available/);
+assert.match(elements.get('world-note').textContent, /2-7 through 2-10/);
+for (const type of ['instrument-package','lander-leg']) assert.ok(cachedPaths.includes(`./src/art/lunar/${type}.png`));
+console.log('Moon 4–6 density, spaced finite pools, missed targets, failure/retry, multi-trip quotas, mixed delivery, save progression, and star gating passed.');
