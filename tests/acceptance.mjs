@@ -86,11 +86,12 @@ sandbox.globalThis = sandbox;
 let source = fs.readFileSync(new URL("../src/game.js", import.meta.url), "utf8");
 source = source.replace(/\}\)\(\);\s*$/, `
   globalThis.__qa = {
-    ContractSystem, refreshCareer, scannerNeeded,
+    ContractSystem, refreshCareer, scannerNeeded, momentumWarning,
     get careerState() { return { carriedTypes, bankedTypes, contractBonus, contractCompleted, runEffects }; },
     depositDuration, makeJunk, fillDebris, scheduleEncounter, collect, draw, stationMessage, start, end, finishLevel, resumeLevel, update, fireTether, collide, thrustEffectiveness,
     get state() { return { phase, queuedPhase, nextStation, elapsed, carriedObjects, bankedObjects, level, progress, pendingResult, running, haul, bank, mass, integrity, tether, junk, player, station, depositing, cargo }; },
     set scenario(value) {
+      if (value.thrusting !== undefined) thrusting = value.thrusting;
       if (value.elapsed !== undefined) elapsed = value.elapsed;
       if (value.running !== undefined) running = value.running;
       if (value.carriedObjects !== undefined) carriedObjects = value.carriedObjects;
@@ -531,7 +532,7 @@ function checkEncounter() {
   const target = targets[0];
   assert.ok(Math.abs((target.x - 180) / target.speed - ((qa.state.station.x - 270) / 25 - 4)) < 1e-8);
   assert.ok(target.value >= 150 && target.value <= 200);
-  assert.ok(target.y >= 108 && target.y <= 135);
+  assert.ok((target.y >= 105 && target.y <= 120) || (target.y >= 322 && target.y <= 334));
 }
 checkEncounter();
 assert.equal(qa.state.junk.length, 8);
@@ -575,7 +576,8 @@ deposit(200); qa.resumeLevel();
 assert.equal(qa.state.phase.name, 'Recovery stretch');
 qa.scenario = {junk:[]}; qa.fillDebris();
 assert.equal(qa.state.junk.length, 5);
-assert.ok(qa.state.junk.every(o=>o.mass === 2 && o.y >= 195 && o.y <= 260));
+assert.ok(qa.state.junk.every(o=>o.mass === 2));
+assert.ok(qa.state.junk.some(o=>o.y<=120) && qa.state.junk.some(o=>o.y>=322));
 deposit(250); qa.resumeLevel();
 assert.equal(qa.state.phase.name, 'Open field', 'phases repeat by banked value');
 deposit(550);
@@ -1137,7 +1139,7 @@ for (const [id, type, gap, expectedMass] of [[14, 'INSTRUMENT', 420, 6], [15, 'L
   assert.equal(targets[1].x - targets[0].x, gap);
   assert.equal(targets[0].speed, 30);
   assert.equal(targets[0].mass, expectedMass);
-  assert.ok(targets.every(item => item.y >= 175 && item.y <= 275));
+  assert.ok(targets.some(item => item.y <= 120) && targets.some(item => item.y >= 322));
   assert.ok(targets.every(item => item.y - item.size - 4 > 75 && item.y + item.size + 4 < 360));
   assert.equal(config.debris.bands.some(b => b.type === type), false, 'no random target clusters');
   qa.scenario = {junk: [targets[0]], player:{y:225,velocityY:0,flash:0}};
@@ -1372,7 +1374,7 @@ assert.ok(qa.state.progress.best[20] >= 1);
 qa.start(); assert.match(qa.state.level.name, /Last Rover · 1\/3/);
 const moonRewardReload = reloadCareer({getItem: () => storage.get('orbital-cleanup-career-v1'), setItem(){}});
 assert.equal(moonRewardReload.rewardWorld(2), false);
-assert.equal(moonRewardReload.rewardWorld(3), false);
+assert.equal(moonRewardReload.rewardWorld(4), false);
 assert.equal(careerSystem.rewardWorld(2), false);
 assert.equal(vm.runInContext("LevelSystem.criterionLabel({type:'bank_type',salvageType:'ROVER',target:1})", sandbox), '1 rover chassis');
 assert.ok(fs.readFileSync(new URL('../service-worker.js', import.meta.url),'utf8').includes('./src/art/lunar/rover-chassis.png'));
@@ -1512,8 +1514,8 @@ for (const [id,type,count] of [[22,'SAMPLE',5],[23,'DRONE',3]]) {
   deposit(qa.state.haul); qa.finishLevel();
   assert.equal(qa.state.progress.best[id],3);
 }
-assert.equal(elements.get('next-level').hidden,true);
-assert.match(elements.get('status').textContent,/More missions are coming later/);
+assert.equal(elements.get('next-level').hidden,false);
+assert.match(elements.get('status').textContent,/Next level unlocked/);
 assert.equal(careerSystem.career.worldTwoReward,true,'Mars batch does not disturb lunar reward');
 const marsSave = storage.get('orbital-cleanup-progress-v1');
 assert.equal(vm.runInContext('LevelSystem.readProgress().activeWorld',sandbox),3);
@@ -1594,3 +1596,261 @@ collectItems('PANEL',6);deposit(qa.state.haul);qa.finishLevel();
 assert.equal(qa.scannerNeeded({type:'PANEL'}),false);
 assert.equal(qa.scannerNeeded({type:'TOOL'}),true,'scanner changes with finale assignment');
 console.log('Mars 1–3, finite targets, saves, deferred modes, scanner unlock/objectives, tether reach and cargo stabilization passed.');
+
+// Mars 4–9: finite pools, both altitude extremes, partial quotas and standard-gear completion.
+const standardMars = () => Object.assign(qa.careerState.runEffects,{reel:1,thrust:1,deposit:1,reach:82,stabilizer:1,scanner:0});
+const startMars = id => {elements.get(`level-${id}`).listeners.click();qa.start();standardMars();};
+const typedQuotas = objective => objective.type === 'all' ? objective.criteria.flatMap(typedQuotas) : objective.type === 'bank_type' ? [objective] : [];
+const beforeMarsCampaignWallet=careerSystem.career.wallet;
+for(const id of [24,25,26,27,28,29]) {
+  startMars(id);
+  const config=qa.state.level;
+  assert.equal(config.id,id);
+  const quotas=typedQuotas(config.objective);
+  const pools=config.debris.pools || (config.debris.limited?[config.debris.limited]:[]);
+  for(const pool of pools) {
+    const objects=qa.state.junk.filter(o=>o.type===pool.band.type).sort((a,b)=>a.x-b.x);
+    const quota=quotas.find(q=>q.salvageType===pool.band.type);
+    assert.equal(objects.length,quota.target+2);
+    assert.ok(objects.slice(1).every((o,i)=>o.x-objects[i].x===480));
+    assert.ok(objects.every(o=>o.y>=105 && o.y<=338 && o.speed===30));
+    const missed=objects.at(-1),oldY=missed.y;
+    missed.x=-41;qa.update(0);
+    assert.ok(missed.x>360);assert.equal(missed.y,oldY,'finite targets keep their altitude when returning');
+  }
+  assert.ok(qa.state.junk.filter(o=>o.type==='SAT').length<=2);
+  assert.ok(!qa.state.junk.some(o=>o.type==='ENGINE'),'engine remains finale-only');
+  if(id===26 || id===29) {
+    const high=qa.state.junk.filter(o=>o.type===quotas[0].salvageType);
+    const low=qa.state.junk.filter(o=>o.type===quotas[1].salvageType);
+    assert.ok(high.every(o=>o.y<=120) && low.every(o=>o.y>=325));
+    assert.ok(Math.min(...low.map(o=>o.y))-4-(Math.max(...high.map(o=>o.y))+4)>164,'one stationary standard tether position cannot serve both required types');
+  }
+  if(id===28) {
+    const arrays=qa.state.junk.filter(o=>o.type==='ARRAY');
+    assert.equal(arrays.filter(o=>o.y<=120).length,3);
+    assert.equal(arrays.filter(o=>o.y>=325).length,3);
+    assert.equal(config.objective.criteria[0].target,4,'quota requires targets from both outer bands');
+  }
+  if(id===27) {
+    for(let i=0;i<6;i++) {
+      const drone=qa.state.junk.find(o=>o.encounter);
+      assert.ok(drone && drone.y<=120 && drone.y>=105);
+      assert.ok(Math.abs((qa.state.station.x-270)/25-(drone.x-180)/30-4)<0.00001);
+      qa.collect(drone);
+      qa.scenario={player:{y:225,velocityY:0,flash:0},station:{x:-71,y:225,speed:25}};qa.update(0);
+      assert.equal(qa.state.junk.filter(o=>o.encounter).length,i<5?1:0);
+    }
+    startMars(id);
+  }
+  const quotaStats={bank:99999,bankedTypes:{}};
+  assert.equal(vm.runInContext(`LevelSystem.rating(LevelSystem.campaign[${id-1}],${JSON.stringify(quotaStats)})`,sandbox),0,'cash alone cannot replace typed cargo');
+  // Deposit partial quotas over multiple trips, then finish every required component.
+  for(const q of quotas){collectItems(q.salvageType,q.target-1,100);deposit(qa.state.haul);}
+  assert.equal(qa.state.pendingResult,false);
+  for(const q of quotas){collectItems(q.salvageType,1,100);deposit(qa.state.haul);}
+  if(id===28) {
+    assert.equal(qa.state.pendingResult,false,'four arrays alone do not meet the value quota');
+    collectItems('PANEL',1,1000-qa.state.bank);deposit(qa.state.haul);
+  }
+  assert.equal(qa.state.pendingResult,true);
+  qa.finishLevel();
+  assert.ok(qa.state.progress.best[id]>=1);
+  assert.equal(elements.get(`level-${id+1}`).disabled,false);
+  assert.equal(careerSystem.career.wallet,beforeMarsCampaignWallet,'no premature campaign reward');
+}
+
+// Random extrema cannot collapse the introductory Mars finite pools into the center.
+const savedMarsRandom=sandbox.Math.random;
+try {
+  for(const roll of [0,0.999]) {
+    sandbox.Math.random=()=>roll;
+    for(const id of [22,23,24,25]) {
+      startMars(id);
+      const targets=qa.state.junk.filter(o=>o.limited);
+      assert.ok(targets.some(o=>o.y<=120) && targets.some(o=>o.y>=325));
+      assert.ok(targets.filter(o=>Math.abs(o.y-225)<=86).length<qa.state.level.objective.target,'center-only recovery cannot finish the quota');
+    }
+  }
+} finally {sandbox.Math.random=savedMarsRandom;}
+
+// Independent Mars finale checkpoints, cross-world switching, retry and one-time reward.
+qa.state.progress.finale={stage:1,bank:420};
+qa.state.progress.moonFinale={stage:1,bank:777};
+startMars(30);
+assert.equal(qa.state.bank,0);
+assert.match(qa.state.level.name,/Last Ascent · 1\/3/);
+qa.careerState.runEffects.scanner=1;
+assert.equal(qa.scannerNeeded({type:'SAMPLE'}),true);
+assert.equal(qa.scannerNeeded({type:'ENGINE'}),false);
+collectItems('SAMPLE',3,60);deposit(qa.state.haul);
+assert.equal(qa.state.pendingResult,false);
+collectItems('DRONE',2,125);deposit(qa.state.haul);
+assert.equal(qa.state.progress.marsFinale.stage,1);
+const marsFirstBank=qa.state.bank;
+assert.equal(vm.runInContext('LevelSystem.readProgress().marsFinale.bank',sandbox),marsFirstBank);
+qa.finishLevel();standardMars();
+assert.match(qa.state.level.name,/Last Ascent · 2\/3/);
+collectItems('ARRAY',1,155);qa.end('SUIT');qa.start();standardMars();
+assert.equal(qa.state.bank,marsFirstBank);assert.equal(qa.state.haul,0);
+assert.equal(qa.state.junk.filter(o=>o.type==='ARRAY').length,4);
+elements.get('level-20').listeners.click();qa.start();
+assert.equal(qa.state.bank,777);assert.equal(qa.state.progress.marsFinale.stage,1);
+startMars(30);assert.equal(qa.state.bank,marsFirstBank);
+collectItems('ARRAY',2,155);deposit(qa.state.haul);assert.equal(qa.state.pendingResult,false);
+collectItems('FRAME',2,200);deposit(qa.state.haul);
+assert.equal(qa.state.progress.marsFinale.stage,2);
+qa.finishLevel();standardMars();
+const marsEngineBank=qa.state.bank;
+assert.equal(qa.state.junk.filter(o=>o.type==='ENGINE').length,1);
+let ascentEngine=qa.state.junk.find(o=>o.type==='ENGINE');
+assert.equal(ascentEngine.mass,24);
+assert.ok((ascentEngine.x-262)/30>(qa.state.station.x-90)/25,'engine arrives after a station pass');
+ascentEngine.x=-41;qa.update(0);assert.ok(ascentEngine.x>360);
+ascentEngine.x=220;ascentEngine.y=225;
+qa.scenario={junk:[ascentEngine],player:{y:225,velocityY:0,flash:0}};
+qa.fireTether();assert.ok(Math.abs(qa.state.tether.duration-1.15)<1e-9);
+qa.update(2);assert.equal(qa.state.haul,550);
+qa.end('REENTRY');qa.start();standardMars();
+assert.equal(qa.state.bank,marsEngineBank);
+assert.equal(qa.state.junk.filter(o=>o.type==='ENGINE').length,1,'lost unique engine returns on retry');
+qa.careerState.runEffects.scanner=1;
+assert.equal(qa.scannerNeeded({type:'ENGINE'}),true);
+qa.collect(qa.state.junk.find(o=>o.type==='ENGINE'));
+assert.equal(qa.scannerNeeded({type:'ENGINE'}),false);
+qa.fillDebris();assert.equal(qa.state.junk.filter(o=>o.type==='ENGINE').length,0);
+deposit(qa.state.haul);
+qa.finishLevel();qa.finishLevel();
+assert.equal(elements.get('result-title').textContent,'WORLD THREE COMPLETE');
+assert.equal(elements.get('world-three-badge').hidden,false);
+assert.equal(elements.get('next-level').hidden,true);
+assert.match(elements.get('status').textContent,/Ascent engine recovered/);
+assert.equal(careerSystem.career.wallet,beforeMarsCampaignWallet+2000);
+assert.equal(careerSystem.career.worldThreeReward,true);
+assert.equal(careerSystem.career.worldOneReward,true);
+assert.equal(careerSystem.career.worldTwoReward,true);
+assert.equal(careerSystem.rewardWorld(3),false);
+assert.equal(qa.state.progress.marsFinale,undefined);
+assert.equal(qa.state.progress.finale.bank,420);
+assert.equal(qa.state.progress.moonFinale.bank,777);
+assert.equal(reloadCareer({getItem:()=>storage.get('orbital-cleanup-career-v1'),setItem(){}}).rewardWorld(3),false);
+assert.equal(reloadCareer({getItem:()=>JSON.stringify({worldTwoReward:true}),setItem(){}}).career.worldThreeReward,false);
+
+// Actual braking trajectories: cargo carries speed; early braking works, late braking can fail.
+function brakeRun({load=60,y=220,velocity=65,stabilizer=1,dt=0.01}) {
+  startMars(24);qa.careerState.runEffects.stabilizer=stabilizer;
+  qa.scenario={mass:load,player:{y,velocityY:velocity,flash:0},junk:[],thrusting:velocity>0};
+  let extreme=y;
+  for(let i=0;i<10/dt && qa.state.running && Math.sign(qa.state.player.velocityY)===Math.sign(velocity);i++) {
+    qa.scenario={junk:[]};qa.update(dt);
+    extreme=velocity>0?Math.max(extreme,qa.state.player.y):Math.min(extreme,qa.state.player.y);
+  }
+  return {travel:Math.abs(extreme-y),alive:qa.state.running};
+}
+const emptyBrake=brakeRun({load:0}),heavyBrake=brakeRun({}),stabilizedBrake=brakeRun({stabilizer:0.55});
+assert.ok(heavyBrake.travel>emptyBrake.travel*1.2,'heavy fast descent needs materially more braking distance');
+assert.ok(stabilizedBrake.travel<heavyBrake.travel && stabilizedBrake.travel>emptyBrake.travel,'stabilizer helps without removing the tradeoff');
+assert.equal(heavyBrake.alive,true,'standard gear can brake early');
+assert.equal(brakeRun({y:345}).alive,false,'late braking at speed can hit the surface');
+assert.equal(brakeRun({y:90,velocity:-65}).alive,false,'late release at speed can cross the upper boundary');
+assert.equal(brakeRun({y:220,velocity:-65}).alive,true,'early release arrests a loaded climb');
+assert.ok(Math.abs(brakeRun({dt:1/30}).travel-brakeRun({dt:1/120}).travel)<3,'braking remains consistent across frame rates');
+startMars(24);
+qa.scenario={mass:60,player:{y:310,velocityY:60,flash:0}};
+assert.match(qa.momentumWarning().text,/THRUST · BRAKE/);
+qa.scenario={player:{y:130,velocityY:-60,flash:0}};
+assert.match(qa.momentumWarning().text,/RELEASE THRUST/);
+qa.scenario={mass:0};assert.equal(qa.momentumWarning(),null);
+qa.scenario={mass:60,player:{y:320,velocityY:10,flash:0}};assert.equal(qa.momentumWarning(),null);
+console.log('Mars 4–10, outer-band coverage, station-timed quotas, independent finale/reward, and cargo momentum/braking checks passed.');
+
+// Earth/Moon movement layouts: every campaign, contract and Endless phase has outer targets.
+const boundaryModes=vm.runInContext('[...LevelSystem.campaign.filter(c=>c.world<=2),LevelSystem.endlessFor(1),LevelSystem.endlessFor(2),...ContractSystem.contracts]',sandbox);
+for(const config of boundaryModes) {
+  for(const field of [config.debris,...(config.assignments||[]).map(a=>a.debris),...(config.phases||[]).map(p=>p.debris)]) {
+    assert.equal(field.altitudeBands.length,3);
+    assert.ok(field.altitudeBands.some(y=>y[1]<=140));
+    assert.ok(field.altitudeBands.some(y=>y[0]>=305));
+    if(field.limited?.count>1) assert.ok(field.limited.altitudeBands.length>=3);
+    if(field.pools?.length>1) {
+      assert.ok(field.pools[0].altitudeBands[0][1]<=120);
+      assert.ok(field.pools[1].altitudeBands[0][0]>=322);
+    }
+    for(const event of [field.arrival,field.encounter,field.pocket].filter(Boolean)) {
+      assert.equal(event.altitudeBands.length,2,'recurring recoveries alternate both sides');
+    }
+  }
+}
+// Generate actual fields under worst-case random rolls, preserving count and spacing.
+const preBoundaryRandom=sandbox.Math.random;
+try {
+  for(const roll of [0,0.999]) {
+    sandbox.Math.random=()=>roll;
+    for(let id=1;id<=20;id++) {
+      if(id===10) delete qa.state.progress.finale;
+      if(id===20) delete qa.state.progress.moonFinale;
+      elements.get(`level-${id}`).listeners.click();qa.start();
+      const ordinary=qa.state.junk.filter(o=>!o.limited&&!o.pocket&&!o.encounter&&!o.special);
+      assert.ok(ordinary.some(o=>o.y<=140),`mission ${id} upper support`);
+      assert.ok(ordinary.some(o=>o.y>=305),`mission ${id} lower support`);
+      const finite=qa.state.junk.filter(o=>o.limited);
+      if(finite.length>1) {
+        assert.ok(finite.some(o=>o.y<=120));assert.ok(finite.some(o=>o.y>=322));
+      }
+      assert.ok(qa.state.junk.every(o=>o.y>75 && o.y<360));
+    }
+  }
+} finally {sandbox.Math.random=preBoundaryRandom;}
+// Drift stays gentle, but outer targets now remain in safe outer corridors.
+elements.get('level-17').listeners.click();qa.start();
+for(const object of qa.state.junk.filter(o=>o.drift)) {
+  const originalY=object.y;
+  qa.scenario={junk:[object],player:{y:225,velocityY:0,flash:0}};
+  object.x=340;object.speed=0;
+  for(let i=0;i<200;i++) {qa.scenario={player:{y:225,velocityY:0,flash:0}};qa.update(0.01);}
+  assert.ok(object.y>=object.drift.minY && object.y<=object.drift.maxY);
+  assert.ok(object.drift.minY-object.size>75 && object.drift.maxY+object.size<360);
+  if(originalY<=120) assert.ok(object.y<=125);
+  if(originalY>=322) assert.ok(object.y>=317);
+}
+// Pocket members stay together; the next group uses the opposite band.
+elements.get('level-13').listeners.click();qa.start();
+const upperPocket=qa.state.junk.filter(o=>o.pocket);
+assert.ok(upperPocket.every(o=>o.y<145));
+upperPocket.forEach(o=>qa.collect(o));qa.fillDebris();
+assert.ok(qa.state.junk.filter(o=>o.pocket).every(o=>o.y>300));
+// Recurring mission-critical ordinary targets alternate even if every roll chooses that type.
+const savedContractRandom=sandbox.Math.random;
+try {
+  sandbox.Math.random=()=>0;
+  launchContract('satellite-sweep');
+  const satellites=qa.state.junk.filter(o=>o.type==='SAT');
+  assert.ok(satellites.some(o=>o.y<=120) && satellites.some(o=>o.y>=322));
+} finally {sandbox.Math.random=savedContractRandom;}
+launchContract('equipment-return');
+qa.scenario={elapsed:8,junk:[]};qa.fillDebris();
+let crate=qa.state.junk.find(o=>o.scheduledSalvage);
+assert.ok(crate.y<=120);qa.collect(crate);
+qa.scenario={elapsed:20};qa.fillDebris();
+crate=qa.state.junk.find(o=>o.scheduledSalvage);assert.ok(crate.y>=322);
+// All Endless phases retain their density and produce both edges on refill.
+for(const world of [1,2]) {
+  qa.state.progress.activeWorld=world;elements.get('endless').listeners.click();
+  for(const at of [0,150,300,500]) {
+    if(at){deposit(at-qa.state.bank);qa.resumeLevel();}
+    qa.scenario={junk:[]};qa.fillDebris();
+    assert.ok(qa.state.junk.some(o=>o.y<=120));
+    assert.ok(qa.state.junk.some(o=>o.y>=322));
+    assert.ok(!qa.state.junk.some(o=>['CAPSULE','ROVER','ENGINE'].includes(o.type)));
+  }
+}
+// Shared momentum is identical for equal gear/load in campaign, Contracts and Endless.
+function modeBrake(startMode) {
+  startMode();standardMars();qa.scenario={mass:60,junk:[],player:{y:225,velocityY:60,flash:0},thrusting:true};
+  qa.update(0.1);return qa.state.player.velocityY;
+}
+const earthMomentum=modeBrake(()=>{elements.get('level-7').listeners.click();qa.start();});
+assert.equal(modeBrake(()=>{elements.get('level-15').listeners.click();qa.start();}),earthMomentum);
+assert.equal(modeBrake(()=>launchContract('engine-recovery')),earthMomentum);
+assert.equal(modeBrake(()=>{qa.state.progress.activeWorld=2;elements.get('endless').listeners.click();}),earthMomentum);
+console.log('Earth/Moon boundary coverage across campaigns, Contracts and all Endless phases, safe drift, alternating pockets/arrivals and shared momentum passed.');

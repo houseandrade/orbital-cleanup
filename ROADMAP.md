@@ -10,13 +10,17 @@ For version-by-version changes, see [Release notes](RELEASE-NOTES.md).
 4. **Shared presentation: complete and deployed.** Campaign and contract briefings expand directly below the selected card, with a MISSION BRIEFING heading and objective bullets. Briefings omit exact timing, altitude, and spawn-pattern hints. The responsive flight header reserves its height so changing status messages do not resize the playfield.
 5. **v0.16 / Mars / World Three: first batch approved and deployed.** Brian approved the artwork and requested Mars missions 1–3 plus tether reach, cargo stabilizer, and a one-time $100 recovery scanner. The first batch uses familiar movement; later missions and speed variation remain proposals. PR #24 deployed successfully as v0.16.0 (run 34782069208); live release verified.
 
-## v0.16 — Mars delivery and remaining proposals
+## Mars delivery and remaining proposals
+
+**v0.17.0 in review:** Brian requested missions 4–10 and reported too little altitude travel and risk. The full Mars campaign is now implemented locally, with guaranteed outer-band targets and shared cargo momentum at speed. See [Mars campaign review](MARS-CAMPAIGN-PLAN.md) for missions, tuning, checkpoints, and validation. Production remains v0.16.0 until approval.
+
+Earth and Moon now share the boundary recovery layout across campaigns, all 17 Contracts, and every Endless phase. Recurring targets and salvage pockets alternate sides; mixed finite orders separate target types by altitude. Introductory fields keep gentler margins, unique finale targets keep scripted placement, and drift remains bounded. Existing timing, counts, objectives, and payouts are preserved. Shared momentum and braking cues apply throughout. Acceptance coverage includes every mode and phase.
 
 ### Setting and art direction
 
 An abandoned expedition site above red Martian terrain, with research equipment and remnants of unfinished infrastructure. Proposed salvage colors are cream, charcoal, and metallic tones with teal accents for readability against the red background. Mix new Mars items with familiar tool crates, panels, and rocket fragments.
 
-Brian approved the Mars background and five salvage sprites from `previews/mars-art-v1`. Originals and prompts are preserved in `src/art/mars`. The first playtest integrates the background, sample canister, and survey drone; the other three sprites are prepared for later missions. Keep terrain below the flight boundary and preserve the expedition site in portrait cropping.
+Brian approved the Mars background and five salvage sprites from `previews/mars-art-v1`. Originals and prompts are preserved in `src/art/mars`. The v0.17.0 review uses all five approved sprites; the ascent engine is exclusive to the finale. Keep terrain below the flight boundary and preserve the expedition site in portrait cropping.
 
 **Later artwork task:** add illustrations for the upgrades. Brian requested these for a future pass; they are not part of this implementation batch.
 
@@ -30,7 +34,7 @@ Brian approved the Mars background and five salvage sprites from `previews/mars-
 | Habitat support frame | Heavy structural debris for later missions and mixed recovery orders. |
 | Ascent engine | Unique finale target: the last major component of an abandoned expedition. Keep it special to the finale initially. |
 
-The artwork lineup is approved. First playtest tuning: sample canisters weigh 4kg and are worth $55–70; survey drones weigh 9kg and are worth $110–140. Later-item gameplay specifications remain open.
+The artwork lineup is approved. First playtest tuning: sample canisters weigh 4kg and are worth $55–70; survey drones weigh 9kg and are worth $110–140. The v0.17.0 review adds 14kg arrays ($140–170), 20kg frames ($180–220), and the 24kg finale engine ($550).
 
 ### Gameplay experiments
 
@@ -65,7 +69,7 @@ Initial playtest tuning (adjust after feedback):
 | 3-2 | Sample Return | Implemented: bank 5 sample canisters from a finite pool of 7; $550/$800 higher stars. |
 | 3-3 | Survey Recovery | Implemented: bank 3 drones from a finite pool of 5, familiar constant speed; $600/$900 higher stars. Speed variation remains deferred. |
 
-Later missions can introduce solar arrays, habitat frames, mixed objectives, and an ascent-engine finale with saved assignment checkpoints. Retain ten campaign missions per world. Specific missions 3-4 through 3-10, rewards, and balance are not designed yet.
+Missions 3-4 through 3-10 are implemented for review, including arrays, frames, mixed orders, a station-timed drone recovery, and Last Ascent’s three saved assignments. The finale has an independent Mars badge and one-time $2,000 reward. Initial balance and mission details are in [Mars campaign review](MARS-CAMPAIGN-PLAN.md).
 
 ### Delivery sequence and open decisions
 
@@ -73,7 +77,7 @@ Later missions can introduce solar arrays, habitat frames, mixed objectives, and
 2. Complete: background and five sprites created and approved.
 3. Complete: approved assets, missions 3-1 through 3-3, world navigation, and selected upgrades deployed in v0.16.0.
 4. Playtest the initial missions and upgrade tuning. Compare a separate drone-speed variant later; keep movement and cargo experiments independent.
-5. Expand the campaign in small review batches, following the Moon’s 4–6, 7–9, and checkpointed-finale approach.
+5. In review: missions 4–10, the checkpointed finale, outer-band coverage, and shared cargo momentum based on Brian’s playthrough feedback.
 6. After campaign approval, evaluate Mars Contracts and world-aware Endless support using the established per-world pattern. Their content and tuning remain open.
 
 The first three missions and approved upgrades are deployed in v0.16.0. Mars unlocks after the Moon finale; completing 3-3 does not award a world-completion badge or reward. Active Mars campaign state persists through earlier-world replays. Until Mars mode support is designed, Contracts remain Earth/Moon and Endless explicitly uses Moon for Mars players. Use the established feature-branch, playtest, and production-approval workflow for each batch.

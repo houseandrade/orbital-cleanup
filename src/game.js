@@ -81,6 +81,7 @@
   let impactText = 0;
   let elapsed = 0;
   let nextSalvageArrival = 8;
+  let altitudeSequence = {};
 
   const random = (min, max) => min + Math.random() * (max - min);
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -118,19 +119,37 @@
   // Drifting targets use one altitude for rendering, collisions, and tether acquisition.
   const debrisY = object => object.drift || tether?.object === object ? object.y : object.y + Math.sin(object.wobble) * 4;
 
-  function makeJunk(offset = 0, chosenBand = null) {
+  function nextAltitude(key, ranges) {
+    if (!ranges) return undefined;
+    const index = altitudeSequence[key] || 0;
+    altitudeSequence[key] = index + 1;
+    return ranges[index % ranges.length];
+  }
+
+  function makeJunk(offset = 0, chosenBand = null, altitudeRange = null) {
     const bands = debrisConfig().bands.filter(band => !band.maxActive || junk.filter(object => object.type === band.type).length < band.maxActive);
     let roll = Math.random() * bands.reduce((sum, band) => sum + band.weight, 0);
     const band = chosenBand || bands.find(band => (roll -= band.weight) < 0) || bands[bands.length - 1];
+    if (!chosenBand && debrisConfig().boundaryTargetType === band.type) {
+      altitudeRange = nextAltitude('target', debrisConfig().targetAltitudeBands);
+    }
     let zone = band;
     if (band.zones) {
       let zoneRoll = Math.random() * band.zones.reduce((sum, entry) => sum + entry.weight, 0);
       zone = band.zones.find(entry => (zoneRoll -= entry.weight) < 0) || band.zones.at(-1);
     }
-    junk.push({ x: WIDTH + offset, y: random(...zone.y), speed: random(...band.speed),
+    if (altitudeRange && band.zones) {
+      const midpoint = (altitudeRange[0] + altitudeRange[1]) / 2;
+      const distance = candidate => Math.max(candidate.y[0] - midpoint, midpoint - candidate.y[1], 0);
+      zone = band.zones.reduce((best, candidate) => distance(candidate) < distance(best) ? candidate : best);
+    }
+    const drift = band.drift && altitudeRange && (altitudeRange[0] < band.drift.minY || altitudeRange[1] > band.drift.maxY)
+      ? { ...band.drift, minY: Math.max(ESCAPE_Y + band.size + 1, altitudeRange[0] - 5), maxY: Math.min(REENTRY_Y - band.size - 1, altitudeRange[1] + 5) }
+      : band.drift;
+    junk.push({ x: WIDTH + offset, y: random(...(altitudeRange || zone.y)), speed: random(...band.speed),
       value: Math.round(random(...zone.value)), valuable: Boolean(zone.risky), mass: band.mass, size: band.size,
       type: band.type, wobble: random(0, 6.28), hit: false,
-      ...(band.drift ? { drift: { ...band.drift }, driftDirection: Math.random() < 0.5 ? -1 : 1 } : {}) });
+      ...(drift ? { drift: { ...drift }, driftDirection: Math.random() < 0.5 ? -1 : 1 } : {}) });
   }
 
   function fillDebris(initial = false) {
@@ -139,13 +158,15 @@
     const missing = limit - junk.filter(object => !object.special && !object.encounter && !object.limited && !object.scheduledSalvage).length;
     for (const pool of initial ? (config.pools || (config.limited ? [config.limited] : [])) : []) {
       for (let i = 0; i < pool.count; i++) {
-        makeJunk((pool.offset || 0) + i * pool.spacing, pool.band);
+        // Explicit altitude bands guarantee coverage across the field, even with unlucky random rolls.
+        const altitudeRange = pool.altitudeBands?.[i % pool.altitudeBands.length];
+        makeJunk((pool.offset || 0) + i * pool.spacing, pool.band, altitudeRange);
         Object.assign(junk.at(-1), { limited: true, speed: pool.speed, orbitLength: pool.count * pool.spacing });
       }
     }
     // Reserve a single rare-salvage slot. Collection never resets its cooldown.
     if (config.arrival && elapsed >= nextSalvageArrival && !junk.some(object => object.scheduledSalvage)) {
-      makeJunk(0, config.arrival.band);
+      makeJunk(0, config.arrival.band, nextAltitude('arrival', config.arrival.altitudeBands));
       Object.assign(junk.at(-1), { scheduledSalvage: true, speed: config.arrival.speed });
       nextSalvageArrival = elapsed + config.arrival.interval;
     }
@@ -154,11 +175,15 @@
     const pocketCount = pocket && !livePockets && missing >= pocket.count ? pocket.count : 0;
     const normalCount = pocket ? Math.max(0, missing - Math.max(0, pocket.count - livePockets)) : missing;
     for (let i = 0; i < normalCount; i++) {
-      makeJunk(initial ? i * config.spacing + random(0, 30) : random(140, 320));
+      const ordinary = junk.filter(object => !object.special && !object.encounter && !object.limited && !object.scheduledSalvage && !object.pocket);
+      // Refill missing bands first, including small support fields beside grouped recoveries.
+      const missingAltitude = config.altitudeBands?.find(range => !ordinary.some(object => object.y >= range[0] && object.y <= range[1]));
+      makeJunk(initial ? i * config.spacing + random(0, 30) : random(140, 320), null,
+        missingAltitude || nextAltitude('support', config.altitudeBands));
     }
     if (pocketCount) {
       const offset = initial ? normalCount * config.spacing + random(0, 30) : random(140, 320);
-      const y = random(...pocket.band.y);
+      const y = random(...(nextAltitude('pocket', pocket.altitudeBands) || pocket.band.y));
       const speed = random(...pocket.band.speed);
       for (let i = 0; i < pocketCount; i++) {
         makeJunk(offset + i * pocket.spacing, pocket.band);
@@ -179,7 +204,7 @@
     if (junk.some(object => object.encounter)) return;
     const type = encounter.band.type;
     if (encounter.finiteCount && (bankedTypes[type] || 0) + (carriedTypes[type] || 0) >= encounter.finiteCount) return;
-    makeJunk(0, encounter.band);
+    makeJunk(0, encounter.band, nextAltitude('encounter', encounter.altitudeBands));
     const object = junk.at(-1);
     object.x = PLAYER_X + object.speed * ((station.x - (PLAYER_X + 90)) / station.speed - encounter.leadSeconds);
     object.encounter = object.valuable = true;
@@ -216,7 +241,7 @@
     document.getElementById('previous-world').disabled = selectedWorld === 1;
     document.getElementById('next-world').disabled = selectedWorld === LevelSystem.worlds.length;
     document.getElementById('world-note').textContent = selectedWorld === 2
-      ? progress.best[10] ? 'Ten Moon missions available.' : 'Complete World One to unlock the Moon.' : selectedWorld === 3 ? progress.best[20] ? 'Mars missions 1–3 available. More missions, Mars Contracts, and Mars Endless are coming later.' : 'Complete World Two to unlock Mars.' : '';
+      ? progress.best[10] ? 'Ten Moon missions available.' : 'Complete World One to unlock the Moon.' : selectedWorld === 3 ? progress.best[20] ? 'Ten Mars missions available. Mars Contracts and Mars Endless are coming later.' : 'Complete World Two to unlock Mars.' : '';
     root.classList.toggle('moon-menu', selectedWorld === 2);
     root.classList.toggle('mars-menu', selectedWorld === 3);
     LevelSystem.campaign.forEach(config => {
@@ -239,6 +264,7 @@
     startButton.textContent = level.assignments && progress[level.checkpointKey] ? `▶ RESUME ASSIGNMENT ${progress[level.checkpointKey].stage + 1}` : isEndless ? '▶ START ENDLESS ORBIT' : '▶ START MISSION';
     document.getElementById('world-one-badge').hidden = !progress.best[10];
     document.getElementById('world-two-badge').hidden = !progress.best[20];
+    document.getElementById('world-three-badge').hidden = !progress.best[30];
     setHighScore(getHighScore());
     const briefing = document.getElementById('mission-briefing');
     briefing.hidden = isEndless || Boolean(level.contract) || level.world !== selectedWorld;
@@ -356,7 +382,7 @@
     nextButton.hidden = level.id === LevelSystem.campaign.length;
     document.getElementById('result-endless').hidden = !nextButton.hidden;
     nextButton.textContent = level.id === 10 ? 'CONTINUE TO THE MOON' : level.id === 20 ? 'CONTINUE TO MARS' : 'NEXT LEVEL';
-    status.textContent = nextButton.hidden ? 'Mars missions 1–3 complete. More missions are coming later. Replay for stars or try Moon Endless.' : level.id === 10 ? 'World One complete. The Moon is unlocked!' : level.id === 20 ? 'World Two complete. Mars is unlocked!' : 'Level complete. Next level unlocked.';
+    status.textContent = nextButton.hidden ? 'Mars campaign complete. Ascent engine recovered! Replay for stars or try Moon Endless.' : level.id === 10 ? 'World One complete. The Moon is unlocked!' : level.id === 20 ? 'World Two complete. Mars is unlocked!' : 'Level complete. Next level unlocked.';
     refreshCampaign();
   }
 
@@ -420,6 +446,7 @@
     impactText = 0;
     elapsed = 0;
     nextSalvageArrival = 8;
+    altitudeSequence = {};
     thrusting = false;
     depositing = false;
     phase = LevelSystem.phaseFor(level, 0);
@@ -630,7 +657,10 @@
     const massRatio = Math.min(mass / 100, 1) * runEffects.stabilizer;
     const gravity = 26 + massRatio * 5;
     const thrustPower = 72 * runEffects.thrust * thrustEffectiveness(mass, runEffects.stabilizer);
-    const damping = 0.968 + massRatio * 0.014;
+    // Fast loaded travel retains more velocity. Continuous ramp, no edge-triggered kick.
+    const speedFactor = clamp((Math.abs(player.velocityY) - 30) / 50, 0, 1);
+    const cargoMomentum = Math.min(mass / 60, 1) * runEffects.stabilizer;
+    const damping = Math.min(0.996, 0.968 + massRatio * 0.014 + 0.018 * cargoMomentum * speedFactor);
 
     player.velocityY += gravity * deltaTime;
     if (thrusting) player.velocityY -= thrustPower * deltaTime;
@@ -878,7 +908,24 @@
     context.restore();
   }
 
+  function momentumWarning() {
+    const velocity = player.velocityY;
+    if (!running || mass < 14 || Math.abs(velocity) < 30) return null;
+    const gravity = 26 + Math.min(mass / 100, 1) * runEffects.stabilizer * 5;
+    const thrust = 72 * runEffects.thrust * thrustEffectiveness(mass, runEffects.stabilizer);
+    // Conservative braking estimate ignores drag so the cue comes before the danger line.
+    const braking = velocity < 0 ? gravity : Math.max(1, thrust - gravity);
+    const distance = velocity < 0 ? player.y - ESCAPE_Y : REENTRY_Y - player.y;
+    if (distance > velocity * velocity / (2 * braking) + 20) return null;
+    return velocity < 0 ? { text: 'RELEASE THRUST · BRAKE', y: 145 } : { text: 'THRUST · BRAKE', y: 305 };
+  }
+
   function drawWarnings() {
+    const warning = momentumWarning();
+    if (warning) {
+      context.fillStyle = '#f1c76b'; context.font = 'bold 13px monospace'; context.textAlign = 'center';
+      context.fillText(warning.text, PLAYER_X, warning.y); context.textAlign = 'left';
+    }
     const top = clamp((135 - player.y) / 60, 0, 1);
     const bottom = clamp((player.y - 300) / 60, 0, 1);
     const pulse = 0.55 + 0.25 * Math.sin(elapsed * 7);
