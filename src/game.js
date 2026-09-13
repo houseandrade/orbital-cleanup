@@ -77,6 +77,7 @@
   let shake = 0;
   let impactText = 0;
   let elapsed = 0;
+  let nextSalvageArrival = 8;
 
   const random = (min, max) => min + Math.random() * (max - min);
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -113,15 +114,33 @@
     const bands = debrisConfig().bands;
     let roll = Math.random() * bands.reduce((sum, band) => sum + band.weight, 0);
     const band = chosenBand || bands.find(band => (roll -= band.weight) < 0) || bands[bands.length - 1];
-    junk.push({ x: WIDTH + offset, y: random(...band.y), speed: random(...band.speed),
-      value: Math.round(random(...band.value)), mass: band.mass, size: band.size,
+    let zone = band;
+    if (band.zones) {
+      let zoneRoll = Math.random() * band.zones.reduce((sum, entry) => sum + entry.weight, 0);
+      zone = band.zones.find(entry => (zoneRoll -= entry.weight) < 0) || band.zones.at(-1);
+    }
+    junk.push({ x: WIDTH + offset, y: random(...zone.y), speed: random(...band.speed),
+      value: Math.round(random(...zone.value)), valuable: Boolean(zone.risky), mass: band.mass, size: band.size,
       type: band.type, wobble: random(0, 6.28), hit: false });
   }
 
   function fillDebris(initial = false) {
     const config = debrisConfig();
-    const limit = config.count - (config.encounter ? 1 : 0);
-    const missing = limit - junk.filter(object => !object.special && !object.encounter).length;
+    const limit = config.count - (config.encounter ? 1 : 0) - (config.arrival ? 1 : 0);
+    const missing = limit - junk.filter(object => !object.special && !object.encounter && !object.limited && !object.scheduledSalvage).length;
+    if (initial && config.limited) {
+      const pool = config.limited;
+      for (let i = 0; i < pool.count; i++) {
+        makeJunk(i * pool.spacing, pool.band);
+        Object.assign(junk.at(-1), { limited: true, speed: pool.speed, orbitLength: pool.count * pool.spacing });
+      }
+    }
+    // Reserve a single rare-salvage slot. Collection never resets its cooldown.
+    if (config.arrival && elapsed >= nextSalvageArrival && !junk.some(object => object.scheduledSalvage)) {
+      makeJunk(0, config.arrival.band);
+      Object.assign(junk.at(-1), { scheduledSalvage: true, speed: config.arrival.speed });
+      nextSalvageArrival = elapsed + config.arrival.interval;
+    }
     const pocket = config.pocket;
     const livePockets = junk.filter(object => object.pocket).length;
     const pocketCount = pocket && !livePockets && missing >= pocket.count ? pocket.count : 0;
@@ -190,7 +209,7 @@
     document.getElementById('over-score-label').textContent = level.contract ? 'CONTRACT BEST' : isEndless ? 'ENDLESS BEST' : 'CAMPAIGN HIGH SCORE';
     startButton.textContent = isEndless ? '▶ START ENDLESS ORBIT' : '▶ START MISSION';
     setHighScore(getHighScore());
-    document.getElementById('level-description').textContent = (isEndless || level.contract) ? level.description : `${level.description} Goal: ${LevelSystem.criterionLabel(level.objective)}. Stars: ${level.stars.map(criterion => LevelSystem.criterionLabel(criterion, level.objective)).join(" / ")}.${level.objective.type === "bank_objects" ? " Higher stars also require all 10 objects banked." : ""}`;
+    document.getElementById('level-description').textContent = (isEndless || level.contract) ? level.description : `${level.description} Goal: ${LevelSystem.criterionLabel(level.objective)}. Stars: ${level.stars.map(criterion => LevelSystem.criterionLabel(criterion, level.objective)).join(" / ")}.${level.objective.type === "bank_objects" ? " Higher stars also require the object quota banked." : ""}`;
   }
 
   function showResult(previousBank = bank) {
@@ -206,7 +225,7 @@
     document.getElementById('phase-preview').hidden = !isEndless;
     finishButton.textContent = isEndless ? 'FINISH RUN SUCCESSFULLY' : 'FINISH LEVEL';
     replayButton.textContent = isEndless ? 'PLAY ENDLESS AGAIN' : 'REPLAY LEVEL';
-    const stars = LevelSystem.rating(level, { bank, bankedObjects });
+    const stars = LevelSystem.rating(level, { bank, bankedObjects, bankedTypes });
     resultTitle.textContent = 'OBJECTIVE MET';
     resultStats.textContent = `${level.id}. ${level.name} • $${bank} banked${level.objective?.type === "bank_objects" ? ` • ${bankedObjects} objects banked` : ""} • ${'★'.repeat(stars)}${'☆'.repeat(3 - stars)} • Previous best: ${progress.best[level.id] || 0}/3`;
     finishButton.hidden = false;
@@ -262,7 +281,7 @@
       status.textContent = `Run complete • $${bank} banked`;
       return;
     }
-    const stars = LevelSystem.rating(level, { bank, bankedObjects });
+    const stars = LevelSystem.rating(level, { bank, bankedObjects, bankedTypes });
     progress.best[level.id] = Math.max(progress.best[level.id] || 0, stars);
     progress.currentLevel = Math.min(level.id + 1, LevelSystem.campaign.length);
     LevelSystem.saveProgress(progress);
@@ -273,14 +292,17 @@
     document.getElementById('result-menu').hidden = false;
     nextButton.hidden = level.id === LevelSystem.campaign.length;
     document.getElementById('result-endless').hidden = !nextButton.hidden;
-    status.textContent = nextButton.hidden ? 'Campaign complete. Try Endless Orbit or replay for stars.' : 'Level complete. Next level unlocked.';
+    status.textContent = nextButton.hidden ? 'Available missions complete. More World One missions are coming. Try Endless Orbit or replay for stars.' : 'Level complete. Next level unlocked.';
     refreshCampaign();
   }
 
   function resumeLevel() {
     if (!pendingResult) return;
     pendingResult = false;
-    if (queuedPhase) { phase = queuedPhase; queuedPhase = null; }
+    if (queuedPhase) {
+      if (queuedPhase !== phase) nextSalvageArrival = Math.max(nextSalvageArrival, elapsed + 8);
+      phase = queuedPhase; queuedPhase = null;
+    }
     resultScreen.classList.remove('overlay--visible');
     resultScreen.setAttribute('aria-hidden', 'true');
     running = true;
@@ -327,6 +349,7 @@
     shake = 0;
     impactText = 0;
     elapsed = 0;
+    nextSalvageArrival = 8;
     thrusting = false;
     depositing = false;
     phase = LevelSystem.phaseFor(level, 0);
@@ -394,7 +417,7 @@
 
   function stationMessage() {
     if (depositNoticeTime > 0) return depositNotice;
-    if (isNearStation()) return depositing && mass > 0 ? `TRANSFERRING SALVAGE… ${Math.min(100, Math.floor(100 * depositProgress / Math.min(0.3, (cargo[0]?.mass || mass) / 18)))}% · KEEP HOLDING` : 'STATION IN RANGE';
+    if (isNearStation()) return depositing && mass > 0 ? `TRANSFERRING SALVAGE… ${Math.min(100, Math.floor(100 * depositProgress / Math.min(0.24, (cargo[0]?.mass || mass) / 22.5)))}% · KEEP HOLDING` : 'STATION IN RANGE';
     if (station.x >= PLAYER_X + 90) return `STATION PASS IN ${Math.ceil((station.x - PLAYER_X - 90) / station.speed)}s`;
     if (station.x > PLAYER_X - 90) return 'STATION PASS NOW • ALIGN ALTITUDE';
     const seconds = (station.x + 70 + nextStation.x - PLAYER_X - 90) / station.speed;
@@ -402,7 +425,7 @@
   }
 
   function updateHud() {
-    const stars = LevelSystem.rating(level, { bank, bankedObjects });
+    const stars = LevelSystem.rating(level, { bank, bankedObjects, bankedTypes });
     document.getElementById('flight-title').textContent = level.contract ? level.name : level.objective ? `${level.id}. ${level.name}` : level.name;
     missionDisplay.textContent = level.objective ? `BANK ${LevelSystem.criterionLabel(level.objective).toUpperCase()}` : `PERSONAL BEST $${sessionBests[scoreKey()] || 0}`;
     const goal = document.getElementById('goal-progress');
@@ -414,12 +437,12 @@
     const objectProgress = document.getElementById('object-progress');
     objectProgress.hidden = level.objective?.type !== 'bank_objects';
     objectProgress.textContent = `${bankedObjects} / ${level.objective?.target || 0} banked · ${carriedObjects} carried${bankedObjects < (level.objective?.target || 0) && bankedObjects + carriedObjects >= (level.objective?.target || 0) ? ' · Return to bank' : ''}`;
-    if (level.contract) {
+    if (level.contract || level.objective?.type === 'bank_type') {
       const count = level.objective.type === 'bank_type' ? (bankedTypes[level.objective.salvageType] || 0) : level.objective.type === 'bank_objects' ? bankedObjects : bank;
       const carried = level.objective.type === 'bank_type' ? (carriedTypes[level.objective.salvageType] || 0) : level.objective.type === 'bank_objects' ? carriedObjects : haul;
       goal.value = Math.min(count, goal.max);
       objectProgress.hidden = false;
-      objectProgress.textContent = `${count}/${goal.max} banked · ${carried} carried · ${contractCompleted ? 'Bonus paid' : `Bonus $${level.bonus}`}${!contractCompleted && count + carried >= goal.max ? ' · Return to bank' : ''}`;
+      objectProgress.textContent = `${count}/${goal.max} banked · ${carried} carried${level.contract ? ` · ${contractCompleted ? 'Bonus paid' : `Bonus $${level.bonus}`}` : ''}${!contractCompleted && count + carried >= goal.max ? ' · Return to bank' : ''}`;
     }
     document.getElementById('star-goals').hidden = !level.objective || level.contract;
     if (level.objective) level.stars.forEach((criterion, index) => {
@@ -489,9 +512,12 @@
     }
     tether = null;
     tetherButton.textContent = "◎ TETHER";
-    if (object.special) specialCollected = true;
-    else if (debrisConfig().pocket || debrisConfig().encounter || level.phases) fillDebris();
-    else makeJunk(random(150, 320));
+    // Collected finite mission targets never replenish during the run.
+    if (!object.limited) {
+      if (object.special) specialCollected = true;
+      else if (debrisConfig().pocket || debrisConfig().encounter || debrisConfig().arrival || level.phases) fillDebris();
+      else makeJunk(random(150, 320));
+    }
     status.textContent = `+${object.value} • ${orbitZone(player.y)} ORBIT • ${mass}kg`;
   }
 
@@ -499,7 +525,7 @@
     if (object.hit) return;
     object.hit = true;
     const relativeSpeed = Math.max(1, object.speed / 40);
-    const damage = Math.round((object.type === "SAT" ? 18 : object.type === "PANEL" ? 11 : 7) * relativeSpeed * 0.55);
+    const damage = Math.round(({ SAT: 18, PANEL: 11, SCRAP: 7, TOOL: 13, ROCKET: 22 }[object.type] || 7) * relativeSpeed * 0.55);
     integrity = clamp(integrity - damage, 0, 100);
     player.velocityY += (object.y - player.y) * 0.18 + random(-20, 20);
     player.flash = 0.25;
@@ -540,6 +566,10 @@
     if (player.y < ESCAPE_Y) { end("ESCAPE"); return; }
     if (player.y > REENTRY_Y) { end("REENTRY"); return; }
     junk.forEach(object => {
+      if (object.limited && object.x <= -40 && tether?.object !== object) {
+        object.x += object.orbitLength;
+        object.hit = false;
+      }
       if (object.special && object.x <= -40 && !specialCollected) { object.x = WIDTH + 300; object.hit = false; }
     });
     junk = junk.filter((object) => object.x > -40 || (tether && tether.object === object));
@@ -573,11 +603,11 @@
 
     if (depositing && isNearStation() && mass > 0) {
       depositProgress += deltaTime;
-      while (cargo.length && depositProgress >= Math.min(0.3, cargo[0].mass / 18)) {
+      while (cargo.length && depositProgress >= Math.min(0.24, cargo[0].mass / 22.5)) {
         const previousBank = bank;
         if (depositStartBank === null) depositStartBank = bank;
         const item = cargo.shift();
-        depositProgress -= Math.min(0.3, item.mass / 18);
+        depositProgress -= Math.min(0.24, item.mass / 22.5);
         bank += item.value;
         haul -= item.value;
         mass = Math.max(0, mass - item.mass);
@@ -643,9 +673,16 @@
     const objectY = tether && tether.object === object ? object.y : object.y + Math.sin(object.wobble) * 4;
     context.save();
     context.translate(object.x, objectY);
-    const dimensions = object.type === 'SCRAP' ? [14, 14] : object.type === 'PANEL' ? [28, 14] : [50, 28];
+    const dimensions = { SCRAP: [14, 14], PANEL: [28, 14], SAT: [50, 28], TOOL: [40, 40], ROCKET: [44, 44] }[object.type] || [28, 28];
     if (GameArt.sprite(context, object.type, 0, 0, ...dimensions)) {
       // The configured collision size remains unchanged.
+    } else if (object.type === 'TOOL') {
+      context.fillStyle = '#eee6d5'; context.fillRect(-12, -9, 24, 18);
+      context.strokeStyle = '#17283e'; context.strokeRect(-5, -13, 10, 5);
+      context.fillStyle = '#64efb1'; context.fillRect(-8, -3, 4, 5); context.fillRect(4, -3, 4, 5);
+    } else if (object.type === 'ROCKET') {
+      context.rotate(0.7); context.fillStyle = '#eee6d5'; context.fillRect(-9, -16, 18, 25);
+      context.fillStyle = '#536072'; context.fillRect(-12, 9, 24, 10);
     } else if (object.type === "SCRAP") {
       context.fillStyle = "#c7cbce"; context.fillRect(-5, -3, 10, 6); context.fillRect(-2, -6, 4, 12);
     } else if (object.type === "PANEL") {

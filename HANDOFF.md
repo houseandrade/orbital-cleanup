@@ -124,3 +124,30 @@ Validation: `node tests/acceptance.mjs` covers countdown/queued returns/pause, p
 ## v0.11 — Contract playtest build
 
 Implemented nine contracts, separate saved career wallet, once-per-run deposit-triggered bonuses, workshop, and three tiers each of reel and thrust upgrades. User explicitly requested upgrades apply across all modes; every run now snapshots owned gear. Only Contracts earn wallet currency. Sprite at `src/art/contracts.png` matches the existing menu palette and is cached offline. See README for initial prices, tier requirements, save semantics, and validation. Playtest preview uses port 8081 because 8080 already serves an older build. No merge or deployment performed.
+
+## v0.12 — Levels 6–7 and new salvage (in playtest)
+
+Adds Lost Equipment (bank 5 tool crates; $550/$850 for additional stars) and Heavy Metal (bank 3 rocket fragments; $750/$1,100 for additional stars). Both require deposited target items for every star tier. Tool crates are $60–$80, 8kg; rocket fragments are $130–$170, 18kg. Finite campaign pools supply seven crates in Level 6 and five rocket fragments in Level 7; missed items loop around and collected targets never replenish. New items use the approved transparent pixel art. Existing reel duration and cargo physics make fragments slower/heavier; collision base damage is 13 for crates and 22 for fragments, versus 11 for panels and 18 for satellites. These are initial content values for playtesting, chosen to differentiate medium equipment from heavy engines; existing items and flight physics are unchanged.
+
+Adds Equipment Return (5 crates, $500 bonus) and Engine Recovery (3 fragments, $700 bonus), preserving existing contracts, prices, and upgrade gates. Endless mixes crates into Scrap pockets and fragments into High-value passes without changing the opening field, recovery phase, phase thresholds, or milestones. Campaign saves keep their existing keys and unlock Level 6 after a saved Level 5 completion. Level 7 is the last currently available mission, not the World One finale. Production remains on the prior approved release until this build is approved.
+
+
+### v0.12 playtest adjustment — salvage2
+
+Brian found new items too common and clustered, allowing Heavy Metal to finish at the first station pass. Campaign target pools now contain the objective count plus two spares: seven TOOL items spaced 360px apart (12s at 30px/s) and five ROCKET items spaced 480px apart (16s at 30px/s). Shared speeds preserve spacing, and missed objects wrap by the pool circumference. Normal debris has five slots and contains only panels/scrap in these missions; collecting a limited target does not spawn a replacement. Replay restores the pool. Contracts retain repeatable weighted target spawns and Endless is unchanged.
+
+Brian also found per-item deposits slow. Transfer times are reduced 20% (0.3s cap to 0.24s, mass rate 18 to 22.5kg/s). Credit, dot removal, and target count updates still happen together for each item. Acceptance checks cover finite counts, gaps, first-pass quota limits, wrapping, no replenishment, replay reset, and interrupted banking.
+
+
+### v0.12 playtest adjustment — salvage3
+
+Brian approved the revised campaign pacing but found the new contract and Endless items too dense and frequent. Equipment Return and Engine Recovery now exclude new items from random bands and reserve one scheduled-salvage slot. Minimum spawn intervals are 12s for crates and 16s for fragments. Endless uses the same single-item cap with 18s/24s intervals in Scrap pockets/High-value passes. The first spawn waits 8s, travels at 30px/s, and takes another 6s to reach the astronaut. A live scheduled item blocks another across type/phase changes; collected items do not reset the spawn clock. Missed items leave the field and later arrivals remain available. Phase changes preserve existing items and impose at least an 8s delay before new rare spawns; missed intervals never produce catch-up clusters. Normal debris fills the other slots.
+
+Campaign finite pools and salvage2 deposit speed remain unchanged. Tests cover cooldowns, single-item caps, replay, preserved in-flight salvage across Endless phases, and all prior acceptance scenarios. Initial timing remains subject to user playtest.
+
+
+### v0.12 playtest adjustment — salvage4
+
+Brian requested more altitude variation and risk near the gameplay edges, consistently across modes. Shared TOOL/ROCKET bands now choose 25% high orbit (y105–140), 50% middle orbit (y170–280), or 25% low orbit (y300–330), then randomize altitude within that zone. The same configuration feeds both campaign finite pools, both new contract arrival schedules, and the corresponding Endless phases. Edge passes use the upper portion of existing value ranges (crates $70–$80, fragments $155–$170), while middle passes use $60–$69/$130–$154. Edge salvage gets the existing value highlight. Sprites and collision bounds remain safely inside y75–360 including wobble. Campaign 6–7 supporting panels/scrap also span broader altitude ranges, shared by the new contracts. Earlier campaign teaching layouts, scripted pockets, and existing Endless recovery behavior are unchanged. All previously validated pool counts, spacing, arrival intervals, and deposit speed remain unchanged.
+
+Validation forces each zone for both new types and checks safe bounds, value ranges, and shared configuration across Campaign, Contracts, and Endless. Full acceptance suite passes.

@@ -1,4 +1,4 @@
-# Orbital Cleanup v0.11
+# Orbital Cleanup v0.12
 
 A mobile-first, standalone PWA build of the v0.532 canvas prototype. Collect debris, manage the added cargo mass, and bank the haul at the cleanup station before the run ends.
 
@@ -115,3 +115,14 @@ The workshop offers three tiers each of reel speed (10/20/30% shorter tether dur
 Career data uses `orbital-cleanup-career-v1`, separate from existing campaign and best-score keys. Blocked storage falls back to session memory with a visible notice. Existing stars and scores are preserved; new runs in all modes benefit from purchased gear. The contract clipboard is an alpha-transparent generated PNG cached for offline use.
 
 Validation: `node tests/acceptance.mjs` covers every contract objective/payout, mixed-type multi-deposit recovery, lost cargo, bonus duplication, campaign/save isolation, purchase requirements and caps, reload and unavailable storage, and gear effects in all modes, plus the existing gameplay/input/PWA checks. Browser QA checked 320×568 and 375×667 menu layouts, contract board, workshop, launch and pause/exit, with no browser warnings/errors observed. Real-device handling and progression pacing need playtesting. This local build has not been merged or deployed.
+
+
+## v0.12 — Lost Equipment and Heavy Metal
+
+World One now has seven available missions. Lost Equipment requires five deposited tool crates; Heavy Metal requires three deposited rocket fragments. Higher stars also require the type quota, plus $550/$850 or $750/$1,100 banked respectively. Existing Level 5 completion unlocks Level 6 automatically; completing Level 6 unlocks Level 7.
+
+Tool crates use the approved cream case illustration and carry $60–$80 at 8kg. Rocket fragments use the broken engine illustration and carry $130–$170 at 18kg. Campaign missions contain seven crates or five rocket fragments, spaced 12 or 16 seconds apart. Missed targets circle back; collected targets do not respawn until replay. The existing mass-based reel and flight behavior applies. Equipment Return and Engine Recovery add repeatable targeted contracts with $500 and $700 bonuses. New contracts allow one target item in flight, with minimum 12s crate / 16s fragment spawn intervals. Endless introduces one rare item at a time during Scrap pockets (crates, minimum 18s) and High-value passes (fragments, minimum 24s), preserving the opening and recovery fields. New targets no longer appear in random clusters.
+
+Level 7 ends the currently available missions; the World One finale is still planned. Existing save keys and upgrades are preserved.
+
+New crates and rocket fragments share randomized high (25%), middle (50%), and low (25%) orbit spawning across campaign missions, their contracts, and Endless phases. Edge passes pay the upper portion of each item's existing value range and display a value highlight.

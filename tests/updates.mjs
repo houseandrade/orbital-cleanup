@@ -8,7 +8,7 @@ const sandbox = {
   self: { registration: { scope: 'https://example.com/orbital-cleanup/' },
     addEventListener: (name, fn) => { listeners[name] = fn; }, skipWaiting() {}, clients: { claim() {} } },
   caches: { open: async () => ({ put: async (key) => { stored.push(key); } }),
-    keys: async () => ['orbital-cleanup-v0.8.1', 'other-app-cache', 'orbital-cleanup-v0.11-contracts10'],
+    keys: async () => ['orbital-cleanup-v0.8.1', 'other-app-cache', 'orbital-cleanup-v0.12-salvage4'],
     delete: async key => { removed.push(key); } },
   fetch: async (url, options) => { requests.push({ url: String(url), options }); return { ok: !fail }; }
 };
@@ -16,8 +16,8 @@ vm.runInNewContext(fs.readFileSync(new URL('../service-worker.js', import.meta.u
 let work;
 listeners.install({ waitUntil(promise) { work = promise; } });
 await work;
-assert.ok(requests.every(({ url, options }) => url.includes('build=orbital-cleanup-v0.11-contracts10') && options.cache === 'reload'));
-assert.ok(stored.includes('./src/input.js?v=0.11-contracts10'), 'fresh versioned controls cached offline');
+assert.ok(requests.every(({ url, options }) => url.includes('build=orbital-cleanup-v0.12-salvage4') && options.cache === 'reload'));
+assert.ok(stored.includes('./src/input.js?v=0.12-salvage4'), 'fresh versioned controls cached offline');
 assert.ok(stored.includes('./index.html'));
 listeners.activate({ waitUntil(promise) { work = promise; } });
 await work;

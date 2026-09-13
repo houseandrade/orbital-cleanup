@@ -108,3 +108,8 @@ Endless phases use banked value within a repeating $750 cycle: Open field at $0,
 Score milestones are $150, $300, $500, $750, $1,000, then every $250 indefinitely. Banking across a milestone announces it. Every successful Endless deposit pauses for Keep Salvaging or Finish Run Successfully, including deposits below $150. Finishing shows Run Complete without campaign stars or unlocks; continuing retains normal failure outcomes. The existing separate Endless best and campaign save keys are retained; no save migration or new persistent fields.
 
 Validation: `node tests/acceptance.mjs` covers countdown/queued returns/pause, pocket recurrence and capacity, encounter alignment, bank-only phase transitions and previews, multi-threshold deposits, repeated cycles, finish/replay/failure, existing saves, mobile pointer ownership, and offline update isolation. Browser QA verified flight, banking preview, and successful finish at 320×568 and 375×667 with no console errors. Real iOS gesture behavior and initial balance settings still need hands-on playtesting. Fuel, upgrades, drifting debris, and new campaign levels remain deferred. Do not merge or deploy without approval.
+
+
+## v0.12 — Levels 6–7 and shared salvage
+
+Implemented for playtest: Lost Equipment and Heavy Metal, approved tool-crate and rocket-fragment artwork, targeted campaign stars, Equipment Return and Engine Recovery contracts, and new salvage in the middle Endless phases. Existing Level 5 saves unlock Level 6. Next: playtest target availability, heavy-cargo handling, and reward pacing before designing Levels 8–10 and the World One finale.

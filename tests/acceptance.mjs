@@ -85,9 +85,10 @@ source = source.replace(/\}\)\(\);\s*$/, `
   globalThis.__qa = {
     ContractSystem, refreshCareer,
     get careerState() { return { carriedTypes, bankedTypes, contractBonus, contractCompleted, runEffects }; },
-    fillDebris, scheduleEncounter, collect, draw, stationMessage, start, end, finishLevel, resumeLevel, update, fireTether, collide, thrustEffectiveness,
+    makeJunk, fillDebris, scheduleEncounter, collect, draw, stationMessage, start, end, finishLevel, resumeLevel, update, fireTether, collide, thrustEffectiveness,
     get state() { return { phase, queuedPhase, nextStation, elapsed, carriedObjects, bankedObjects, level, progress, pendingResult, running, haul, bank, mass, integrity, tether, junk, player, station, depositing, cargo }; },
     set scenario(value) {
+      if (value.elapsed !== undefined) elapsed = value.elapsed;
       if (value.running !== undefined) running = value.running;
       if (value.carriedObjects !== undefined) carriedObjects = value.carriedObjects;
       if (value.bankedObjects !== undefined) bankedObjects = value.bankedObjects;
@@ -149,7 +150,7 @@ qa.draw();
 assert.equal(qa.state.bank, 0, 'unfinished transfer does not credit money');
 assert.equal(qa.state.mass, 5, 'unfinished transfer keeps cargo mass');
 assert.equal(qa.state.cargo.length, 1, 'unfinished transfer keeps visible cargo');
-assert.match(elements.get('station-status').textContent, /TRANSFERRING SALVAGE.*36%/);
+assert.match(elements.get('station-status').textContent, /TRANSFERRING SALVAGE.*45%/);
 qa.scenario = { depositing: false };
 qa.update(0);
 assert.equal(qa.state.haul, 30, 'interrupting a transfer preserves its value');
@@ -461,8 +462,8 @@ assert.equal(elements.get('star-3').textContent, '★★★ $1000');
 deposit(350);
 qa.finishLevel();
 assert.equal(qa.state.progress.best[5], 1);
-assert.equal(elements.get('next-level').hidden, true);
-assert.equal(elements.get('result-endless').hidden, false);
+assert.equal(elements.get('next-level').hidden, false);
+assert.equal(elements.get('result-endless').hidden, true);
 qa.start();
 deposit(650);
 qa.finishLevel();
@@ -596,7 +597,7 @@ for (const config of vm.runInContext('LevelSystem.campaign', sandbox)) {
   assert.equal(config.player.suitIntegrity, 100);
   assert.deepEqual(Array.from(config.station.returnOffset), config.id === 1 ? [120,180] : [420,620]);
 }
-assert.deepEqual(Array.from(vm.runInContext('LevelSystem.campaign.map(c=>c.objective.target)', sandbox)), [60,150,150,10,350]);
+assert.deepEqual(Array.from(vm.runInContext('LevelSystem.campaign.map(c=>c.objective.target)', sandbox)), [60,150,150,10,350,5,3]);
 console.log('Orbital Cleanup v0.11 acceptance checks passed.');
 
 // Contract deposits, type tracking, once-per-run bonuses, and career purchases.
@@ -717,7 +718,7 @@ for (const contract of careerSystem.contracts) {
 elements.get('endless').listeners.click();
 deposit(100);
 assert.equal(elements.get('result-contracts').hidden, true, 'contract action does not carry into endless results');
-console.log('All nine contract objectives and payouts passed.');
+console.log('All eleven contract objectives and payouts passed.');
 
 launchContract('first-shift');
 const partialWallet = careerSystem.career.wallet;
@@ -746,3 +747,166 @@ assert.equal(careerSystem.career.wallet, partialWallet + 100);
 qa.end('SUIT');
 assert.equal(careerSystem.career.wallet, partialWallet + 100, 'failure retains received items only');
 console.log('Per-item deposit display, interruption, and retained earnings checks passed.');
+
+// New targeted campaign missions use deposited type counts for all star tiers.
+elements.get('result-menu').listeners.click();
+assert.equal(elements.get('level-6').disabled, false, 'existing Level 5 completion unlocks Level 6');
+assert.equal(elements.get('level-7').disabled, true);
+for (const id of [6, 7]) {
+  elements.get(`level-${id}`).listeners.click();
+  qa.start();
+  const config = qa.state.level;
+  const type = config.objective.salvageType;
+  const wallet = careerSystem.career.wallet;
+  assert.equal(config.debris.limited.band.type, type);
+  assert.match(elements.get('level-description').textContent, id === 6 ? /tool crates/ : /rocket fragments/);
+  for (let i = 0; i < config.objective.target; i++) qa.collect({ type, value: 70, mass: id === 6 ? 8 : 18, size: 12 });
+  qa.draw();
+  assert.equal(qa.state.pendingResult, false);
+  assert.equal(elements.get('goal-progress').value, 0);
+  assert.match(elements.get('object-progress').textContent, /Return to bank/);
+  assert.ok(!elements.get('object-progress').textContent.includes('Bonus'));
+  deposit(qa.state.haul);
+  assert.equal(qa.state.pendingResult, true);
+  assert.equal(elements.get('goal-progress').value, config.objective.target);
+  assert.ok(elements.get('star-1').classList.contains('earned'));
+  qa.finishLevel();
+  assert.equal(qa.state.progress.best[id], 1);
+  assert.equal(careerSystem.career.wallet, wallet, 'campaign does not pay contract wallet');
+  qa.start();
+  deposit(config.stars[2].target);
+  assert.equal(qa.state.pendingResult, false, 'money without target items cannot complete a targeted mission');
+  for (let i = 0; i < config.objective.target; i++) qa.collect({ type, value: 70, mass: 8, size: 12 });
+  deposit(qa.state.haul);
+  qa.finishLevel();
+  assert.equal(qa.state.progress.best[id], 3);
+  assert.equal(vm.runInContext(`LevelSystem.readProgress().best[${id}]`, sandbox), 3);
+}
+assert.equal(elements.get('next-level').hidden, true);
+assert.equal(elements.get('result-endless').hidden, false);
+assert.match(elements.get('status').textContent, /More World One missions are coming/);
+for (const [at, type] of [[150, 'TOOL'], [300, 'ROCKET']]) {
+  const config = vm.runInContext(`LevelSystem.phaseFor(LevelSystem.endless, ${at})`, sandbox);
+  assert.equal(config.debris.arrival.band.type, type);
+  assert.ok(config.debris.bands.every(b => b.type !== type));
+}
+for (const name of ['tool-crate', 'rocket-fragment']) {
+  assert.ok(cachedPaths.includes(`./src/art/${name}.png`));
+  assert.ok(fs.existsSync(new URL(`../src/art/${name}.png`, import.meta.url)));
+}
+console.log('Levels 6–7, targeted stars, save compatibility, new Endless salvage, and offline assets passed.');
+
+// Limited campaign pools circulate without multiplying or replenishing collected targets.
+for (const id of [6, 7]) {
+  elements.get(`level-${id}`).listeners.click();
+  qa.start();
+  const config = qa.state.level;
+  const pool = config.debris.limited;
+  const targets = qa.state.junk.filter(o => o.limited);
+  assert.equal(targets.length, config.objective.target + 2);
+  assert.equal(qa.state.junk.filter(o => !o.limited).length, config.debris.count);
+  assert.ok(config.debris.bands.every(b => !['TOOL', 'ROCKET'].includes(b.type)), 'new types cannot randomly replenish');
+  for (let i = 1; i < targets.length; i++) {
+    assert.equal(targets[i].x - targets[i - 1].x, pool.spacing);
+    assert.equal(targets[i].speed, targets[0].speed, 'equal speeds prevent clustering');
+  }
+  const firstPassEnds = (config.station.startX - (180 - 90)) / config.station.speed;
+  assert.ok(targets.filter(o => (o.x - 180) / o.speed <= firstPassEnds).length < config.objective.target, 'first station pass cannot receive the whole quota');
+  const missed = targets[0];
+  missed.x = -41;
+  qa.scenario = { player: { y: 225, velocityY: 0, flash: 0 } };
+  qa.update(0);
+  assert.ok(qa.state.junk.includes(missed));
+  assert.equal(missed.x, -41 + pool.count * pool.spacing);
+  qa.collect(missed);
+  qa.fillDebris();
+  assert.equal(qa.state.junk.filter(o => o.limited).length, pool.count - 1);
+  for (const item of targets.slice(1)) qa.collect(item);
+  qa.fillDebris();
+  assert.equal(qa.state.junk.filter(o => o.limited).length, 0, 'collected targets never respawn');
+  qa.start();
+  assert.equal(qa.state.junk.filter(o => o.limited).length, pool.count, 'replay restores the finite pool');
+}
+console.log('Finite campaign salvage pools, spacing, missed-item orbits, and replay checks passed.');
+
+function verifyRareArrivals(type, interval) {
+  assert.equal(qa.state.junk.filter(o => o.scheduledSalvage).length, 0);
+  qa.scenario = { elapsed: 7 };
+  qa.fillDebris();
+  assert.equal(qa.state.junk.filter(o => o.scheduledSalvage).length, 0, 'no opening cluster');
+  qa.scenario = { elapsed: 20 };
+  qa.fillDebris();
+  const first = qa.state.junk.find(o => o.scheduledSalvage);
+  assert.equal(first.type, type);
+  qa.collect(first);
+  qa.scenario = { elapsed: 20 + interval - 0.01 };
+  qa.fillDebris();
+  assert.equal(qa.state.junk.filter(o => o.scheduledSalvage).length, 0, 'collecting does not bypass cooldown');
+  qa.scenario = { elapsed: 20 + interval };
+  qa.fillDebris();
+  const second = qa.state.junk.find(o => o.scheduledSalvage);
+  assert.equal(second.type, type);
+  qa.scenario = { elapsed: 20 + interval * 4 };
+  qa.fillDebris();
+  assert.equal(qa.state.junk.filter(o => o.scheduledSalvage).length, 1, 'late updates never create catch-up clusters');
+  assert.equal(qa.state.junk.find(o => o.scheduledSalvage), second);
+}
+for (const [id, type, interval] of [['equipment-return', 'TOOL', 12], ['engine-recovery', 'ROCKET', 16]]) {
+  launchContract(id);
+  assert.ok(qa.state.level.debris.bands.every(b => !['TOOL', 'ROCKET'].includes(b.type)));
+  verifyRareArrivals(type, interval);
+  qa.start();
+  assert.equal(qa.state.junk.filter(o => o.scheduledSalvage).length, 0, 'replay resets arrival timing');
+}
+for (const [bank, type, interval] of [[150, 'TOOL', 18], [300, 'ROCKET', 24]]) {
+  elements.get('endless').listeners.click();
+  deposit(bank);
+  qa.resumeLevel();
+  verifyRareArrivals(type, interval);
+}
+// An item already in flight survives a phase change and blocks another rare item.
+elements.get('endless').listeners.click();
+deposit(150); qa.resumeLevel();
+qa.scenario = { elapsed: 20 }; qa.fillDebris();
+const inFlightCrate = qa.state.junk.find(o => o.scheduledSalvage);
+deposit(150);
+qa.scenario = { junk: [inFlightCrate] };
+qa.resumeLevel();
+qa.scenario = { elapsed: 100 }; qa.fillDebris();
+assert.equal(qa.state.junk.filter(o => o.scheduledSalvage).length, 1);
+assert.ok(qa.state.junk.includes(inFlightCrate));
+qa.collect(inFlightCrate);
+qa.fillDebris();
+assert.equal(qa.state.junk.filter(o => o.scheduledSalvage).length, 1);
+assert.equal(qa.state.junk.find(o => o.scheduledSalvage).type, 'ROCKET');
+console.log('Contract and Endless rare-item intervals, single-item caps, and phase transitions passed.');
+
+// Force each weighted altitude zone to verify risk, reward, and safe boundaries.
+const originalRandom = sandbox.Math.random;
+try {
+  for (const id of [6, 7]) {
+    elements.get(`level-${id}`).listeners.click(); qa.start();
+    const band = qa.state.level.debris.limited.band;
+    for (const [roll, zoneIndex] of [[0.1, 0], [0.5, 1], [0.9, 2]]) {
+      sandbox.Math.random = () => roll;
+      qa.makeJunk(0, band);
+      const object = qa.state.junk.at(-1);
+      const zone = band.zones[zoneIndex];
+      assert.ok(object.y >= zone.y[0] && object.y <= zone.y[1]);
+      assert.ok(object.value >= zone.value[0] && object.value <= zone.value[1]);
+      assert.equal(object.valuable, Boolean(zone.risky));
+      assert.ok(object.y - object.size - 4 > qa.state.level.field.escapeY);
+      assert.ok(object.y + object.size + 4 < qa.state.level.field.reentryY);
+    }
+    assert.ok(band.zones[0].value[0] > band.zones[1].value[1]);
+    assert.ok(band.zones[2].value[0] > band.zones[1].value[1]);
+  }
+} finally { sandbox.Math.random = originalRandom; }
+for (const id of ['equipment-return', 'engine-recovery']) {
+  launchContract(id);
+  assert.equal(qa.state.level.debris.arrival.band.zones.length, 3);
+}
+for (const at of [150, 300]) {
+  assert.equal(vm.runInContext(`LevelSystem.phaseFor(LevelSystem.endless, ${at}).debris.arrival.band.zones.length`, sandbox), 3);
+}
+console.log('Randomized salvage altitude zones, edge rewards, safe bounds, and shared-mode configuration passed.');
