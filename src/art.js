@@ -2,12 +2,14 @@
 const GameArt = (() => {
   const atlas = new Image();
   const earth = new Image();
+  const mars = new Image();
+  mars.src = 'src/art/mars/mars-background.png';
   const moon = new Image();
   moon.src = 'src/art/lunar/moon-background.png';
   atlas.src = 'src/art/sprites.png';
   earth.src = 'src/art/earth.png';
   const salvage = {};
-  for (const [type, file] of Object.entries({ TOOL: 'tool-crate', ROCKET: 'rocket-fragment', CAPSULE: 'survey-capsule', WHEEL: 'lunar/rover-wheel', TANK: 'lunar/oxygen-tank', INSTRUMENT: 'lunar/instrument-package', LEG: 'lunar/lander-leg', ROVER: 'lunar/rover-chassis' })) {
+  for (const [type, file] of Object.entries({ TOOL: 'tool-crate', ROCKET: 'rocket-fragment', CAPSULE: 'survey-capsule', WHEEL: 'lunar/rover-wheel', TANK: 'lunar/oxygen-tank', INSTRUMENT: 'lunar/instrument-package', LEG: 'lunar/lander-leg', ROVER: 'lunar/rover-chassis', SAMPLE: 'mars/sample-canister', DRONE: 'mars/survey-drone', ARRAY: 'mars/solar-array-section', FRAME: 'mars/habitat-support-frame', ENGINE: 'mars/ascent-engine' })) {
     salvage[type] = new Image();
     salvage[type].src = `src/art/${file}.png`;
   }
@@ -40,6 +42,13 @@ const GameArt = (() => {
     return true;
   }
   function backdrop(ctx, world = 1) {
+    if (world === 3) {
+      if (!mars.complete || !mars.naturalWidth) return false;
+      ctx.save(); ctx.imageSmoothingEnabled = false;
+      // Keep the terrain below the flight boundary and preserve the expedition site.
+      ctx.drawImage(mars, 0, 480, 1536, 544, 0, 368, 360, 152);
+      ctx.restore(); return true;
+    }
     if (world === 2) {
       if (!moon.complete || !moon.naturalWidth) return false;
       ctx.save(); ctx.imageSmoothingEnabled = false;

@@ -31,7 +31,7 @@
   const replayButton = document.getElementById("replay-level");
   const progress = LevelSystem.readProgress();
   let level = LevelSystem.campaign.find(config => config.id === progress.currentLevel);
-  let contractWorld = progress.activeWorld || 1;
+  let contractWorld = Math.min(progress.activeWorld || 1, 2);
   let selectedWorld = progress.selectedWorld || level.world || 1;
   let pendingResult = false;
   let exitPaused = false;
@@ -67,7 +67,7 @@
   let bankedTypes = {};
   let contractBonus = 0;
   let contractCompleted = false;
-  let runEffects = { reel: 1, thrust: 1, deposit: 1 };
+  let runEffects = { reel: 1, thrust: 1, deposit: 1, reach: 82, stabilizer: 1, scanner: 0 };
   let assignmentIndex = 0;
   let mass = 0;
   let integrity = 100;
@@ -86,13 +86,13 @@
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const easeOutCubic = (value) => 1 - Math.pow(1 - value, 3);
   const orbitZone = (y) => y < 170 ? "HIGH" : y < 270 ? "MID" : "LOW";
-  const thrustEffectiveness = (cargoMass) => Math.max(0.75, 1 - Math.min(cargoMass / 100, 1) * 0.25);
+  const thrustEffectiveness = (cargoMass, penaltyFactor = 1) => Math.max(0.75, 1 - Math.min(cargoMass / 100, 1) * 0.25 * penaltyFactor);
 
   const sessionBests = {};
   const endlessScoreKey = world => world === 2 ? 'orbital-cleanup-moon-endless-best-v1' : 'orbital-cleanup-endless-best-v1';
   const scoreKey = () => level.contract ? 'orbital-cleanup-contract-best-v1' : level.id === 'endless' ? endlessScoreKey(level.world) : HIGH_SCORE_KEY;
   function readEndlessBest(world = progress.activeWorld) {
-    const key = endlessScoreKey(world);
+    const key = endlessScoreKey(LevelSystem.endlessFor(world).world);
     try { return Math.max(sessionBests[key] || 0, Number.parseInt(localStorage.getItem(key), 10) || 0); }
     catch (_) { return sessionBests[key] || 0; }
   }
@@ -196,12 +196,15 @@
     for (const [id, item] of Object.entries(ContractSystem.upgrades)) {
       const tier = career.upgrades[id];
       const button = document.getElementById(`buy-${id}`);
-      const required = ContractSystem.requirements[tier];
-      document.getElementById(`tier-${id}`).textContent = `Tier ${tier}/3 · ${item.labels[tier]}`;
-      const locked = tier < 3 && career.completed.length < required;
-      button.disabled = tier === 3 || locked || career.wallet < item.prices[tier];
-      button.textContent = tier === 3 ? 'FULLY UPGRADED' : locked ? `${career.completed.length}/${required} DIFFERENT JOBS COMPLETED` : career.wallet < item.prices[tier] ? `NEED $${item.prices[tier] - career.wallet} MORE` : `BUY TIER ${tier + 1} · $${item.prices[tier]}`;
-      document.getElementById(`next-${id}`).textContent = tier === 3 ? 'Maximum tier reached.' : `Next: ${item.labels[tier + 1]} · $${item.prices[tier].toLocaleString()}`;
+      const maximum = item.prices.length;
+      const single = maximum === 1;
+      const maxed = tier >= maximum;
+      const required = ContractSystem.requirements[tier] || 0;
+      document.getElementById(`tier-${id}`).textContent = single ? item.labels[tier] : `Tier ${tier}/${maximum} · ${item.labels[tier]}`;
+      const locked = !maxed && career.completed.length < required;
+      button.disabled = maxed || locked || career.wallet < item.prices[tier];
+      button.textContent = maxed ? single ? 'UNLOCKED' : 'FULLY UPGRADED' : locked ? `${career.completed.length}/${required} DIFFERENT JOBS COMPLETED` : career.wallet < item.prices[tier] ? `NEED $${item.prices[tier] - career.wallet} MORE` : single ? `UNLOCK · $${item.prices[tier]}` : `BUY TIER ${tier + 1} · $${item.prices[tier]}`;
+      document.getElementById(`next-${id}`).textContent = maxed ? single ? 'Ready for every game mode.' : 'Maximum tier reached.' : single ? 'One-time unlock · $100' : `Next: ${item.labels[tier + 1]} · $${item.prices[tier].toLocaleString()}`;
     }
   }
 
@@ -213,8 +216,9 @@
     document.getElementById('previous-world').disabled = selectedWorld === 1;
     document.getElementById('next-world').disabled = selectedWorld === LevelSystem.worlds.length;
     document.getElementById('world-note').textContent = selectedWorld === 2
-      ? progress.best[10] ? 'Ten Moon missions available.' : 'Complete World One to unlock the Moon.' : '';
+      ? progress.best[10] ? 'Ten Moon missions available.' : 'Complete World One to unlock the Moon.' : selectedWorld === 3 ? progress.best[20] ? 'Mars missions 1–3 available. More missions, Mars Contracts, and Mars Endless are coming later.' : 'Complete World Two to unlock Mars.' : '';
     root.classList.toggle('moon-menu', selectedWorld === 2);
+    root.classList.toggle('mars-menu', selectedWorld === 3);
     LevelSystem.campaign.forEach(config => {
       const button = document.getElementById(`level-${config.id}`);
       button.hidden = config.world !== selectedWorld;
@@ -226,7 +230,7 @@
       if (selected) button.setAttribute('aria-controls', 'mission-briefing');
       else button.removeAttribute('aria-controls');
     });
-    document.getElementById('endless-destination').textContent = progress.activeWorld === 2 ? 'MOON' : 'EARTH';
+    document.getElementById('endless-destination').textContent = progress.activeWorld === 3 ? 'MOON · MARS ENDLESS COMING LATER' : progress.activeWorld === 2 ? 'MOON' : 'EARTH';
     document.getElementById('endless-menu-best').textContent = `$${readEndlessBest()}`;
     refreshCareer();
     const isEndless = level.id === 'endless';
@@ -351,8 +355,8 @@
     document.getElementById('result-menu').hidden = false;
     nextButton.hidden = level.id === LevelSystem.campaign.length;
     document.getElementById('result-endless').hidden = !nextButton.hidden;
-    nextButton.textContent = level.id === 10 ? 'CONTINUE TO THE MOON' : 'NEXT LEVEL';
-    status.textContent = nextButton.hidden ? 'Moon campaign complete. Rover recovered! Replay for stars or try Endless Orbit.' : level.id === 10 ? 'World One complete. The Moon is unlocked!' : 'Level complete. Next level unlocked.';
+    nextButton.textContent = level.id === 10 ? 'CONTINUE TO THE MOON' : level.id === 20 ? 'CONTINUE TO MARS' : 'NEXT LEVEL';
+    status.textContent = nextButton.hidden ? 'Mars missions 1–3 complete. More missions are coming later. Replay for stars or try Moon Endless.' : level.id === 10 ? 'World One complete. The Moon is unlocked!' : level.id === 20 ? 'World Two complete. Mars is unlocked!' : 'Level complete. Next level unlocked.';
     refreshCampaign();
   }
 
@@ -405,7 +409,7 @@
     bankedTypes = {};
     contractBonus = 0;
     contractCompleted = false;
-    runEffects = { reel: ContractSystem.effect('reel'), thrust: ContractSystem.effect('thrust'), deposit: ContractSystem.effect('deposit') };
+    runEffects = Object.fromEntries(Object.keys(ContractSystem.upgrades).map(id => [id, ContractSystem.effect(id)]));
     mass = 0;
     depositProgress = 0;
     integrity = level.player.suitIntegrity;
@@ -442,7 +446,7 @@
       selectedWorld = level.world;
       progress.selectedWorld = selectedWorld;
       progress.currentLevel = level.id;
-      if (level.world === 2) progress.activeWorld = 2;
+      progress.activeWorld = Math.max(progress.activeWorld || 1, level.world);
       LevelSystem.saveProgress(progress);
     }
     refreshCampaign();
@@ -463,7 +467,7 @@
 
     let title = "MISSION ENDED";
     let description = "Your run is over.";
-    if (kind === "REENTRY") { title = level.world === 2 ? "SURFACE IMPACT" : "REENTRY"; description = level.world === 2 ? "You descended into the lunar surface." : "You dropped below the recoverable orbit."; }
+    if (kind === "REENTRY") { title = level.world >= 2 ? "SURFACE IMPACT" : "REENTRY"; description = level.world === 3 ? "You descended into the Martian surface." : level.world === 2 ? "You descended into the lunar surface." : "You dropped below the recoverable orbit."; }
     if (kind === "ESCAPE") { title = "LOST IN SPACE"; description = "You drifted beyond the recoverable orbit."; }
     if (kind === "SUIT") { title = "SUIT FAILURE"; description = "Your suit integrity reached zero."; }
 
@@ -552,7 +556,7 @@
     }
 
     let target = null;
-    let closestDistance = 82;
+    let closestDistance = runEffects.reach;
     junk.forEach((object) => {
       const objectY = debrisY(object);
       const distance = Math.hypot(object.x - PLAYER_X, objectY - player.y);
@@ -622,9 +626,10 @@
     if (!running) return;
     elapsed += deltaTime;
     depositNoticeTime = Math.max(0, depositNoticeTime - deltaTime);
-    const massRatio = Math.min(mass / 100, 1);
+    // Scale only the cargo penalties; full mass remains in cargo, collisions and reeling.
+    const massRatio = Math.min(mass / 100, 1) * runEffects.stabilizer;
     const gravity = 26 + massRatio * 5;
-    const thrustPower = 72 * runEffects.thrust * thrustEffectiveness(mass);
+    const thrustPower = 72 * runEffects.thrust * thrustEffectiveness(mass, runEffects.stabilizer);
     const damping = 0.968 + massRatio * 0.014;
 
     player.velocityY += gravity * deltaTime;
@@ -742,8 +747,8 @@
 
   function drawEarth() {
     if (GameArt.backdrop(context, level.world)) return;
-    if (level.world === 2) {
-      context.fillStyle = '#626874'; context.fillRect(0, 378, WIDTH, HEIGHT - 378);
+    if (level.world >= 2) {
+      context.fillStyle = level.world === 3 ? '#963e29' : '#626874'; context.fillRect(0, 378, WIDTH, HEIGHT - 378);
       return;
     }
     context.beginPath();
@@ -763,11 +768,26 @@
     context.beginPath(); context.ellipse(250, 465, 65, 17, -0.1, 0, 6.28); context.fill();
   }
 
+  function scannerNeeded(object) {
+    if (!runEffects.scanner || !level.objective || (level.contract && contractCompleted)) return false;
+    const needs = criterion => {
+      if (criterion.type === 'all') return criterion.criteria.some(needs);
+      if (criterion.type === 'bank_type') return object.type === criterion.salvageType &&
+        (bankedTypes[object.type] || 0) + (carriedTypes[object.type] || 0) < criterion.target;
+      if (criterion.type === 'bank_group') return criterion.types.includes(object.type) &&
+        criterion.types.reduce((sum, type) => sum + (bankedTypes[type] || 0) + (carriedTypes[type] || 0), 0) < criterion.target;
+      if (criterion.type === 'bank_objects') return bankedObjects + carriedObjects < criterion.target;
+      if (criterion.type === 'bank_value') return bank + haul < criterion.target;
+      return false;
+    };
+    return needs(level.objective);
+  }
+
   function drawJunk(object) {
     const objectY = debrisY(object);
     context.save();
     context.translate(object.x, objectY);
-    const dimensions = { SCRAP: [14, 14], PANEL: [28, 14], SAT: [50, 28], TOOL: [40, 40], ROCKET: [44, 44], CAPSULE: [44, 44], WHEEL: [36, 36], TANK: [34, 34], INSTRUMENT: [40, 40], LEG: [44, 44], ROVER: [52, 44] }[object.type] || [28, 28];
+    const dimensions = { SCRAP: [14, 14], PANEL: [28, 14], SAT: [50, 28], TOOL: [40, 40], ROCKET: [44, 44], CAPSULE: [44, 44], WHEEL: [36, 36], TANK: [34, 34], INSTRUMENT: [40, 40], LEG: [44, 44], ROVER: [52, 44], SAMPLE: [34, 34], DRONE: [44, 44], ARRAY: [54, 34], FRAME: [48, 48], ENGINE: [52, 52] }[object.type] || [28, 28];
     if (GameArt.sprite(context, object.type, 0, 0, ...dimensions)) {
       // The configured collision size remains unchanged.
     } else if (object.type === 'ROVER') {
@@ -803,6 +823,15 @@
       context.fillStyle = "#52799f"; context.fillRect(-13, -6, 26, 12); context.strokeStyle = "#ccd5dc"; context.strokeRect(-13, -6, 26, 12);
     } else {
       context.fillStyle = "#d0d4d7"; context.fillRect(-7, -8, 14, 16); context.fillStyle = "#52799f"; context.fillRect(-25, -5, 18, 10); context.fillRect(7, -5, 18, 10);
+    }
+    if (scannerNeeded(object) && object.x >= 0 && object.x <= WIDTH) {
+      const half = Math.max(...dimensions) / 2 + 4;
+      context.strokeStyle = '#64efb1'; context.lineWidth = 2;
+      context.beginPath();
+      for (const x of [-1, 1]) for (const y of [-1, 1]) {
+        context.moveTo(x * (half - 6), y * half); context.lineTo(x * half, y * half); context.lineTo(x * half, y * (half - 6));
+      }
+      context.stroke();
     }
     if (object.special || object.valuable) {
       context.strokeStyle = '#f1c76b'; context.strokeRect(-29, -14, 58, 28);
@@ -872,7 +901,7 @@
       context.beginPath(); context.moveTo(0, REENTRY_Y); context.lineTo(WIDTH, REENTRY_Y); context.stroke();
       if (player.y > 325) {
         context.fillStyle = `rgba(255,135,95,${pulse})`; context.font = "bold 14px monospace"; context.textAlign = "center";
-        context.fillText(level.world === 2 ? "⚠ SURFACE IMPACT RISK" : "⚠ REENTRY RISK", 180, 340); context.textAlign = "left";
+        context.fillText(level.world >= 2 ? "⚠ SURFACE IMPACT RISK" : "⚠ REENTRY RISK", 180, 340); context.textAlign = "left";
       }
     }
   }
@@ -986,7 +1015,7 @@
   for (const contract of ContractSystem.contracts) document.getElementById(`contract-${contract.id}`).addEventListener('click', () => { if (contract.world === 2 && !progress.best[10]) return; level = contract; start(); });
   for (const [id, item] of Object.entries(ContractSystem.upgrades)) document.getElementById(`buy-${id}`).addEventListener('click', () => {
     if (running || pendingResult || exitPaused) return;
-    document.getElementById('purchase-status').textContent = ContractSystem.purchase(id) ? `${item.name} upgraded. Ready for your next contract.` : 'Purchase unavailable.';
+    document.getElementById('purchase-status').textContent = ContractSystem.purchase(id) ? `${item.name} ${item.prices.length === 1 ? 'unlocked' : 'upgraded'}. Ready for your next launch.` : 'Purchase unavailable.';
     refreshCareer();
   });
   function refreshContractWorld() {
@@ -995,6 +1024,7 @@
     document.getElementById('next-contract-world').disabled = contractWorld === 2;
     document.getElementById('contract-world-note').textContent = contractWorld === 2 && !progress.best[10] ? 'Complete World One to unlock Moon contracts.' : '';
     root.classList.toggle('moon-menu', contractWorld === 2);
+    root.classList.remove('mars-menu');
     for (const contract of ContractSystem.contracts) {
       const locked = contract.world === 2 && !progress.best[10];
       document.getElementById(`contract-card-${contract.id}`).hidden = contract.world !== contractWorld;

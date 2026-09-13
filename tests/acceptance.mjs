@@ -86,7 +86,7 @@ sandbox.globalThis = sandbox;
 let source = fs.readFileSync(new URL("../src/game.js", import.meta.url), "utf8");
 source = source.replace(/\}\)\(\);\s*$/, `
   globalThis.__qa = {
-    ContractSystem, refreshCareer,
+    ContractSystem, refreshCareer, scannerNeeded,
     get careerState() { return { carriedTypes, bankedTypes, contractBonus, contractCompleted, runEffects }; },
     depositDuration, makeJunk, fillDebris, scheduleEncounter, collect, draw, stationMessage, start, end, finishLevel, resumeLevel, update, fireTether, collide, thrustEffectiveness,
     get state() { return { phase, queuedPhase, nextStation, elapsed, carriedObjects, bankedObjects, level, progress, pendingResult, running, haul, bank, mass, integrity, tether, junk, player, station, depositing, cargo }; },
@@ -1366,7 +1366,8 @@ assert.equal(careerSystem.career.worldOneReward, true);
 assert.equal(qa.state.progress.moonFinale, undefined);
 assert.equal(qa.state.progress.finale.bank, 420, 'Moon completion preserves Earth replay checkpoint');
 assert.equal(elements.get('world-two-badge').hidden, false);
-assert.equal(elements.get('next-level').hidden, true);
+assert.equal(elements.get('next-level').hidden, false);
+assert.equal(elements.get('next-level').textContent, 'CONTINUE TO MARS');
 assert.ok(qa.state.progress.best[20] >= 1);
 qa.start(); assert.match(qa.state.level.name, /Last Rover · 1\/3/);
 const moonRewardReload = reloadCareer({getItem: () => storage.get('orbital-cleanup-career-v1'), setItem(){}});
@@ -1473,3 +1474,123 @@ assert.equal(careerSystem.career.wallet,walletBeforeEndless,'Endless does not aw
 elements.get('result-menu').listeners.click();
 assert.equal(elements.get('endless-menu-best').textContent,'$750');
 console.log('Moon contracts, world navigation, finite target density, payouts, migration, active world, Endless phases and separate scores passed.');
+
+// Mars introduction, finite quotas, progression and honest deferred mode navigation.
+const moonBest = qa.state.progress.best[20];
+delete qa.state.progress.best[20];
+const beforeLockedMars = qa.state.level.id;
+elements.get('level-21').listeners.click();
+assert.equal(qa.state.level.id, beforeLockedMars);
+qa.state.progress.best[20] = moonBest;
+elements.get('level-21').listeners.click(); qa.start();
+assert.equal(qa.state.level.world, 3);
+assert.equal(qa.state.progress.activeWorld, 3);
+assert.ok(qa.state.junk.every(o => ['PANEL', 'TOOL'].includes(o.type)));
+assert.ok(qa.state.junk.filter(o => o.type === 'TOOL').length <= 2);
+collectItems('PANEL', 5, 50); deposit(250); qa.finishLevel();
+assert.equal(qa.state.progress.best[21], 1);
+elements.get('next-level').listeners.click();
+assert.equal(qa.state.level.id, 22);
+for (const [id,type,count] of [[22,'SAMPLE',5],[23,'DRONE',3]]) {
+  elements.get(`level-${id}`).listeners.click(); qa.start();
+  const targets = qa.state.junk.filter(o => o.type === type).sort((a,b)=>a.x-b.x);
+  assert.equal(targets.length, count+2);
+  assert.ok(targets.every(o => o.speed === 30 && !o.drift));
+  assert.ok(targets.slice(1).every((o,i)=>o.x-targets[i].x >= 400));
+  const missed = targets.at(-1); missed.x=-100;
+  qa.scenario = {player:{y:225,velocityY:0,flash:0}}; qa.update(0.01);
+  assert.ok(qa.state.junk.includes(missed) && missed.x>360, 'missed finite target returns');
+  collectItems('PANEL', 1, 900); deposit(900);
+  assert.equal(qa.state.pendingResult,false,'value alone cannot satisfy Mars typed quota');
+  qa.collect(targets[0]); deposit(qa.state.haul);
+  assert.equal(qa.state.pendingResult,false,'partial quota remains unfinished');
+  // The deposit helper clears debris to isolate transfers; restore uncollected pool members.
+  qa.scenario = {junk:targets.slice(1)};
+  for(const object of targets.slice(1,count)) qa.collect(object);
+  qa.fillDebris();
+  assert.equal(qa.state.junk.filter(o=>o.type===type).length,2,'collected finite targets do not replenish');
+  deposit(qa.state.haul); qa.finishLevel();
+  assert.equal(qa.state.progress.best[id],3);
+}
+assert.equal(elements.get('next-level').hidden,true);
+assert.match(elements.get('status').textContent,/More missions are coming later/);
+assert.equal(careerSystem.career.worldTwoReward,true,'Mars batch does not disturb lunar reward');
+const marsSave = storage.get('orbital-cleanup-progress-v1');
+assert.equal(vm.runInContext('LevelSystem.readProgress().activeWorld',sandbox),3);
+assert.equal(vm.runInContext('LevelSystem.readProgress().selectedWorld',sandbox),3);
+elements.get('level-11').listeners.click(); qa.start();
+assert.equal(qa.state.progress.activeWorld,3,'Moon replay does not reset active Mars world');
+elements.get('endless').listeners.click();
+assert.equal(qa.state.level.world,2,'Mars Endless remains explicitly deferred');
+assert.match(elements.get('endless-destination').textContent,/MARS ENDLESS COMING LATER/);
+assert.equal(qa.scannerNeeded({type:'PANEL'}),false,'no objectives in Endless');
+for(const name of ['mars-background','sample-canister','survey-drone','solar-array-section','habitat-support-frame','ascent-engine']) {
+  assert.ok(fs.existsSync(new URL(`../src/art/mars/${name}.png`,import.meta.url)));
+  assert.ok(fs.readFileSync(new URL('../service-worker.js',import.meta.url),'utf8').includes(`./src/art/mars/${name}.png`));
+}
+
+// One-time scanner purchase, safe older saves and validation against invalid tiers.
+const oldGear=reloadCareer({getItem:()=>JSON.stringify({wallet:100,upgrades:{reel:1}}),setItem(){}});
+assert.equal(oldGear.effect('reach'),82);
+assert.equal(oldGear.effect('stabilizer'),1);
+assert.equal(oldGear.effect('scanner'),0);
+assert.equal(oldGear.purchase('scanner'),true);
+assert.equal(oldGear.career.wallet,0);
+assert.equal(oldGear.effect('scanner'),1);
+assert.equal(oldGear.purchase('scanner'),false);
+const invalidScanner=reloadCareer({getItem:()=>JSON.stringify({wallet:100,upgrades:{scanner:2}}),setItem(){}});
+assert.equal(invalidScanner.effect('scanner'),0);
+const poorScanner=reloadCareer({getItem:()=>JSON.stringify({wallet:99}),setItem(){}});
+assert.equal(poorScanner.purchase('scanner'),false);
+assert.equal(poorScanner.career.wallet,99);
+careerSystem.credit(10000);
+assert.equal(careerSystem.purchase('scanner'),true);
+qa.refreshCareer();
+assert.equal(elements.get('tier-scanner').textContent,'Unlocked');
+assert.equal(elements.get('buy-scanner').disabled,true);
+assert.doesNotMatch(elements.get('tier-scanner').textContent,/Tier/);
+
+// Reach expands interception only on the next launch, retaining tether duration.
+elements.get('level-22').listeners.click(); qa.start();
+const setReachTarget=()=>{qa.scenario={junk:[{x:266,y:225,wobble:0,mass:9,type:'DRONE'}],player:{y:225,velocityY:0,flash:0}};};
+setReachTarget();qa.fireTether();assert.equal(qa.state.tether,null);
+assert.equal(careerSystem.purchase('reach'),true);
+qa.fireTether();assert.equal(qa.state.tether,null,'purchases wait until launch');
+qa.start();setReachTarget();qa.fireTether();
+assert.ok(qa.state.tether,'upgraded reach acquires a target beyond standard range');
+assert.equal(qa.state.tether.duration,(0.55+9*0.025)*qa.careerState.runEffects.reel);
+qa.fireTether();
+qa.scenario={junk:[{x:271,y:225,wobble:0,mass:9}],player:{y:225,velocityY:0,flash:0}};
+qa.fireTether();assert.equal(qa.state.tether,null,'tier one range remains bounded');
+
+// Stabilization changes only loaded handling, not mass or unloaded motion.
+assert.equal(careerSystem.purchase('stabilizer'),true);qa.start();
+const velocity=(load,factor)=>{qa.careerState.runEffects.stabilizer=factor;qa.scenario={mass:load,junk:[],player:{y:225,velocityY:0,flash:0}};qa.update(0.1);return qa.state.player.velocityY;};
+assert.equal(velocity(0,1),velocity(0,0.55));
+assert.ok(velocity(100,0.55)<velocity(100,1));
+assert.equal(qa.state.mass,100);
+
+// Scanner follows required types, banked + carried quotas, and current finale assignment.
+qa.start();
+assert.equal(qa.scannerNeeded({type:'SAMPLE'}),true);
+assert.equal(qa.scannerNeeded({type:'DRONE'}),false);
+collectItems('SAMPLE',5,55);
+assert.equal(qa.scannerNeeded({type:'SAMPLE'}),false,'full carried quota removes extra target highlighting');
+qa.end('SUIT');qa.start();
+assert.equal(qa.scannerNeeded({type:'SAMPLE'}),true,'failed carried quota needs recovery again');
+collectItems('SAMPLE',5,55);deposit(275);
+assert.equal(qa.scannerNeeded({type:'SAMPLE'}),false,'banked quota remains satisfied');
+elements.get('level-8').listeners.click();qa.start();
+assert.equal(qa.scannerNeeded({type:'TOOL'}),true);
+assert.equal(qa.scannerNeeded({type:'ROCKET'}),true);
+collectItems('TOOL',3);
+assert.equal(qa.scannerNeeded({type:'TOOL'}),false);
+assert.equal(qa.scannerNeeded({type:'ROCKET'}),true);
+delete qa.state.progress.finale;
+elements.get('level-10').listeners.click();qa.start();
+assert.equal(qa.scannerNeeded({type:'PANEL'}),true);
+assert.equal(qa.scannerNeeded({type:'CAPSULE'}),false);
+collectItems('PANEL',6);deposit(qa.state.haul);qa.finishLevel();
+assert.equal(qa.scannerNeeded({type:'PANEL'}),false);
+assert.equal(qa.scannerNeeded({type:'TOOL'}),true,'scanner changes with finale assignment');
+console.log('Mars 1–3, finite targets, saves, deferred modes, scanner unlock/objectives, tether reach and cargo stabilization passed.');
