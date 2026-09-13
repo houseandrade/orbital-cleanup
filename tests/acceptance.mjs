@@ -25,6 +25,8 @@ function makeElement(id) {
     },
     focus() {},
     setAttribute() {},
+    removeAttribute() {},
+    insertAdjacentElement() {},
     addEventListener(name, callback) { this.listeners[name] = callback; },
     setPointerCapture() {},
     hasPointerCapture() { return false; },

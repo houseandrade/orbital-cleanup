@@ -173,3 +173,16 @@ User requested replacing the standalone World One completion banner with a green
 ## v0.13 polish1 — satellite variety and Campaign card
 
 User reported too few satellites in Levels 6–10, requested the completion check before World One in the card subtext, and noted the astronaut's right-side clipping. Later missions and all finale assignments now include a low-weight satellite band capped at two active satellites, sampling high/mid/low altitudes with upper-range rewards near boundaries. Existing normal debris counts and mission target pools remain unchanged. New target contracts inherit the varied support bands. The Campaign heading is plain, with subtext `10 missions · [green check when complete] World One`. The astronaut atlas background offset and silhouette mask now match its source bounds, preserving both arms inside the icon column. Grid text columns can shrink without overflowing. Full acceptance checks include satellite presence across all late-campaign assignments and the two-satellite cap. Production remains unchanged pending playtest approval.
+
+
+## v0.14 — Mission briefings and contract sorting
+
+Selecting a campaign mission expands a connected MISSION BRIEFING directly below its card. Objectives appear as bullets; mixed quotas are separate items, and Final Sweep lists all three assignments with its saved checkpoint. Star requirements remain explicit. Start Mission appears inside the briefing. Selecting another mission moves the briefing and scrolls the selected card into view.
+
+Contracts use the same expandable briefing, with objective bullets, payout terms, and Accept Contract inside the selected card. Only one contract briefing is open at a time. The board automatically sorts Easy, Medium, then Hard, preserving order within each difficulty. Existing objectives, unlocks, saved progress, payouts, and flight behavior are unchanged.
+
+Validation: full acceptance suite and whitespace checks pass; local browser review verified the campaign card, contract objectives, and collapse-on-selection behavior. Brian approved the changes and requested a v0.14 PR targeting production.
+
+## v0.15 — Planned Moon prototype
+
+Brian approved the five lunar salvage sprites and Moon background. Local assets are saved under src/art/lunar/ and previews/lunar-art-v1/ for the next iteration; they are not included in the v0.14 release. Preserve the distant Earth when cropping the Moon background. Next scope: world selector and the first three Moon missions, using the v0.14 inline briefing pattern.

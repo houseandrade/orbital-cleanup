@@ -200,7 +200,11 @@
       const button = document.getElementById(`level-${config.id}`);
       button.disabled = config.id > 1 && !progress.best[config.id - 1];
       button.textContent = `${config.id}. ${config.name} • ${progress.best[config.id] ? '★'.repeat(progress.best[config.id]) : button.disabled ? 'LOCKED' : 'NEW'}`;
-      button.setAttribute('aria-pressed', String(config.id === level.id));
+      const selected = config.id === level.id;
+      button.setAttribute('aria-pressed', String(selected));
+      button.setAttribute('aria-expanded', String(selected));
+      if (selected) button.setAttribute('aria-controls', 'mission-briefing');
+      else button.removeAttribute('aria-controls');
     });
     document.getElementById('endless-menu-best').textContent = `$${readEndlessBest()}`;
     refreshCareer();
@@ -210,9 +214,22 @@
     startButton.textContent = level.assignments && progress.finale ? `▶ RESUME ASSIGNMENT ${progress.finale.stage + 1}` : isEndless ? '▶ START ENDLESS ORBIT' : '▶ START MISSION';
     document.getElementById('world-one-badge').hidden = !progress.best[10];
     setHighScore(getHighScore());
-    document.getElementById('level-description').textContent = (isEndless || level.contract) ? level.description : `${level.description} Goal: ${LevelSystem.criterionLabel(level.objective)}. Stars: ${level.stars.map(criterion => LevelSystem.criterionLabel(criterion, level.objective)).join(" / ")}.${level.objective.type === "bank_objects" ? " Higher stars also require the object quota banked." : ""}`;
-    if (level.assignments) {
-      document.getElementById('level-description').textContent = `Final Sweep: clear 6 ordinary objects, recover 3 tool crates + 2 rocket fragments, then deliver the survey capsule. Completed assignments become checkpoints. All three assignments are required for stars; bank $1,200 / $1,800 for extra stars. ${progress.finale ? `Resume assignment ${progress.finale.stage + 1} with $${progress.finale.bank} checkpoint banked.` : 'Start assignment 1.'}`;
+    const briefing = document.getElementById('mission-briefing');
+    briefing.hidden = isEndless || Boolean(level.contract);
+    if (!briefing.hidden) {
+      document.getElementById(`level-${level.id}`).insertAdjacentElement('afterend', briefing);
+      document.getElementById('level-description').textContent = level.assignments
+        ? `Complete three assignments. Each completed assignment saves a checkpoint. ${progress.finale ? `Resume assignment ${progress.finale.stage + 1} with $${progress.finale.bank} banked.` : 'Start with assignment 1.'}`
+        : level.description;
+      // Split combined quotas into separate bullets, retaining every required criterion.
+      const objectiveItems = criterion => criterion.type === 'all'
+        ? criterion.criteria.flatMap(objectiveItems)
+        : [`Bank ${LevelSystem.criterionLabel(criterion)}.`];
+      const objectives = level.assignments
+        ? level.assignments.map((assignment, index) => `Assignment ${index + 1} — ${assignment.description}`)
+        : objectiveItems(level.objective);
+      document.getElementById('briefing-objectives').innerHTML = objectives.map(text => `<li>${text}</li>`).join('');
+      document.getElementById('briefing-stars').textContent = `★ Complete ${level.assignments ? 'all assignments' : 'the objectives'} · ★★ Bank ${LevelSystem.criterionLabel(level.stars[1])} · ★★★ Bank ${LevelSystem.criterionLabel(level.stars[2])}. Higher stars also require ${level.assignments ? 'all assignments' : 'all objectives'}.`;
     }
   }
 
@@ -889,7 +906,20 @@
     refreshCareer();
     document.getElementById(id).scrollIntoView?.({ block: 'start' });
   }
-  document.getElementById('contract-list').innerHTML = ContractSystem.contracts.map(c => `<article class="career-card"><div class="kicker">${c.difficulty} · ${c.objective.type === 'bank_type' ? 'TARGETED RECOVERY' : c.objective.type === 'bank_value' ? 'VALUE TARGET' : 'COLLECTION'}</div><h3>${c.name}</h3><p>Bank ${LevelSystem.criterionLabel(c.objective)}</p><p class="reward">Salvage value + $${c.bonus} bonus</p><button id="contract-${c.id}" type="button" class="button button--cta">ACCEPT CONTRACT</button></article>`).join('');
+  const difficultyOrder = { Easy: 0, Medium: 1, Hard: 2 };
+  const boardContracts = [...ContractSystem.contracts].sort((a, b) =>
+    (difficultyOrder[a.difficulty] ?? 3) - (difficultyOrder[b.difficulty] ?? 3));
+  document.getElementById('contract-list').innerHTML = boardContracts.map(c => `<article class="career-card contract-card"><button id="select-contract-${c.id}" type="button" class="button contract-selector" aria-expanded="false" aria-controls="contract-briefing-${c.id}"><span class="kicker">${c.difficulty} · ${c.objective.type === 'bank_type' ? 'TARGETED RECOVERY' : c.objective.type === 'bank_value' ? 'VALUE TARGET' : 'COLLECTION'}</span><span class="contract-name">${c.name}</span><span class="contract-prompt">VIEW BRIEFING</span></button><section id="contract-briefing-${c.id}" class="mission-briefing contract-briefing" aria-labelledby="contract-briefing-title-${c.id}" hidden><h3 id="contract-briefing-title-${c.id}">MISSION BRIEFING</h3><ul aria-label="Contract objectives"><li>Bank ${LevelSystem.criterionLabel(c.objective)}.</li></ul><p class="reward">Salvage value + $${c.bonus} bonus</p><p>Deposits pay immediately. Meet the objective to earn the bonus once this run. Unbanked cargo is lost if the run ends in failure.</p><button id="contract-${c.id}" type="button" class="button button--cta">ACCEPT CONTRACT</button></section></article>`).join('');
+  for (const contract of ContractSystem.contracts) {
+    document.getElementById(`select-contract-${contract.id}`).addEventListener('click', () => {
+      for (const item of ContractSystem.contracts) {
+        const selected = item.id === contract.id;
+        document.getElementById(`contract-briefing-${item.id}`).hidden = !selected;
+        document.getElementById(`select-contract-${item.id}`).setAttribute('aria-expanded', String(selected));
+      }
+      document.getElementById(`select-contract-${contract.id}`).scrollIntoView?.({ block: 'start' });
+    });
+  }
   document.getElementById('upgrade-list').innerHTML = Object.entries(ContractSystem.upgrades).map(([id, item]) => `<article class="career-card"><h3>${item.name}</h3><p id="tier-${id}" class="reward"></p><p>${item.description}</p><p id="next-${id}"></p><button id="buy-${id}" type="button" class="button button--cta"></button></article>`).join('');
   for (const contract of ContractSystem.contracts) document.getElementById(`contract-${contract.id}`).addEventListener('click', () => { level = contract; start(); });
   for (const [id, item] of Object.entries(ContractSystem.upgrades)) document.getElementById(`buy-${id}`).addEventListener('click', () => {
@@ -986,6 +1016,7 @@
       progress.currentLevel = level.id;
       LevelSystem.saveProgress(progress);
       refreshCampaign();
+      document.getElementById(`level-${level.id}`).scrollIntoView?.({ block: 'start' });
       draw();
     });
   });
