@@ -63,6 +63,7 @@ const ContractSystem = (() => {
     return { ...base, id, name, difficulty, bonus, contract: true, objective, stars: [], debris,
       description: `Bank ${LevelSystem.criterionLabel(objective)} for a $${bonus} bonus. Only deposited salvage counts.` };
   }));
+  for (const contract of contracts) contract.debris = LevelSystem.withBoundaryTargets(contract.debris, false, contract.objective.salvageType);
   let career = { wallet: 0, completed: [], upgrades: Object.fromEntries(Object.keys(upgrades).map(id => [id, 0])), worldOneReward: false, worldTwoReward: false, worldThreeReward: false };
   let persistent = true;
   try {

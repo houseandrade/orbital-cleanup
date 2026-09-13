@@ -8,6 +8,8 @@ The history below was reconstructed from merged changes and project records. Fol
 
 ### v0.17.0 — Full Mars campaign and cargo momentum (in review)
 
+Earth and Moon now share the boundary recovery layout across campaigns, all 17 Contracts, and every Endless phase. Recurring targets and salvage pockets alternate sides; mixed finite orders separate target types by altitude. Introductory fields keep gentler margins, unique finale targets keep scripted placement, and drift remains bounded. Existing timing, counts, objectives, and payouts are preserved. Shared momentum and braking cues apply throughout. Acceptance coverage includes every mode and phase.
+
 - Added Power Salvage, Habitat Recovery, Research Manifest, Survey Window, Power Reserve, Heavy Lift, and the three-assignment Last Ascent finale.
 - Added independent Mars checkpoints, completion badge, and one-time $2,000 reward. Existing 3-3 completion unlocks 3-4.
 - Broadened Mars support salvage and guaranteed upper/lower finite targets so central hovering cannot finish recovery quotas with standard gear. Mixed orders require travel between opposite bands.

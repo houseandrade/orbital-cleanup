@@ -305,6 +305,33 @@ const LevelSystem = (() => {
           arrival: { band: landerLeg, interval: 20, speed: 30 } } }
     ]
   };
+  // Shared movement layout: cycle ordinary fields and recurring targets across altitude bands.
+  // Clone configurations so contracts and phase variants never mutate their source missions.
+  const recoveryHigh = [105, 120], recoveryLow = [322, 334], recoveryMiddle = [195, 250];
+  function withBoundaryTargets(debris, introduction = false, targetType = null) {
+    const high = introduction ? [120, 140] : recoveryHigh;
+    const low = introduction ? [305, 325] : recoveryLow;
+    const layout = { ...debris, altitudeBands: introduction ? [recoveryMiddle, high, low] : [high, low, recoveryMiddle],
+      boundaryTargetType: targetType, targetAltitudeBands: [high, low] };
+    if (debris.limited && debris.limited.count > 1) layout.limited = { ...debris.limited,
+      altitudeBands: debris.limited.band.drift ? [recoveryMiddle, high, low] : [high, low, recoveryMiddle] };
+    if (debris.pools) layout.pools = debris.pools.map((pool, index) => ({ ...pool,
+      altitudeBands: [index % 2 ? low : high] }));
+    if (debris.arrival) layout.arrival = { ...debris.arrival, altitudeBands: [high, low] };
+    if (debris.encounter) layout.encounter = { ...debris.encounter, altitudeBands: [high, low] };
+    // Keep pockets together, with their original internal spread and pacing.
+    if (debris.pocket) layout.pocket = { ...debris.pocket, altitudeBands: [[114, 118], [318, 322]] };
+    return layout;
+  }
+  for (const config of campaign.filter(config => config.world <= 2)) {
+    config.debris = withBoundaryTargets(config.debris, config.missionNumber === 1);
+    if (config.assignments) config.assignments = config.assignments.map(assignment => ({ ...assignment,
+      debris: withBoundaryTargets(assignment.debris) }));
+  }
+  for (const mode of [endless, moonEndless]) {
+    mode.debris = withBoundaryTargets(mode.debris);
+    mode.phases = mode.phases.map(phase => ({ ...phase, debris: withBoundaryTargets(phase.debris) }));
+  }
   // Mars Endless is deferred; its active campaign uses the existing Moon destination.
   const endlessFor = world => world >= 2 ? moonEndless : endless;
   function phaseFor(config, bank) {
@@ -368,5 +395,5 @@ const LevelSystem = (() => {
   function saveProgress(progress) {
     try { localStorage.setItem(key, JSON.stringify(progress)); return true; } catch (_) { return false; }
   }
-  return { worlds, campaign, endless, endlessFor, phaseFor, nextMilestone, criterionLabel, meets, rating, readProgress, saveProgress };
+  return { withBoundaryTargets, worlds, campaign, endless, endlessFor, phaseFor, nextMilestone, criterionLabel, meets, rating, readProgress, saveProgress };
 })();

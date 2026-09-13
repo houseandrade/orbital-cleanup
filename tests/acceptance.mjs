@@ -532,7 +532,7 @@ function checkEncounter() {
   const target = targets[0];
   assert.ok(Math.abs((target.x - 180) / target.speed - ((qa.state.station.x - 270) / 25 - 4)) < 1e-8);
   assert.ok(target.value >= 150 && target.value <= 200);
-  assert.ok(target.y >= 108 && target.y <= 135);
+  assert.ok((target.y >= 105 && target.y <= 120) || (target.y >= 322 && target.y <= 334));
 }
 checkEncounter();
 assert.equal(qa.state.junk.length, 8);
@@ -576,7 +576,8 @@ deposit(200); qa.resumeLevel();
 assert.equal(qa.state.phase.name, 'Recovery stretch');
 qa.scenario = {junk:[]}; qa.fillDebris();
 assert.equal(qa.state.junk.length, 5);
-assert.ok(qa.state.junk.every(o=>o.mass === 2 && o.y >= 195 && o.y <= 260));
+assert.ok(qa.state.junk.every(o=>o.mass === 2));
+assert.ok(qa.state.junk.some(o=>o.y<=120) && qa.state.junk.some(o=>o.y>=322));
 deposit(250); qa.resumeLevel();
 assert.equal(qa.state.phase.name, 'Open field', 'phases repeat by banked value');
 deposit(550);
@@ -1138,7 +1139,7 @@ for (const [id, type, gap, expectedMass] of [[14, 'INSTRUMENT', 420, 6], [15, 'L
   assert.equal(targets[1].x - targets[0].x, gap);
   assert.equal(targets[0].speed, 30);
   assert.equal(targets[0].mass, expectedMass);
-  assert.ok(targets.every(item => item.y >= 175 && item.y <= 275));
+  assert.ok(targets.some(item => item.y <= 120) && targets.some(item => item.y >= 322));
   assert.ok(targets.every(item => item.y - item.size - 4 > 75 && item.y + item.size + 4 < 360));
   assert.equal(config.debris.bands.some(b => b.type === type), false, 'no random target clusters');
   qa.scenario = {junk: [targets[0]], player:{y:225,velocityY:0,flash:0}};
@@ -1762,3 +1763,94 @@ assert.match(qa.momentumWarning().text,/RELEASE THRUST/);
 qa.scenario={mass:0};assert.equal(qa.momentumWarning(),null);
 qa.scenario={mass:60,player:{y:320,velocityY:10,flash:0}};assert.equal(qa.momentumWarning(),null);
 console.log('Mars 4–10, outer-band coverage, station-timed quotas, independent finale/reward, and cargo momentum/braking checks passed.');
+
+// Earth/Moon movement layouts: every campaign, contract and Endless phase has outer targets.
+const boundaryModes=vm.runInContext('[...LevelSystem.campaign.filter(c=>c.world<=2),LevelSystem.endlessFor(1),LevelSystem.endlessFor(2),...ContractSystem.contracts]',sandbox);
+for(const config of boundaryModes) {
+  for(const field of [config.debris,...(config.assignments||[]).map(a=>a.debris),...(config.phases||[]).map(p=>p.debris)]) {
+    assert.equal(field.altitudeBands.length,3);
+    assert.ok(field.altitudeBands.some(y=>y[1]<=140));
+    assert.ok(field.altitudeBands.some(y=>y[0]>=305));
+    if(field.limited?.count>1) assert.ok(field.limited.altitudeBands.length>=3);
+    if(field.pools?.length>1) {
+      assert.ok(field.pools[0].altitudeBands[0][1]<=120);
+      assert.ok(field.pools[1].altitudeBands[0][0]>=322);
+    }
+    for(const event of [field.arrival,field.encounter,field.pocket].filter(Boolean)) {
+      assert.equal(event.altitudeBands.length,2,'recurring recoveries alternate both sides');
+    }
+  }
+}
+// Generate actual fields under worst-case random rolls, preserving count and spacing.
+const preBoundaryRandom=sandbox.Math.random;
+try {
+  for(const roll of [0,0.999]) {
+    sandbox.Math.random=()=>roll;
+    for(let id=1;id<=20;id++) {
+      if(id===10) delete qa.state.progress.finale;
+      if(id===20) delete qa.state.progress.moonFinale;
+      elements.get(`level-${id}`).listeners.click();qa.start();
+      const ordinary=qa.state.junk.filter(o=>!o.limited&&!o.pocket&&!o.encounter&&!o.special);
+      assert.ok(ordinary.some(o=>o.y<=140),`mission ${id} upper support`);
+      assert.ok(ordinary.some(o=>o.y>=305),`mission ${id} lower support`);
+      const finite=qa.state.junk.filter(o=>o.limited);
+      if(finite.length>1) {
+        assert.ok(finite.some(o=>o.y<=120));assert.ok(finite.some(o=>o.y>=322));
+      }
+      assert.ok(qa.state.junk.every(o=>o.y>75 && o.y<360));
+    }
+  }
+} finally {sandbox.Math.random=preBoundaryRandom;}
+// Drift stays gentle, but outer targets now remain in safe outer corridors.
+elements.get('level-17').listeners.click();qa.start();
+for(const object of qa.state.junk.filter(o=>o.drift)) {
+  const originalY=object.y;
+  qa.scenario={junk:[object],player:{y:225,velocityY:0,flash:0}};
+  object.x=340;object.speed=0;
+  for(let i=0;i<200;i++) {qa.scenario={player:{y:225,velocityY:0,flash:0}};qa.update(0.01);}
+  assert.ok(object.y>=object.drift.minY && object.y<=object.drift.maxY);
+  assert.ok(object.drift.minY-object.size>75 && object.drift.maxY+object.size<360);
+  if(originalY<=120) assert.ok(object.y<=125);
+  if(originalY>=322) assert.ok(object.y>=317);
+}
+// Pocket members stay together; the next group uses the opposite band.
+elements.get('level-13').listeners.click();qa.start();
+const upperPocket=qa.state.junk.filter(o=>o.pocket);
+assert.ok(upperPocket.every(o=>o.y<145));
+upperPocket.forEach(o=>qa.collect(o));qa.fillDebris();
+assert.ok(qa.state.junk.filter(o=>o.pocket).every(o=>o.y>300));
+// Recurring mission-critical ordinary targets alternate even if every roll chooses that type.
+const savedContractRandom=sandbox.Math.random;
+try {
+  sandbox.Math.random=()=>0;
+  launchContract('satellite-sweep');
+  const satellites=qa.state.junk.filter(o=>o.type==='SAT');
+  assert.ok(satellites.some(o=>o.y<=120) && satellites.some(o=>o.y>=322));
+} finally {sandbox.Math.random=savedContractRandom;}
+launchContract('equipment-return');
+qa.scenario={elapsed:8,junk:[]};qa.fillDebris();
+let crate=qa.state.junk.find(o=>o.scheduledSalvage);
+assert.ok(crate.y<=120);qa.collect(crate);
+qa.scenario={elapsed:20};qa.fillDebris();
+crate=qa.state.junk.find(o=>o.scheduledSalvage);assert.ok(crate.y>=322);
+// All Endless phases retain their density and produce both edges on refill.
+for(const world of [1,2]) {
+  qa.state.progress.activeWorld=world;elements.get('endless').listeners.click();
+  for(const at of [0,150,300,500]) {
+    if(at){deposit(at-qa.state.bank);qa.resumeLevel();}
+    qa.scenario={junk:[]};qa.fillDebris();
+    assert.ok(qa.state.junk.some(o=>o.y<=120));
+    assert.ok(qa.state.junk.some(o=>o.y>=322));
+    assert.ok(!qa.state.junk.some(o=>['CAPSULE','ROVER','ENGINE'].includes(o.type)));
+  }
+}
+// Shared momentum is identical for equal gear/load in campaign, Contracts and Endless.
+function modeBrake(startMode) {
+  startMode();standardMars();qa.scenario={mass:60,junk:[],player:{y:225,velocityY:60,flash:0},thrusting:true};
+  qa.update(0.1);return qa.state.player.velocityY;
+}
+const earthMomentum=modeBrake(()=>{elements.get('level-7').listeners.click();qa.start();});
+assert.equal(modeBrake(()=>{elements.get('level-15').listeners.click();qa.start();}),earthMomentum);
+assert.equal(modeBrake(()=>launchContract('engine-recovery')),earthMomentum);
+assert.equal(modeBrake(()=>{qa.state.progress.activeWorld=2;elements.get('endless').listeners.click();}),earthMomentum);
+console.log('Earth/Moon boundary coverage across campaigns, Contracts and all Endless phases, safe drift, alternating pockets/arrivals and shared momentum passed.');

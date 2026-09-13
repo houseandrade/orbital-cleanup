@@ -14,6 +14,8 @@ For version-by-version changes, see [Release notes](RELEASE-NOTES.md).
 
 **v0.17.0 in review:** Brian requested missions 4–10 and reported too little altitude travel and risk. The full Mars campaign is now implemented locally, with guaranteed outer-band targets and shared cargo momentum at speed. See [Mars campaign review](MARS-CAMPAIGN-PLAN.md) for missions, tuning, checkpoints, and validation. Production remains v0.16.0 until approval.
 
+Earth and Moon now share the boundary recovery layout across campaigns, all 17 Contracts, and every Endless phase. Recurring targets and salvage pockets alternate sides; mixed finite orders separate target types by altitude. Introductory fields keep gentler margins, unique finale targets keep scripted placement, and drift remains bounded. Existing timing, counts, objectives, and payouts are preserved. Shared momentum and braking cues apply throughout. Acceptance coverage includes every mode and phase.
+
 ### Setting and art direction
 
 An abandoned expedition site above red Martian terrain, with research equipment and remnants of unfinished infrastructure. Proposed salvage colors are cream, charcoal, and metallic tones with teal accents for readability against the red background. Mix new Mars items with familiar tool crates, panels, and rocket fragments.

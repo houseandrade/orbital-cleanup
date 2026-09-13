@@ -81,6 +81,7 @@
   let impactText = 0;
   let elapsed = 0;
   let nextSalvageArrival = 8;
+  let altitudeSequence = {};
 
   const random = (min, max) => min + Math.random() * (max - min);
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -118,19 +119,37 @@
   // Drifting targets use one altitude for rendering, collisions, and tether acquisition.
   const debrisY = object => object.drift || tether?.object === object ? object.y : object.y + Math.sin(object.wobble) * 4;
 
-  function makeJunk(offset = 0, chosenBand = null) {
+  function nextAltitude(key, ranges) {
+    if (!ranges) return undefined;
+    const index = altitudeSequence[key] || 0;
+    altitudeSequence[key] = index + 1;
+    return ranges[index % ranges.length];
+  }
+
+  function makeJunk(offset = 0, chosenBand = null, altitudeRange = null) {
     const bands = debrisConfig().bands.filter(band => !band.maxActive || junk.filter(object => object.type === band.type).length < band.maxActive);
     let roll = Math.random() * bands.reduce((sum, band) => sum + band.weight, 0);
     const band = chosenBand || bands.find(band => (roll -= band.weight) < 0) || bands[bands.length - 1];
+    if (!chosenBand && debrisConfig().boundaryTargetType === band.type) {
+      altitudeRange = nextAltitude('target', debrisConfig().targetAltitudeBands);
+    }
     let zone = band;
     if (band.zones) {
       let zoneRoll = Math.random() * band.zones.reduce((sum, entry) => sum + entry.weight, 0);
       zone = band.zones.find(entry => (zoneRoll -= entry.weight) < 0) || band.zones.at(-1);
     }
-    junk.push({ x: WIDTH + offset, y: random(...zone.y), speed: random(...band.speed),
+    if (altitudeRange && band.zones) {
+      const midpoint = (altitudeRange[0] + altitudeRange[1]) / 2;
+      const distance = candidate => Math.max(candidate.y[0] - midpoint, midpoint - candidate.y[1], 0);
+      zone = band.zones.reduce((best, candidate) => distance(candidate) < distance(best) ? candidate : best);
+    }
+    const drift = band.drift && altitudeRange && (altitudeRange[0] < band.drift.minY || altitudeRange[1] > band.drift.maxY)
+      ? { ...band.drift, minY: Math.max(ESCAPE_Y + band.size + 1, altitudeRange[0] - 5), maxY: Math.min(REENTRY_Y - band.size - 1, altitudeRange[1] + 5) }
+      : band.drift;
+    junk.push({ x: WIDTH + offset, y: random(...(altitudeRange || zone.y)), speed: random(...band.speed),
       value: Math.round(random(...zone.value)), valuable: Boolean(zone.risky), mass: band.mass, size: band.size,
       type: band.type, wobble: random(0, 6.28), hit: false,
-      ...(band.drift ? { drift: { ...band.drift }, driftDirection: Math.random() < 0.5 ? -1 : 1 } : {}) });
+      ...(drift ? { drift: { ...drift }, driftDirection: Math.random() < 0.5 ? -1 : 1 } : {}) });
   }
 
   function fillDebris(initial = false) {
@@ -140,16 +159,14 @@
     for (const pool of initial ? (config.pools || (config.limited ? [config.limited] : [])) : []) {
       for (let i = 0; i < pool.count; i++) {
         // Explicit altitude bands guarantee coverage across the field, even with unlucky random rolls.
-        const targetBand = pool.altitudeBands
-          ? { ...pool.band, zones: undefined, y: pool.altitudeBands[i % pool.altitudeBands.length] }
-          : pool.band;
-        makeJunk((pool.offset || 0) + i * pool.spacing, targetBand);
+        const altitudeRange = pool.altitudeBands?.[i % pool.altitudeBands.length];
+        makeJunk((pool.offset || 0) + i * pool.spacing, pool.band, altitudeRange);
         Object.assign(junk.at(-1), { limited: true, speed: pool.speed, orbitLength: pool.count * pool.spacing });
       }
     }
     // Reserve a single rare-salvage slot. Collection never resets its cooldown.
     if (config.arrival && elapsed >= nextSalvageArrival && !junk.some(object => object.scheduledSalvage)) {
-      makeJunk(0, config.arrival.band);
+      makeJunk(0, config.arrival.band, nextAltitude('arrival', config.arrival.altitudeBands));
       Object.assign(junk.at(-1), { scheduledSalvage: true, speed: config.arrival.speed });
       nextSalvageArrival = elapsed + config.arrival.interval;
     }
@@ -158,11 +175,15 @@
     const pocketCount = pocket && !livePockets && missing >= pocket.count ? pocket.count : 0;
     const normalCount = pocket ? Math.max(0, missing - Math.max(0, pocket.count - livePockets)) : missing;
     for (let i = 0; i < normalCount; i++) {
-      makeJunk(initial ? i * config.spacing + random(0, 30) : random(140, 320));
+      const ordinary = junk.filter(object => !object.special && !object.encounter && !object.limited && !object.scheduledSalvage && !object.pocket);
+      // Refill missing bands first, including small support fields beside grouped recoveries.
+      const missingAltitude = config.altitudeBands?.find(range => !ordinary.some(object => object.y >= range[0] && object.y <= range[1]));
+      makeJunk(initial ? i * config.spacing + random(0, 30) : random(140, 320), null,
+        missingAltitude || nextAltitude('support', config.altitudeBands));
     }
     if (pocketCount) {
       const offset = initial ? normalCount * config.spacing + random(0, 30) : random(140, 320);
-      const y = random(...pocket.band.y);
+      const y = random(...(nextAltitude('pocket', pocket.altitudeBands) || pocket.band.y));
       const speed = random(...pocket.band.speed);
       for (let i = 0; i < pocketCount; i++) {
         makeJunk(offset + i * pocket.spacing, pocket.band);
@@ -183,7 +204,7 @@
     if (junk.some(object => object.encounter)) return;
     const type = encounter.band.type;
     if (encounter.finiteCount && (bankedTypes[type] || 0) + (carriedTypes[type] || 0) >= encounter.finiteCount) return;
-    makeJunk(0, encounter.band);
+    makeJunk(0, encounter.band, nextAltitude('encounter', encounter.altitudeBands));
     const object = junk.at(-1);
     object.x = PLAYER_X + object.speed * ((station.x - (PLAYER_X + 90)) / station.speed - encounter.leadSeconds);
     object.encounter = object.valuable = true;
@@ -425,6 +446,7 @@
     impactText = 0;
     elapsed = 0;
     nextSalvageArrival = 8;
+    altitudeSequence = {};
     thrusting = false;
     depositing = false;
     phase = LevelSystem.phaseFor(level, 0);

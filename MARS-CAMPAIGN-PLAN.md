@@ -6,7 +6,7 @@ Production is v0.16.0. Brian requested missions 4–10, followed by Mars Contrac
 
 Brian found it too easy to remain in the middle and rarely faced danger. Mars now spreads ordinary support salvage across the flight area, while finite mission pools guarantee outer-band targets. Sample Return and Survey Recovery retain some central targets, but no longer offer enough central targets to complete the quota. Mixed orders in 3-6, 3-9 and the finale put required types at opposite altitudes. Power Reserve requires four arrays from a pool with three at each extreme, so both bands must be visited with standard gear.
 
-The arrival mission remains forgiving. Earth and Moon spawn layouts are unchanged in this batch. Shared cargo momentum applies in every world and mode, giving existing heavy-cargo missions more risk too.
+The arrival missions remain forgiving. Following playtest feedback, Earth and Moon campaigns, Contracts, and every Endless phase now use upper/lower target coverage too. Finite target fields span both boundaries; mixed orders split target types by altitude; recurring salvage and grouped pockets alternate sides. Drift corridors stay inside safe flight bounds. Unique finale recoveries retain their scripted placement. Shared cargo momentum applies in every world and mode, giving existing heavy-cargo missions more risk too.
 
 ## Mission tuning
 
@@ -56,3 +56,5 @@ Open http://127.0.0.1:8089/previews/v017/playtest.html for standard gear or the 
 ## Next
 
 Playtest campaign pacing, outer-band travel, loaded braking, and finale checkpoints. Then create Mars Contracts and Mars Endless using the established per-world patterns. Until then, the menu explicitly offers Moon Endless to active Mars players. Horizontal drone speed variation, suit reinforcement, and upgrade illustrations remain deferred.
+
+Earth/Moon extension validation: acceptance checks cover all campaign layouts, all 17 Contracts, every Endless phase, safe drift corridors, alternating arrivals/pockets, and identical momentum under matching equipment and load across modes. Target counts, spacing, arrival timing, objectives, and payouts are preserved.
