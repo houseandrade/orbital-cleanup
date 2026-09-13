@@ -10,6 +10,8 @@
 
 Preserve manageable object density across worlds: spaced mission targets, bounded support fields, capped valuable support items, and no random clusters of mission targets. Exact tuning may vary by world.
 
+Keep mission briefings concise across every world: goals, relevant cargo behavior, and recovery rules, without exact timing, altitude, or spawn-pattern hints. This copy cleanup is included in the v0.15.3 playtest before production and mission 2-10.
+
 Suggested Moon batches: playtest missions 2-7–2-9; mission 2-10 with per-world checkpoints/rewards and campaign balance; then lunar Contracts and world-aware Endless. Mars planning follows this work.
 
 The sections below are historical delivery notes. This current roadmap supersedes older statements about available missions, deployment state, and deferred modes.

@@ -37,7 +37,7 @@ const ContractSystem = (() => {
     }
     const objective = { type, target, salvageType };
     return { ...base, id, name, difficulty, bonus, contract: true, objective, stars: [],
-      description: `Bank ${LevelSystem.criterionLabel(objective)} for a $${bonus} bonus. Only deposited salvage counts.${arrival ? ' Targets travel at varied altitudes; edge-of-orbit items pay more.' : ''}`,
+      description: `Bank ${LevelSystem.criterionLabel(objective)} for a $${bonus} bonus. Only deposited salvage counts.`,
       debris: { count: 8, spacing: 85, bands, ...(arrival ? { arrival } : {}) } };
   });
   let career = { wallet: 0, completed: [], upgrades: { reel: 0, thrust: 0, deposit: 0 }, worldOneReward: false };

@@ -198,3 +198,5 @@ All three preserve five ordinary support slots and a two-satellite cap. Existing
 Validation: full acceptance suite passes, including bounded drift, shared tether altitude, cancellation without snapping, station lead timing, single-target recurrence, six-recovery cap, replay, multi-deposit objectives, heavy mixed quotas, star gating, and progression. Browser QA checked briefings and mission launch at 375×667 with no warnings/errors. Initial pacing and rewards require playtesting. Helper: previews/v0153/playtest.html on localhost:8085.
 
 v0.15.2 (stable flight header) was approved, merged via PR #19, and successfully deployed; the public page was verified. v0.15.3 remains a separate playtest build pending approval.
+
+Briefing copy follows Heavy Metal’s concise style: state the goal, relevant cargo behavior, and missed-item recovery rules without revealing exact timing, altitude, or spawn patterns. Applied across Earth and Moon, including the Earth finale, with matching cleanup for Contracts and Endless phase text. Off Course and Catch the Window use Brian’s requested wording. Gameplay tuning and objectives are unchanged.
