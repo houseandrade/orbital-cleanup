@@ -1,0 +1,9 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Moon playtest</title><style>body{max-width:480px;margin:60px auto;padding:24px;background:#080d13;color:#eef3f8;font:16px/1.6 system-ui}button,a{display:block;margin:16px 0;padding:16px;border:0;border-radius:8px;background:#a7f3b5;color:#0a2315;font:700 16px system-ui;text-align:center}p{color:#abb8c6}</style><h1>Moon playtest · v0.15</h1><p>Try all three Moon missions using your local preview gear. This prepares a separate local test save, with Earth completed and the first two Moon missions completed so all three are available. Production progress is unaffected.</p><button id="prepare">Prepare Moon test save</button><a href="../../">Open game</a><p id="status"></p><script>
+ document.getElementById('prepare').onclick=()=>{
+ if(location.hostname!=='localhost'||location.port!=='8085'){document.getElementById('status').textContent='This helper only runs on the dedicated localhost:8085 preview.';return;}
+ const key='orbital-cleanup-progress-v1';
+ if(!localStorage.getItem('moon-playtest-backup')) localStorage.setItem('moon-playtest-backup',JSON.stringify({progress:localStorage.getItem(key)}));
+ localStorage.setItem(key,JSON.stringify({currentLevel:11,selectedWorld:2,best:Object.fromEntries(Array.from({length:12},(_,i)=>[i+1,1]))}));
+ document.getElementById('status').textContent='Moon test save is ready. Open the game and choose Campaign.';
+ };
+</script></html>

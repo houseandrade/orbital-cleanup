@@ -31,6 +31,7 @@
   const replayButton = document.getElementById("replay-level");
   const progress = LevelSystem.readProgress();
   let level = LevelSystem.campaign.find(config => config.id === progress.currentLevel);
+  let selectedWorld = progress.selectedWorld || level.world || 1;
   let pendingResult = false;
   let exitPaused = false;
   let resumeAfterExit = false;
@@ -196,10 +197,20 @@
   }
 
   function refreshCampaign() {
+    const world = LevelSystem.worlds.find(item => item.id === selectedWorld);
+    const missions = LevelSystem.campaign.filter(config => config.world === selectedWorld);
+    document.getElementById('world-name').textContent = `WORLD ${world.id} · ${world.name}`;
+    document.getElementById('world-progress').textContent = `${missions.filter(config => progress.best[config.id]).length}/${world.planned} missions · ${missions.reduce((total, config) => total + (progress.best[config.id] || 0), 0)}/${world.planned * 3} stars`;
+    document.getElementById('previous-world').disabled = selectedWorld === 1;
+    document.getElementById('next-world').disabled = selectedWorld === LevelSystem.worlds.length;
+    document.getElementById('world-note').textContent = selectedWorld === 2
+      ? `${progress.best[10] ? 'First 3 missions available.' : 'Complete World One to unlock the Moon.'} Missions 2-4 through 2-10 are coming later.` : '';
+    root.classList.toggle('moon-menu', selectedWorld === 2);
     LevelSystem.campaign.forEach(config => {
       const button = document.getElementById(`level-${config.id}`);
+      button.hidden = config.world !== selectedWorld;
       button.disabled = config.id > 1 && !progress.best[config.id - 1];
-      button.textContent = `${config.id}. ${config.name} • ${progress.best[config.id] ? '★'.repeat(progress.best[config.id]) : button.disabled ? 'LOCKED' : 'NEW'}`;
+      button.textContent = `${config.world}-${config.missionNumber}. ${config.name} • ${progress.best[config.id] ? '★'.repeat(progress.best[config.id]) : button.disabled ? 'LOCKED' : 'NEW'}`;
       const selected = config.id === level.id;
       button.setAttribute('aria-pressed', String(selected));
       button.setAttribute('aria-expanded', String(selected));
@@ -215,7 +226,7 @@
     document.getElementById('world-one-badge').hidden = !progress.best[10];
     setHighScore(getHighScore());
     const briefing = document.getElementById('mission-briefing');
-    briefing.hidden = isEndless || Boolean(level.contract);
+    briefing.hidden = isEndless || Boolean(level.contract) || level.world !== selectedWorld;
     if (!briefing.hidden) {
       document.getElementById(`level-${level.id}`).insertAdjacentElement('afterend', briefing);
       document.getElementById('level-description').textContent = level.assignments
@@ -322,14 +333,15 @@
       LevelSystem.saveProgress(progress);
       const rewarded = ContractSystem.rewardWorldOne();
       resultTitle.textContent = 'WORLD ONE COMPLETE';
-      resultStats.textContent = `Survey capsule secured · ${Object.values(progress.best).reduce((sum, value) => sum + value, 0)}/30 campaign stars · ${rewarded ? '$2,000 completion reward added to your wallet' : 'Completion reward already claimed'}`;
+      resultStats.textContent = `Survey capsule secured · ${LevelSystem.campaign.filter(config => config.world === 1).reduce((sum, config) => sum + (progress.best[config.id] || 0), 0)}/30 campaign stars · ${rewarded ? '$2,000 completion reward added to your wallet' : 'Completion reward already claimed'}`;
     }
     finishButton.hidden = continueButton.hidden = true;
     replayButton.hidden = false;
     document.getElementById('result-menu').hidden = false;
     nextButton.hidden = level.id === LevelSystem.campaign.length;
     document.getElementById('result-endless').hidden = !nextButton.hidden;
-    status.textContent = nextButton.hidden ? 'World One complete. Try Endless Orbit or replay for stars.' : 'Level complete. Next level unlocked.';
+    nextButton.textContent = level.id === 10 ? 'CONTINUE TO THE MOON' : 'NEXT LEVEL';
+    status.textContent = nextButton.hidden ? 'Moon prototype complete. More missions are coming; replay for stars or try Endless Orbit.' : level.id === 10 ? 'World One complete. The Moon is unlocked!' : 'Level complete. Next level unlocked.';
     refreshCampaign();
   }
 
@@ -416,6 +428,8 @@
     root.classList.remove('menu-open');
     status.textContent = level.description;
     if (level.objective && !level.contract) {
+      selectedWorld = level.world;
+      progress.selectedWorld = selectedWorld;
       progress.currentLevel = level.id;
       LevelSystem.saveProgress(progress);
     }
@@ -437,7 +451,7 @@
 
     let title = "MISSION ENDED";
     let description = "Your run is over.";
-    if (kind === "REENTRY") { title = "REENTRY"; description = "You dropped below the recoverable orbit."; }
+    if (kind === "REENTRY") { title = level.world === 2 ? "SURFACE IMPACT" : "REENTRY"; description = level.world === 2 ? "You descended into the lunar surface." : "You dropped below the recoverable orbit."; }
     if (kind === "ESCAPE") { title = "LOST IN SPACE"; description = "You drifted beyond the recoverable orbit."; }
     if (kind === "SUIT") { title = "SUIT FAILURE"; description = "Your suit integrity reached zero."; }
 
@@ -472,7 +486,7 @@
 
   function updateHud() {
     const stars = LevelSystem.rating(level, { bank, bankedObjects, bankedTypes });
-    document.getElementById('flight-title').textContent = level.contract ? level.name : level.objective ? `${level.id}. ${level.name}` : level.name;
+    document.getElementById('flight-title').textContent = level.contract ? level.name : level.objective ? `${level.world}-${level.missionNumber}. ${level.name}` : level.name;
     missionDisplay.textContent = level.objective ? `BANK ${LevelSystem.criterionLabel(level.objective).toUpperCase()}` : `PERSONAL BEST $${sessionBests[scoreKey()] || 0}`;
     const goal = document.getElementById('goal-progress');
     const endlessTarget = level.milestones ? LevelSystem.nextMilestone(level, bank) : null;
@@ -579,7 +593,7 @@
     if (object.hit) return;
     object.hit = true;
     const relativeSpeed = Math.max(1, object.speed / 40);
-    const damage = Math.round(({ SAT: 18, PANEL: 11, SCRAP: 7, TOOL: 13, ROCKET: 22, CAPSULE: 15 }[object.type] || 7) * relativeSpeed * 0.55);
+    const damage = Math.round(({ SAT: 18, PANEL: 11, SCRAP: 7, TOOL: 13, ROCKET: 22, CAPSULE: 15, WHEEL: 12, TANK: 10 }[object.type] || 7) * relativeSpeed * 0.55);
     integrity = clamp(integrity - damage, 0, 100);
     player.velocityY += (object.y - player.y) * 0.18 + random(-20, 20);
     player.flash = 0.25;
@@ -705,7 +719,11 @@
   }
 
   function drawEarth() {
-    if (GameArt.backdrop(context)) return;
+    if (GameArt.backdrop(context, level.world)) return;
+    if (level.world === 2) {
+      context.fillStyle = '#626874'; context.fillRect(0, 378, WIDTH, HEIGHT - 378);
+      return;
+    }
     context.beginPath();
     context.arc(180, HEIGHT + 48, 180, Math.PI, Math.PI * 2);
     context.lineTo(WIDTH, HEIGHT);
@@ -727,9 +745,17 @@
     const objectY = tether && tether.object === object ? object.y : object.y + Math.sin(object.wobble) * 4;
     context.save();
     context.translate(object.x, objectY);
-    const dimensions = { SCRAP: [14, 14], PANEL: [28, 14], SAT: [50, 28], TOOL: [40, 40], ROCKET: [44, 44], CAPSULE: [44, 44] }[object.type] || [28, 28];
+    const dimensions = { SCRAP: [14, 14], PANEL: [28, 14], SAT: [50, 28], TOOL: [40, 40], ROCKET: [44, 44], CAPSULE: [44, 44], WHEEL: [36, 36], TANK: [34, 34] }[object.type] || [28, 28];
     if (GameArt.sprite(context, object.type, 0, 0, ...dimensions)) {
       // The configured collision size remains unchanged.
+    } else if (object.type === 'WHEEL') {
+      context.strokeStyle = '#ddd8c9'; context.lineWidth = 4;
+      context.beginPath(); context.arc(0, 0, 11, 0, Math.PI * 2); context.stroke();
+      context.fillStyle = '#bba461'; context.fillRect(-3, -3, 6, 6);
+    } else if (object.type === 'TANK') {
+      context.fillStyle = '#eee6d5'; context.fillRect(-6, -12, 12, 24);
+      context.fillStyle = '#52799f'; context.fillRect(-6, -3, 12, 6);
+      context.fillStyle = '#929da5'; context.fillRect(-3, -16, 6, 4);
     } else if (object.type === 'TOOL') {
       context.fillStyle = '#eee6d5'; context.fillRect(-12, -9, 24, 18);
       context.strokeStyle = '#17283e'; context.strokeRect(-5, -13, 10, 5);
@@ -812,7 +838,7 @@
       context.beginPath(); context.moveTo(0, REENTRY_Y); context.lineTo(WIDTH, REENTRY_Y); context.stroke();
       if (player.y > 325) {
         context.fillStyle = `rgba(255,135,95,${pulse})`; context.font = "bold 14px monospace"; context.textAlign = "center";
-        context.fillText("⚠ REENTRY RISK", 180, 340); context.textAlign = "left";
+        context.fillText(level.world === 2 ? "⚠ SURFACE IMPACT RISK" : "⚠ REENTRY RISK", 180, 340); context.textAlign = "left";
       }
     }
   }
@@ -830,9 +856,9 @@
       context.fillStyle = "#fff"; context.fillRect((index * 67) % WIDTH, (index * 41) % 350, 1, 1);
     }
     context.globalAlpha = 1;
+    drawEarth();
     junk.forEach(drawJunk);
     drawStation();
-    drawEarth();
     drawWarnings();
     if (tether) {
       context.beginPath(); context.moveTo(PLAYER_X, player.y); context.lineTo(tether.currentX, tether.currentY);
@@ -931,6 +957,21 @@
   document.getElementById('choose-upgrades').addEventListener('click', () => careerPage('upgrades-picker'));
   document.getElementById('back-contracts').addEventListener('click', openCampaign);
   document.getElementById('back-upgrades').addEventListener('click', openCampaign);
+  function selectWorld(worldId) {
+    selectedWorld = worldId;
+    progress.selectedWorld = worldId;
+    const missions = LevelSystem.campaign.filter(config => config.world === worldId);
+    if (level.world !== worldId || level.contract || !level.objective) {
+      const available = missions.filter(config => config.id === 1 || progress.best[config.id - 1]);
+      const remembered = available.find(config => config.id === progress.currentLevel);
+      if (available.length) level = remembered || available.find(config => !progress.best[config.id]) || available[0];
+    }
+    LevelSystem.saveProgress(progress);
+    refreshCampaign();
+    document.getElementById('campaign-picker').scrollIntoView?.({ block: 'start' });
+  }
+  document.getElementById('previous-world').addEventListener('click', () => { if (selectedWorld > 1) selectWorld(selectedWorld - 1); });
+  document.getElementById('next-world').addEventListener('click', () => { if (selectedWorld < LevelSystem.worlds.length) selectWorld(selectedWorld + 1); });
   document.getElementById('choose-campaign').addEventListener('click', () => {
     if (!level.objective || level.contract) level = LevelSystem.campaign.find(config => config.id === progress.currentLevel);
     root.classList.add('picker-open');
@@ -938,7 +979,7 @@
     document.getElementById('campaign-picker').hidden = false;
     document.getElementById('contracts-picker').hidden = true;
     document.getElementById('upgrades-picker').hidden = true;
-    refreshCampaign();
+    selectWorld(selectedWorld);
   });
   document.getElementById('back-modes').addEventListener('click', openCampaign);
   document.getElementById('over-menu').addEventListener('click', openCampaign);
