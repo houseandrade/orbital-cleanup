@@ -55,18 +55,19 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
 #exit-confirm { z-index:5; }
 .menu-panel { max-width:none; border:0; border-radius:0; padding:20px 8px 120px; background:transparent; }
 #start-screen { background:var(--space) url('src/art/earth.png') center bottom / 100% auto no-repeat; }
-.tagline { color:var(--muted); font:14px monospace; margin:6px 0 24px; }
+.tagline { color:var(--muted); font:14px monospace; margin:6px 0 8px; }
 .mode-card { display:grid; grid-template-columns:64px 1fr; gap:14px; align-items:center; text-align:left; border:1px solid var(--border); border-radius:9px; padding:18px 14px; margin-bottom:12px; background:#0b131de8; }
 .mode-card h2 { font-size:19px; }
 .mode-card p { margin:6px 0; font-size:12px; color:var(--muted); }
 .menu-sprite { display:block; width:64px; height:74px; image-rendering:pixelated; background-repeat:no-repeat; }
-.menu-tutorial { margin:20px 0 0; font-size:11px; }
+.menu-tutorial { margin:0 0 14px; font-size:12px; line-height:1.6; }
+.menu-tutorial span { display:block; }
 .campaign-levels { display:grid; gap:8px; margin-top:14px; }
 .campaign-levels .button { text-align:left; min-height:52px; }
 .campaign-levels [aria-pressed="true"] { border-color:var(--accent); color:var(--accent); }
 .menu-open > .topbar,.menu-open > .flight-hud,.menu-open > .controls { visibility:hidden; }
 [hidden] { display:none !important; }
-@media(max-height:700px) { .menu-panel { padding-top:8px; padding-bottom:70px; } .panel h1 { font-size:26px; margin:6px 0; } .tagline { margin-bottom:16px; } .mode-card { padding:12px; margin-bottom:8px; } .menu-tutorial { margin-top:12px; } .flight-stats { padding:6px 12px; } .flight-stats strong { font-size:22px; } .star-goals { padding:6px 12px; } .controls .button { min-height:58px; } }
+@media(max-height:700px) { .menu-panel { padding-top:8px; padding-bottom:70px; } .panel h1 { font-size:26px; margin:6px 0; } .tagline { margin-bottom:8px; } .mode-card { padding:12px; margin-bottom:8px; }  .flight-stats { padding:6px 12px; } .flight-stats strong { font-size:22px; } .star-goals { padding:6px 12px; } .controls .button { min-height:58px; } }
 @media(max-height:550px) { .status { display:none; } .topbar { min-height:44px; } .panel { padding:12px; } .menu-panel { padding-bottom:30px; } .mode-card { padding:8px; } .menu-panel h1 { font-size:22px; } .tagline { margin:4px 0 8px; } }
 @media(prefers-reduced-motion:reduce) { .button:active { transform:none; } }
 
@@ -83,14 +84,13 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
 
 .object-progress { padding:5px 12px 0; color:var(--accent); font-size:11px; }
 
-.picker-open .menu-panel > h1, .picker-open .tagline { display:none; }
+.picker-open .menu-panel > h1, .picker-open .tagline, .picker-open .menu-tutorial { display:none; }
 #campaign-picker { background:#0b1118f5; border-radius:8px; padding:12px; margin-top:14px; }
 .picker-open .menu-panel { padding-bottom:12px; }
 
 .career-bar { grid-column:1 / -1; display:flex; align-items:center; justify-content:space-between; gap:8px; padding-top:12px; border-top:1px solid var(--border); font-size:12px; }
 .workshop-wallet { font-size:13px; padding:10px 0; border-bottom:1px solid var(--border); }
 .career-panel { text-align:left; background:#0b1118f5; border-radius:8px; padding:12px; margin-top:12px; }
-.contract-mode { border-color:#a7f3b5; }
 .career-card { border:1px solid var(--border); border-radius:8px; padding:12px; margin:10px 0; background:#101a24; }
 .career-card h3 { margin:6px 0; font-size:16px; }
 .career-card p { font-size:12px; line-height:1.5; color:var(--muted); margin:6px 0; }
