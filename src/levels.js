@@ -62,6 +62,35 @@ const LevelSystem = (() => {
         band(0.3, [160, 290], [38, 48], [35, 50], 5, 10, 'PANEL')]
     }), objective: { type: 'bank_type', salvageType: 'ROCKET', target: 3 } }
   ];
+  const all = (...criteria) => ({ type: 'all', criteria });
+  const typed = (salvageType, target) => ({ type: 'bank_type', salvageType, target });
+  const mixedField = () => ({ count: 5, spacing: 110, bands: campaign[5].debris.bands,
+    pools: [
+      { count: 5, spacing: 480, speed: 30, band: toolCrates },
+      { count: 4, spacing: 480, offset: 240, speed: 30, band: rocketFragments }
+    ] });
+  campaign.push(
+    { ...level(8, 'Sorting Shift', 'Bank 3 tool crates and 2 rocket fragments. Choose the types you still need.', 1, 800, 1200, mixedField()),
+      objective: all(typed('TOOL', 3), typed('ROCKET', 2)) },
+    { ...level(9, 'Salvage Run', 'Bank 4 rocket fragments and $900 total. Shorter trips keep heavy cargo manageable.', 1, 1300, 1800,
+      { ...campaign[6].debris, limited: { ...campaign[6].debris.limited, count: 6 } }),
+      objective: all(typed('ROCKET', 4), { type: 'bank_value', target: 900 }) }
+  );
+  const assignments = [
+    { name: 'Clear the field', description: 'Bank 6 ordinary objects: scraps, panels, or satellites.',
+      objective: { type: 'bank_group', types: ['SCRAP', 'PANEL', 'SAT'], target: 6 }, debris: campaign[1].debris },
+    { name: 'Recover equipment', description: 'Bank 3 tool crates and 2 rocket fragments.',
+      objective: all(typed('TOOL', 3), typed('ROCKET', 2)), debris: mixedField() },
+    { name: 'Retrieve the capsule', description: 'The capsule arrives after the first station pass, near the upper or lower orbit boundary. Recover it and return safely; missed capsules circle back.',
+      objective: typed('CAPSULE', 1), debris: { count: 5, spacing: 110, bands: campaign[5].debris.bands,
+        limited: { count: 1, spacing: 900, offset: 840, speed: 30,
+          band: { ...band(1, [98, 110], [30, 30], [300, 300], 14, 15, 'CAPSULE'), zones: [
+            { weight: 0.5, y: [98, 110], value: [300, 300], risky: true },
+            { weight: 0.5, y: [325, 336], value: [300, 300], risky: true }
+          ] } } } }
+  ];
+  campaign.push({ ...level(10, 'Final Sweep', 'Three assignments, saved checkpoints, and one final recovery. Complete World One for a one-time $2,000 reward.',
+    1, 1200, 1800, assignments[0].debris), objective: assignments[0].objective, assignments });
   const scrapPocket = {
     count: 3, spacing: 32, ySpread: 12,
     band: band(1, [205, 250], [38, 44], [15, 25], 2, 7, 'SCRAP')
@@ -108,6 +137,8 @@ const LevelSystem = (() => {
   function meets(criterion, stats, objective) {
     if (!criterion) return false;
     switch (criterion.type) {
+      case 'all': return criterion.criteria.every(c => meets(c, stats));
+      case 'bank_group': return criterion.types.reduce((sum, type) => sum + (stats.bankedTypes?.[type] || 0), 0) >= criterion.target;
       case 'bank_type': return (stats.bankedTypes?.[criterion.salvageType] || 0) >= criterion.target;
       case 'bank_objects': return stats.bankedObjects >= criterion.target;
       case 'bank_value': return stats.bank >= criterion.target;
@@ -118,8 +149,10 @@ const LevelSystem = (() => {
   const rating = (config, stats) => config.stars.reduce((stars, criterion, index) =>
     stars === index && meets(criterion, stats, config.objective) ? stars + 1 : stars, 0);
   function criterionLabel(criterion, objective) {
+    if (criterion.type === 'all') return criterion.criteria.map(c => criterionLabel(c)).join(' + ');
+    if (criterion.type === 'bank_group') return `${criterion.target} ordinary objects`;
     if (criterion.type === 'complete_objective') return criterionLabel(objective);
-    if (criterion.type === 'bank_type') return `${criterion.target} ${({ SAT: 'satellites', PANEL: 'panels', SCRAP: 'scraps', TOOL: 'tool crates', ROCKET: 'rocket fragments' })[criterion.salvageType] || 'items'}`;
+    if (criterion.type === 'bank_type') return `${criterion.target} ${({ SAT: 'satellites', PANEL: 'panels', SCRAP: 'scraps', TOOL: 'tool crates', ROCKET: 'rocket fragments', CAPSULE: 'survey capsule' })[criterion.salvageType] || 'items'}`;
     return criterion.type === 'bank_objects' ? `${criterion.target} objects` : `$${criterion.target}`;
   }
   const key = 'orbital-cleanup-progress-v1';
@@ -132,11 +165,14 @@ const LevelSystem = (() => {
         if (Number.isInteger(stars) && stars >= 1 && stars <= 3 && (config.id === 1 || result.best[config.id - 1])) result.best[config.id] = stars;
       }
       if (campaign.some(config => config.id === saved?.currentLevel) && (saved.currentLevel === 1 || result.best[saved.currentLevel - 1])) result.currentLevel = saved.currentLevel;
+      if (result.best[9] && Number.isInteger(saved?.finale?.stage) && saved.finale.stage >= 1 && saved.finale.stage <= 2 && Number.isSafeInteger(saved.finale.bank) && saved.finale.bank >= 0) {
+        result.finale = { stage: saved.finale.stage, bank: saved.finale.bank };
+      }
     } catch (_) {}
     return result;
   }
   function saveProgress(progress) {
-    try { localStorage.setItem(key, JSON.stringify(progress)); } catch (_) {}
+    try { localStorage.setItem(key, JSON.stringify(progress)); return true; } catch (_) { return false; }
   }
   return { campaign, endless, phaseFor, nextMilestone, criterionLabel, meets, rating, readProgress, saveProgress };
 })();

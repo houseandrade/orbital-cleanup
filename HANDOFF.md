@@ -151,3 +151,20 @@ Campaign finite pools and salvage2 deposit speed remain unchanged. Tests cover c
 Brian requested more altitude variation and risk near the gameplay edges, consistently across modes. Shared TOOL/ROCKET bands now choose 25% high orbit (y105–140), 50% middle orbit (y170–280), or 25% low orbit (y300–330), then randomize altitude within that zone. The same configuration feeds both campaign finite pools, both new contract arrival schedules, and the corresponding Endless phases. Edge passes use the upper portion of existing value ranges (crates $70–$80, fragments $155–$170), while middle passes use $60–$69/$130–$154. Edge salvage gets the existing value highlight. Sprites and collision bounds remain safely inside y75–360 including wobble. Campaign 6–7 supporting panels/scrap also span broader altitude ranges, shared by the new contracts. Earlier campaign teaching layouts, scripted pockets, and existing Endless recovery behavior are unchanged. All previously validated pool counts, spacing, arrival intervals, and deposit speed remain unchanged.
 
 Validation forces each zone for both new types and checks safe bounds, value ranges, and shared configuration across Campaign, Contracts, and Endless. Full acceptance suite passes.
+
+
+## v0.13 — implementation ready for playtest
+
+User approved implementation of Levels 8–10, checkpointed finale, capsule art, and Deposit Speed (not Reel Motor). The ending animation remains undecided and is excluded. Implemented the objectives and initial star/price/reward values documented in README's v0.13 section. Mixed finite pools stagger crates/fragments by 240px, with 480px same-type spacing at 30px/s and two spares per required type. Stage three has a unique $300, 14kg capsule that loops when missed. Checkpoints capture cumulative bank only at assignment boundaries; retries restore bank and reset the failed assignment, cargo, field, and integrity. One-time wallet reward is stored atomically with its claim flag in career data. Existing v0.12 gameplay balance is preserved.
+
+Acceptance checks cover mixed objectives, every assignment transition, persisted checkpoint loading, failed-assignment rollback, capsule recovery after failure, completion/replay, reward idempotence after reload, older upgrade saves, next-launch effect application, and visible per-item deposits at max upgrade. Initial prices and star thresholds require hands-on playtesting. Production remains v0.12 pending approval.
+
+
+### v0.13 finale2 — capsule challenge
+
+Brian found the capsule too immediate and safely positioned. Its finite pool now starts with an 840px offset: it enters the visible field after 28s, reaches the astronaut at 34s, and cannot be tethered during the initial station pass. Each attempt chooses upper orbit y98–110 or lower orbit y325–336 with equal probability; both include safe sprite/collision clearance inside y75–360. It receives the existing valuable-target highlight, keeps its $300 value/14kg mass, and loops every 30s when missed. Checkpoint retry preserves completed assignments and resets this delayed approach. Tests cover arrival timing, both altitude ranges, and safe bounds.
+
+
+### v0.13 finale3 — campaign completion indicator
+
+User requested replacing the standalone World One completion banner with a green check beside CAMPAIGN inside its entry card. The check retains an accessible World One complete label and appears only after Level 10 completion.

@@ -1,4 +1,4 @@
-# Orbital Cleanup v0.12
+# Orbital Cleanup v0.13
 
 A mobile-first, standalone PWA build of the v0.532 canvas prototype. Collect debris, manage the added cargo mass, and bank the haul at the cleanup station before the run ends.
 
@@ -126,3 +126,12 @@ Tool crates use the approved cream case illustration and carry $60–$80 at 8kg.
 Level 7 ends the currently available missions; the World One finale is still planned. Existing save keys and upgrades are preserved.
 
 New crates and rocket fragments share randomized high (25%), middle (50%), and low (25%) orbit spawning across campaign missions, their contracts, and Endless phases. Edge passes pay the upper portion of each item's existing value range and display a value highlight.
+
+
+## v0.13 — World One finale and Deposit Speed
+
+Sorting Shift (8) requires 3 tool crates and 2 rocket fragments; extra stars require $800/$1,200 banked. Salvage Run (9) requires 4 rocket fragments and $900 banked; extra stars require $1,300/$1,800. Targets use spaced finite pools with two spare items per required type and preserve the shared altitude/risk rules.
+
+Final Sweep (10) contains three assignments: bank six ordinary objects; bank three crates and two fragments; recover and deposit one survey capsule. The capsule appears after 28 seconds near either orbit boundary, after the first station pass, and circles back if missed. Completing an assignment saves the next checkpoint and cumulative bank. Failure or leaving discards only the current assignment's progress; retry restores the checkpoint bank, a fresh field and suit, and the capsule when applicable. Checkpoints persist across reopening when storage is available. Completing all three assignments grants one star, with $1,200/$1,800 total for additional stars. A simple World One Complete screen, campaign badge, and one-time $2,000 wallet reward mark the finale. Replaying starts from assignment one. The concept ending animation is not included.
+
+Deposit Speed tiers reduce each item transfer duration by 15%/30%/45% relative to v0.12. Prices are $800/$3,000/$7,500 with the existing 0/3/6 different-contract gates. It applies on next launch in every mode; Reel Motor and thrust remain separate. Older saves default the new upgrade to tier zero.

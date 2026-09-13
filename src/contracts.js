@@ -2,6 +2,7 @@
 const ContractSystem = (() => {
   const key = 'orbital-cleanup-career-v1';
   const upgrades = {
+    deposit: { name: 'Deposit speed', description: 'Shorter station transfers. Each item still banks separately.', prices: [800, 3000, 7500], effects: [1, 0.85, 0.7, 0.55], labels: ['Standard', '15% shorter', '30% shorter', '45% shorter'] },
     reel: { name: 'Reel motor', description: 'Shorter recovery time. Heavy salvage still takes longer.', prices: [900, 3500, 9000], effects: [1, 0.9, 0.8, 0.7], labels: ['Standard', '10% shorter', '20% shorter', '30% shorter'] },
     thrust: { name: 'Thruster power', description: 'More lift under load. Watch your altitude near the upper boundary.', prices: [1000, 4000, 10000], effects: [1, 1.06, 1.12, 1.18], labels: ['Standard', '+6% power', '+12% power', '+18% power'] }
   };
@@ -39,11 +40,12 @@ const ContractSystem = (() => {
       description: `Bank ${LevelSystem.criterionLabel(objective)} for a $${bonus} bonus. Only deposited salvage counts.${arrival ? ' Targets travel at varied altitudes; edge-of-orbit items pay more.' : ''}`,
       debris: { count: 8, spacing: 85, bands, ...(arrival ? { arrival } : {}) } };
   });
-  let career = { wallet: 0, completed: [], upgrades: { reel: 0, thrust: 0 } };
+  let career = { wallet: 0, completed: [], upgrades: { reel: 0, thrust: 0, deposit: 0 }, worldOneReward: false };
   let persistent = true;
   try {
     const saved = JSON.parse(localStorage.getItem(key));
     if (saved) {
+      career.worldOneReward = saved.worldOneReward === true;
       if (Number.isSafeInteger(saved.wallet) && saved.wallet >= 0) career.wallet = saved.wallet;
       career.completed = contracts.filter(c => Array.isArray(saved.completed) && saved.completed.includes(c.id)).map(c => c.id);
       for (const id of Object.keys(upgrades)) {
@@ -59,6 +61,13 @@ const ContractSystem = (() => {
   function credit(amount) {
     if (!Number.isSafeInteger(amount) || amount < 0 || !Number.isSafeInteger(career.wallet + amount)) return false;
     career.wallet += amount;
+    save();
+    return true;
+  }
+  function rewardWorldOne() {
+    if (career.worldOneReward || !Number.isSafeInteger(career.wallet + 2000)) return false;
+    career.wallet += 2000;
+    career.worldOneReward = true;
     save();
     return true;
   }
@@ -78,6 +87,6 @@ const ContractSystem = (() => {
     return true;
   }
   const effect = id => upgrades[id].effects[career.upgrades[id]];
-  return { contracts, upgrades, requirements, credit, complete, purchase, effect,
+  return { contracts, upgrades, requirements, credit, complete, purchase, effect, rewardWorldOne,
     get career() { return structuredClone(career); }, get persistent() { return persistent; } };
 })();

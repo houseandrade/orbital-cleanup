@@ -113,3 +113,8 @@ Validation: `node tests/acceptance.mjs` covers countdown/queued returns/pause, p
 ## v0.12 — Levels 6–7 and shared salvage
 
 Implemented for playtest: Lost Equipment and Heavy Metal, approved tool-crate and rocket-fragment artwork, targeted campaign stars, Equipment Return and Engine Recovery contracts, and new salvage in the middle Endless phases. Existing Level 5 saves unlock Level 6. Next: playtest target availability, heavy-cargo handling, and reward pacing before designing Levels 8–10 and the World One finale.
+
+
+## v0.13 — World One complete (playtest)
+
+Implemented Levels 8–10, three-assignment Final Sweep with saved checkpoints, survey capsule, completion badge/reward, and Deposit Speed tiers. Next: validate mixed-objective pacing, checkpoint clarity, and upgrade feel. Ending animation remains an undecided concept and is not implemented.
