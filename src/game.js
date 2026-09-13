@@ -31,6 +31,7 @@
   const replayButton = document.getElementById("replay-level");
   const progress = LevelSystem.readProgress();
   let level = LevelSystem.campaign.find(config => config.id === progress.currentLevel);
+  let contractWorld = progress.activeWorld || 1;
   let selectedWorld = progress.selectedWorld || level.world || 1;
   let pendingResult = false;
   let exitPaused = false;
@@ -88,10 +89,12 @@
   const thrustEffectiveness = (cargoMass) => Math.max(0.75, 1 - Math.min(cargoMass / 100, 1) * 0.25);
 
   const sessionBests = {};
-  const scoreKey = () => level.contract ? 'orbital-cleanup-contract-best-v1' : level.id === 'endless' ? 'orbital-cleanup-endless-best-v1' : HIGH_SCORE_KEY;
-  function readEndlessBest() {
-    try { return Math.max(sessionBests['orbital-cleanup-endless-best-v1'] || 0, Number.parseInt(localStorage.getItem('orbital-cleanup-endless-best-v1'), 10) || 0); }
-    catch (_) { return sessionBests['orbital-cleanup-endless-best-v1'] || 0; }
+  const endlessScoreKey = world => world === 2 ? 'orbital-cleanup-moon-endless-best-v1' : 'orbital-cleanup-endless-best-v1';
+  const scoreKey = () => level.contract ? 'orbital-cleanup-contract-best-v1' : level.id === 'endless' ? endlessScoreKey(level.world) : HIGH_SCORE_KEY;
+  function readEndlessBest(world = progress.activeWorld) {
+    const key = endlessScoreKey(world);
+    try { return Math.max(sessionBests[key] || 0, Number.parseInt(localStorage.getItem(key), 10) || 0); }
+    catch (_) { return sessionBests[key] || 0; }
   }
   function getHighScore() {
     try {
@@ -223,6 +226,7 @@
       if (selected) button.setAttribute('aria-controls', 'mission-briefing');
       else button.removeAttribute('aria-controls');
     });
+    document.getElementById('endless-destination').textContent = progress.activeWorld === 2 ? 'MOON' : 'EARTH';
     document.getElementById('endless-menu-best').textContent = `$${readEndlessBest()}`;
     refreshCareer();
     const isEndless = level.id === 'endless';
@@ -438,6 +442,7 @@
       selectedWorld = level.world;
       progress.selectedWorld = selectedWorld;
       progress.currentLevel = level.id;
+      if (level.world === 2) progress.activeWorld = 2;
       LevelSystem.saveProgress(progress);
     }
     refreshCampaign();
@@ -959,14 +964,16 @@
     root.classList.add('picker-open');
     for (const page of ['mode-menu', 'campaign-picker', 'contracts-picker', 'upgrades-picker']) document.getElementById(page).hidden = page !== id;
     refreshCareer();
+    if (id === 'contracts-picker') refreshContractWorld();
     document.getElementById(id).scrollIntoView?.({ block: 'start' });
   }
   const difficultyOrder = { Easy: 0, Medium: 1, Hard: 2 };
   const boardContracts = [...ContractSystem.contracts].sort((a, b) =>
     (difficultyOrder[a.difficulty] ?? 3) - (difficultyOrder[b.difficulty] ?? 3));
-  document.getElementById('contract-list').innerHTML = boardContracts.map(c => `<article class="career-card contract-card"><button id="select-contract-${c.id}" type="button" class="button contract-selector" aria-expanded="false" aria-controls="contract-briefing-${c.id}"><span class="kicker">${c.difficulty} · ${c.objective.type === 'bank_type' ? 'TARGETED RECOVERY' : c.objective.type === 'bank_value' ? 'VALUE TARGET' : 'COLLECTION'}</span><span class="contract-name">${c.name}</span><span class="contract-prompt">VIEW BRIEFING</span></button><section id="contract-briefing-${c.id}" class="mission-briefing contract-briefing" aria-labelledby="contract-briefing-title-${c.id}" hidden><h3 id="contract-briefing-title-${c.id}">MISSION BRIEFING</h3><ul aria-label="Contract objectives"><li>Bank ${LevelSystem.criterionLabel(c.objective)}.</li></ul><p class="reward">Salvage value + $${c.bonus} bonus</p><p>Deposits pay immediately. Meet the objective to earn the bonus once this run. Unbanked cargo is lost if the run ends in failure.</p><button id="contract-${c.id}" type="button" class="button button--cta">ACCEPT CONTRACT</button></section></article>`).join('');
+  document.getElementById('contract-list').innerHTML = boardContracts.map(c => `<article id="contract-card-${c.id}" class="career-card contract-card"><button id="select-contract-${c.id}" type="button" class="button contract-selector" aria-expanded="false" aria-controls="contract-briefing-${c.id}"><span class="kicker">${c.difficulty} · ${c.objective.type === 'bank_type' ? 'TARGETED RECOVERY' : c.objective.type === 'bank_value' ? 'VALUE TARGET' : 'COLLECTION'}</span><span class="contract-name">${c.name}</span><span class="contract-prompt">VIEW BRIEFING</span></button><section id="contract-briefing-${c.id}" class="mission-briefing contract-briefing" aria-labelledby="contract-briefing-title-${c.id}" hidden><h3 id="contract-briefing-title-${c.id}">MISSION BRIEFING</h3><ul aria-label="Contract objectives"><li>Bank ${LevelSystem.criterionLabel(c.objective)}.</li></ul>${c.debris.limited ? '<p>Missed items return on a later pass.</p>' : ''}<p class="reward">Salvage value + $${c.bonus} bonus</p><p>Deposits pay immediately. Meet the objective to earn the bonus once this run. Unbanked cargo is lost if the run ends in failure.</p><button id="contract-${c.id}" type="button" class="button button--cta">ACCEPT CONTRACT</button></section></article>`).join('');
   for (const contract of ContractSystem.contracts) {
     document.getElementById(`select-contract-${contract.id}`).addEventListener('click', () => {
+      if (contract.world === 2 && !progress.best[10]) return;
       for (const item of ContractSystem.contracts) {
         const selected = item.id === contract.id;
         document.getElementById(`contract-briefing-${item.id}`).hidden = !selected;
@@ -976,12 +983,29 @@
     });
   }
   document.getElementById('upgrade-list').innerHTML = Object.entries(ContractSystem.upgrades).map(([id, item]) => `<article class="career-card"><h3>${item.name}</h3><p id="tier-${id}" class="reward"></p><p>${item.description}</p><p id="next-${id}"></p><button id="buy-${id}" type="button" class="button button--cta"></button></article>`).join('');
-  for (const contract of ContractSystem.contracts) document.getElementById(`contract-${contract.id}`).addEventListener('click', () => { level = contract; start(); });
+  for (const contract of ContractSystem.contracts) document.getElementById(`contract-${contract.id}`).addEventListener('click', () => { if (contract.world === 2 && !progress.best[10]) return; level = contract; start(); });
   for (const [id, item] of Object.entries(ContractSystem.upgrades)) document.getElementById(`buy-${id}`).addEventListener('click', () => {
     if (running || pendingResult || exitPaused) return;
     document.getElementById('purchase-status').textContent = ContractSystem.purchase(id) ? `${item.name} upgraded. Ready for your next contract.` : 'Purchase unavailable.';
     refreshCareer();
   });
+  function refreshContractWorld() {
+    document.getElementById('contract-world-name').textContent = contractWorld === 2 ? 'MOON CONTRACTS' : 'EARTH CONTRACTS';
+    document.getElementById('previous-contract-world').disabled = contractWorld === 1;
+    document.getElementById('next-contract-world').disabled = contractWorld === 2;
+    document.getElementById('contract-world-note').textContent = contractWorld === 2 && !progress.best[10] ? 'Complete World One to unlock Moon contracts.' : '';
+    root.classList.toggle('moon-menu', contractWorld === 2);
+    for (const contract of ContractSystem.contracts) {
+      const locked = contract.world === 2 && !progress.best[10];
+      document.getElementById(`contract-card-${contract.id}`).hidden = contract.world !== contractWorld;
+      document.getElementById(`select-contract-${contract.id}`).disabled = locked;
+      document.getElementById(`contract-${contract.id}`).disabled = locked;
+      document.getElementById(`contract-briefing-${contract.id}`).hidden = true;
+      document.getElementById(`select-contract-${contract.id}`).setAttribute('aria-expanded', 'false');
+    }
+  }
+  document.getElementById('previous-contract-world').addEventListener('click', () => { contractWorld = 1; refreshContractWorld(); });
+  document.getElementById('next-contract-world').addEventListener('click', () => { contractWorld = 2; refreshContractWorld(); });
   document.getElementById('choose-contracts').addEventListener('click', () => careerPage('contracts-picker'));
   document.getElementById('choose-upgrades').addEventListener('click', () => careerPage('upgrades-picker'));
   document.getElementById('back-contracts').addEventListener('click', openCampaign);
@@ -1019,11 +1043,11 @@
     document.getElementById('back-contracts').focus();
   });
   document.getElementById('endless').addEventListener('click', () => {
-    level = LevelSystem.endless;
+    level = LevelSystem.endlessFor(progress.activeWorld);
     start();
   });
   document.getElementById('result-endless').addEventListener('click', () => {
-    level = LevelSystem.endless;
+    level = LevelSystem.endlessFor(progress.activeWorld);
     start();
   });
   finishButton.addEventListener('click', finishLevel);

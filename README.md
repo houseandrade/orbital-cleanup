@@ -211,3 +211,14 @@ Last Rover completes the ten-mission Moon campaign with three checkpointed assig
 Moon checkpoints are independent of Earth checkpoints, including replay saves. Failure rolls back the current assignment only. Completion awards a separate Moon badge and one-time $2,000 wallet reward, preserving Earth reward claims. Initial higher-star thresholds are $1,800/$2,400 across assignments. Briefings state goals and recovery rules without exact timing, altitude, or spawn hints.
 
 Acceptance coverage includes mixed quotas, checkpoint persistence/isolation, failed-stage rollback, finite density, normal rover tethering, missed/lost rover return, replay, and reward isolation/idempotence. Review locally via previews/v0154/playtest.html on localhost:8086. v0.15.4 is not deployed; pacing and star targets await playtesting. Lunar Contracts and world-aware Endless follow Moon campaign approval, then Mars.
+
+
+## v0.15.5 — Moon Contracts and Endless Orbit (playtest)
+
+v0.15.4 Last Rover is approved and deployed via PR #21. Deployment 34779093640 succeeded, and the public finale configuration was verified.
+
+The contract board now has Earth/Moon navigation and retains Easy → Medium → Hard ordering and inline briefings within each world. Six Moon jobs cover tanks, wheels, instruments, lander legs, object count, and bank value. Moon contracts unlock with World Two after Earth completion. Targeted jobs use finite pools with two spare items, deliberate spacing, five ordinary support slots, and capped satellites. Value/count jobs use a single recurring lunar target slot within a five-object budget. Wallet, upgrades, and completed-job unlocks are shared; bonuses pay once per run and retain existing replay/failure rules.
+
+Starting a Moon campaign mission sets a persistent active world. Mission-page browsing and contracts do not change it; Earth replays do not reset it. Legacy saves infer Moon activity from lunar progress/current campaign mission. Endless follows this world, labels its destination on the menu, and uses a separate Moon best-score key while preserving the original Earth key. The Moon run cycles through familiar salvage, wheels/tanks, instruments, and heavy legs. Rare arrivals remain capped; the rover stays exclusive to the finale. Endless does not add spendable wallet earnings.
+
+Validation: full acceptance suite passes, including locked access, board filtering/sorting, finite targets, all six payouts, shared save persistence, migration, world-selection isolation, phased lunar salvage, and separate scores. Browser QA checked inline Moon contract copy and lunar Endless scenery/launch with no warnings/errors. Review at previews/v0155/playtest.html on localhost:8087. This build is not deployed; contract rewards and pacing await playtesting. Mars remains next after Moon mode approval.

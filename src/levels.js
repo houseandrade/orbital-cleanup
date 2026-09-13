@@ -214,6 +214,25 @@ const LevelSystem = (() => {
       debris: { count: 5, spacing: 110, bands: [band(1, [195, 260], [38, 44], [30, 40], 2, 7, 'SCRAP')] } }
   ];
   endless.phaseCycleValue = 750;
+  endless.world = 1;
+  const moonEndless = { ...endless, world: 2, name: 'Endless Orbit · Moon', station: lunarStation,
+    debris: { count: 5, spacing: 110, bands: lunarRecoverySupport },
+    phases: [
+      { name: 'Lunar salvage', at: 0, description: 'Recover familiar salvage above the Moon.',
+        debris: { count: 5, spacing: 110, bands: lunarRecoverySupport } },
+      { name: 'Workshop spares', at: 150, description: 'Recover rover wheels and spent oxygen tanks.',
+        debris: { count: 5, spacing: 110, bands: lunarRecoverySupport,
+          arrival: { band: roverWheel, interval: 16, speed: 30 },
+          pocket: { count: 2, spacing: 40, ySpread: 14, band: band(1, [185, 260], [32, 38], [35, 45], 4, 10, 'TANK') } } },
+      { name: 'Research recovery', at: 300, description: 'Recover valuable instrument packages.',
+        debris: { count: 5, spacing: 110, bands: lunarRecoverySupport,
+          arrival: { band: lunarInstrument, interval: 16, speed: 30 } } },
+      { name: 'Lander salvage', at: 500, description: 'Recover heavy lander legs. Bank your haul over as many trips as you need.',
+        debris: { count: 5, spacing: 110, bands: lunarRecoverySupport,
+          arrival: { band: landerLeg, interval: 20, speed: 30 } } }
+    ]
+  };
+  const endlessFor = world => world === 2 ? moonEndless : endless;
   function phaseFor(config, bank) {
     if (!config.phases) return null;
     const value = bank % config.phaseCycleValue;
@@ -262,11 +281,17 @@ const LevelSystem = (() => {
         }
       }
     } catch (_) {}
+    result.activeWorld = result.best[10] && (result.best[11] || result.currentLevel >= 11) ? 2 : 1;
+    try {
+      const saved = JSON.parse(localStorage.getItem(key));
+      if (saved?.activeWorld === 2 && result.best[10]) result.activeWorld = 2;
+      else if (saved?.activeWorld === 1 && !result.best[11]) result.activeWorld = 1;
+    } catch (_) {}
     result.selectedWorld ??= campaign.find(config => config.id === result.currentLevel)?.world || 1;
     return result;
   }
   function saveProgress(progress) {
     try { localStorage.setItem(key, JSON.stringify(progress)); return true; } catch (_) { return false; }
   }
-  return { worlds, campaign, endless, phaseFor, nextMilestone, criterionLabel, meets, rating, readProgress, saveProgress };
+  return { worlds, campaign, endless, endlessFor, phaseFor, nextMilestone, criterionLabel, meets, rating, readProgress, saveProgress };
 })();
