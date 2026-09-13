@@ -65,7 +65,8 @@
   let bankedTypes = {};
   let contractBonus = 0;
   let contractCompleted = false;
-  let runEffects = { reel: 1, thrust: 1 };
+  let runEffects = { reel: 1, thrust: 1, deposit: 1 };
+  let assignmentIndex = 0;
   let mass = 0;
   let integrity = 100;
   let lastFrame = 0;
@@ -128,10 +129,9 @@
     const config = debrisConfig();
     const limit = config.count - (config.encounter ? 1 : 0) - (config.arrival ? 1 : 0);
     const missing = limit - junk.filter(object => !object.special && !object.encounter && !object.limited && !object.scheduledSalvage).length;
-    if (initial && config.limited) {
-      const pool = config.limited;
+    for (const pool of initial ? (config.pools || (config.limited ? [config.limited] : [])) : []) {
       for (let i = 0; i < pool.count; i++) {
-        makeJunk(i * pool.spacing, pool.band);
+        makeJunk((pool.offset || 0) + i * pool.spacing, pool.band);
         Object.assign(junk.at(-1), { limited: true, speed: pool.speed, orbitLength: pool.count * pool.spacing });
       }
     }
@@ -207,9 +207,13 @@
     const isEndless = level.id === 'endless';
     document.getElementById('start-score-label').textContent = level.contract ? 'CONTRACT BEST' : isEndless ? 'ENDLESS BEST' : 'CAMPAIGN HIGH SCORE';
     document.getElementById('over-score-label').textContent = level.contract ? 'CONTRACT BEST' : isEndless ? 'ENDLESS BEST' : 'CAMPAIGN HIGH SCORE';
-    startButton.textContent = isEndless ? '▶ START ENDLESS ORBIT' : '▶ START MISSION';
+    startButton.textContent = level.assignments && progress.finale ? `▶ RESUME ASSIGNMENT ${progress.finale.stage + 1}` : isEndless ? '▶ START ENDLESS ORBIT' : '▶ START MISSION';
+    document.getElementById('world-one-badge').hidden = !progress.best[10];
     setHighScore(getHighScore());
     document.getElementById('level-description').textContent = (isEndless || level.contract) ? level.description : `${level.description} Goal: ${LevelSystem.criterionLabel(level.objective)}. Stars: ${level.stars.map(criterion => LevelSystem.criterionLabel(criterion, level.objective)).join(" / ")}.${level.objective.type === "bank_objects" ? " Higher stars also require the object quota banked." : ""}`;
+    if (level.assignments) {
+      document.getElementById('level-description').textContent = `Final Sweep: clear 6 ordinary objects, recover 3 tool crates + 2 rocket fragments, then deliver the survey capsule. Completed assignments become checkpoints. All three assignments are required for stars; bank $1,200 / $1,800 for extra stars. ${progress.finale ? `Resume assignment ${progress.finale.stage + 1} with $${progress.finale.bank} checkpoint banked.` : 'Start assignment 1.'}`;
+    }
   }
 
   function showResult(previousBank = bank) {
@@ -255,6 +259,14 @@
     document.getElementById('result-endless').hidden = true;
     document.getElementById('result-menu').hidden = true;
     document.getElementById('result-contracts').hidden = true;
+    if (level.assignments && assignmentIndex < 2) {
+      progress.finale = { stage: assignmentIndex + 1, bank };
+      const checkpointSaved = LevelSystem.saveProgress(progress);
+      resultTitle.textContent = 'ASSIGNMENT COMPLETE';
+      resultStats.textContent = `${checkpointSaved ? 'Checkpoint saved' : 'Checkpoint kept for this session; saving unavailable'} · $${bank} banked. Next: ${level.assignments[assignmentIndex + 1].description}`;
+      finishButton.textContent = `START ASSIGNMENT ${assignmentIndex + 2}`;
+      continueButton.hidden = true;
+    }
     resultScreen.classList.add('overlay--visible');
     resultScreen.setAttribute('aria-hidden', 'false');
   }
@@ -262,6 +274,7 @@
   function finishLevel() {
     if (!pendingResult) return;
     pendingResult = false;
+    if (level.assignments && assignmentIndex < 2) { start(); return; }
     if (level.contract) {
       resultTitle.textContent = 'CONTRACT COMPLETE';
       document.getElementById('result-contracts').hidden = false;
@@ -287,12 +300,19 @@
     LevelSystem.saveProgress(progress);
     setHighScore(bank);
     resultTitle.textContent = 'LEVEL COMPLETE';
+    if (level.assignments) {
+      delete progress.finale;
+      LevelSystem.saveProgress(progress);
+      const rewarded = ContractSystem.rewardWorldOne();
+      resultTitle.textContent = 'WORLD ONE COMPLETE';
+      resultStats.textContent = `Survey capsule secured · ${Object.values(progress.best).reduce((sum, value) => sum + value, 0)}/30 campaign stars · ${rewarded ? '$2,000 completion reward added to your wallet' : 'Completion reward already claimed'}`;
+    }
     finishButton.hidden = continueButton.hidden = true;
     replayButton.hidden = false;
     document.getElementById('result-menu').hidden = false;
     nextButton.hidden = level.id === LevelSystem.campaign.length;
     document.getElementById('result-endless').hidden = !nextButton.hidden;
-    status.textContent = nextButton.hidden ? 'Available missions complete. More World One missions are coming. Try Endless Orbit or replay for stars.' : 'Level complete. Next level unlocked.';
+    status.textContent = nextButton.hidden ? 'World One complete. Try Endless Orbit or replay for stars.' : 'Level complete. Next level unlocked.';
     refreshCampaign();
   }
 
@@ -311,6 +331,12 @@
   }
 
   function reset() {
+    if (level.assignments) {
+      const base = LevelSystem.campaign[9];
+      assignmentIndex = progress.finale?.stage || 0;
+      const assignment = base.assignments[assignmentIndex];
+      level = { ...base, ...assignment, id: 10, name: `Final Sweep · ${assignmentIndex + 1}/3 · ${assignment.name}` };
+    }
     releaseControls();
     cancelAnimationFrame(animationFrame);
     running = false;
@@ -332,14 +358,14 @@
     particles = [];
     tether = null;
     haul = 0;
-    bank = 0;
+    bank = level.assignments ? (progress.finale?.bank || 0) : 0;
     carriedObjects = 0;
     bankedObjects = 0;
     carriedTypes = {};
     bankedTypes = {};
     contractBonus = 0;
     contractCompleted = false;
-    runEffects = { reel: ContractSystem.effect('reel'), thrust: ContractSystem.effect('thrust') };
+    runEffects = { reel: ContractSystem.effect('reel'), thrust: ContractSystem.effect('thrust'), deposit: ContractSystem.effect('deposit') };
     mass = 0;
     depositProgress = 0;
     integrity = level.player.suitIntegrity;
@@ -400,7 +426,8 @@
 
     setHighScore(finalBank);
     death.textContent = title;
-    detail.textContent = description;
+    detail.textContent = level.assignments ? `${description} Retry assignment ${assignmentIndex + 1}; earlier assignments are saved.` : description;
+    playAgainButton.textContent = level.assignments ? `▶ RETRY ASSIGNMENT ${assignmentIndex + 1}` : '▶ PLAY AGAIN';
     bankDisplay.textContent = String(finalBank);
     lostDisplay.textContent = String(lostHaul);
     summary.textContent = `${finalBank} banked • ${lostHaul} lost`;
@@ -415,9 +442,11 @@
     return Math.abs(station.x - PLAYER_X) < 90 && Math.abs(station.y - player.y) < 85;
   }
 
+  const depositDuration = itemMass => Math.min(0.24, itemMass / 22.5) * runEffects.deposit;
+
   function stationMessage() {
     if (depositNoticeTime > 0) return depositNotice;
-    if (isNearStation()) return depositing && mass > 0 ? `TRANSFERRING SALVAGE… ${Math.min(100, Math.floor(100 * depositProgress / Math.min(0.24, (cargo[0]?.mass || mass) / 22.5)))}% · KEEP HOLDING` : 'STATION IN RANGE';
+    if (isNearStation()) return depositing && mass > 0 ? `TRANSFERRING SALVAGE… ${Math.min(100, Math.floor(100 * depositProgress / depositDuration(cargo[0]?.mass || mass)))}% · KEEP HOLDING` : 'STATION IN RANGE';
     if (station.x >= PLAYER_X + 90) return `STATION PASS IN ${Math.ceil((station.x - PLAYER_X - 90) / station.speed)}s`;
     if (station.x > PLAYER_X - 90) return 'STATION PASS NOW • ALIGN ALTITUDE';
     const seconds = (station.x + 70 + nextStation.x - PLAYER_X - 90) / station.speed;
@@ -444,7 +473,15 @@
       objectProgress.hidden = false;
       objectProgress.textContent = `${count}/${goal.max} banked · ${carried} carried${level.contract ? ` · ${contractCompleted ? 'Bonus paid' : `Bonus $${level.bonus}`}` : ''}${!contractCompleted && count + carried >= goal.max ? ' · Return to bank' : ''}`;
     }
-    document.getElementById('star-goals').hidden = !level.objective || level.contract;
+    if (['all', 'bank_group'].includes(level.objective?.type)) {
+      const criteria = level.objective.type === 'all' ? level.objective.criteria : [level.objective];
+      const countFor = c => c.type === 'bank_value' ? bank : c.type === 'bank_group' ? c.types.reduce((sum, type) => sum + (bankedTypes[type] || 0), 0) : (bankedTypes[c.salvageType] || 0);
+      goal.max = criteria.length;
+      goal.value = criteria.reduce((sum, c) => sum + Math.min(1, countFor(c) / c.target), 0);
+      objectProgress.hidden = false;
+      objectProgress.textContent = criteria.map(c => `${LevelSystem.criterionLabel(c)}: ${Math.min(countFor(c), c.target)}/${c.target}`).join(' · ');
+    }
+    document.getElementById('star-goals').hidden = !level.objective || level.contract || (level.assignments && assignmentIndex < 2);
     if (level.objective) level.stars.forEach((criterion, index) => {
       const star = document.getElementById(`star-${index + 1}`);
       star.textContent = `${'★'.repeat(index + 1)} ${LevelSystem.criterionLabel(criterion, level.objective)}`;
@@ -525,7 +562,7 @@
     if (object.hit) return;
     object.hit = true;
     const relativeSpeed = Math.max(1, object.speed / 40);
-    const damage = Math.round(({ SAT: 18, PANEL: 11, SCRAP: 7, TOOL: 13, ROCKET: 22 }[object.type] || 7) * relativeSpeed * 0.55);
+    const damage = Math.round(({ SAT: 18, PANEL: 11, SCRAP: 7, TOOL: 13, ROCKET: 22, CAPSULE: 15 }[object.type] || 7) * relativeSpeed * 0.55);
     integrity = clamp(integrity - damage, 0, 100);
     player.velocityY += (object.y - player.y) * 0.18 + random(-20, 20);
     player.flash = 0.25;
@@ -603,11 +640,11 @@
 
     if (depositing && isNearStation() && mass > 0) {
       depositProgress += deltaTime;
-      while (cargo.length && depositProgress >= Math.min(0.24, cargo[0].mass / 22.5)) {
+      while (cargo.length && depositProgress >= depositDuration(cargo[0].mass)) {
         const previousBank = bank;
         if (depositStartBank === null) depositStartBank = bank;
         const item = cargo.shift();
-        depositProgress -= Math.min(0.24, item.mass / 22.5);
+        depositProgress -= depositDuration(item.mass);
         bank += item.value;
         haul -= item.value;
         mass = Math.max(0, mass - item.mass);
@@ -673,7 +710,7 @@
     const objectY = tether && tether.object === object ? object.y : object.y + Math.sin(object.wobble) * 4;
     context.save();
     context.translate(object.x, objectY);
-    const dimensions = { SCRAP: [14, 14], PANEL: [28, 14], SAT: [50, 28], TOOL: [40, 40], ROCKET: [44, 44] }[object.type] || [28, 28];
+    const dimensions = { SCRAP: [14, 14], PANEL: [28, 14], SAT: [50, 28], TOOL: [40, 40], ROCKET: [44, 44], CAPSULE: [44, 44] }[object.type] || [28, 28];
     if (GameArt.sprite(context, object.type, 0, 0, ...dimensions)) {
       // The configured collision size remains unchanged.
     } else if (object.type === 'TOOL') {

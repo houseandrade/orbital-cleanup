@@ -85,7 +85,7 @@ source = source.replace(/\}\)\(\);\s*$/, `
   globalThis.__qa = {
     ContractSystem, refreshCareer,
     get careerState() { return { carriedTypes, bankedTypes, contractBonus, contractCompleted, runEffects }; },
-    makeJunk, fillDebris, scheduleEncounter, collect, draw, stationMessage, start, end, finishLevel, resumeLevel, update, fireTether, collide, thrustEffectiveness,
+    depositDuration, makeJunk, fillDebris, scheduleEncounter, collect, draw, stationMessage, start, end, finishLevel, resumeLevel, update, fireTether, collide, thrustEffectiveness,
     get state() { return { phase, queuedPhase, nextStation, elapsed, carriedObjects, bankedObjects, level, progress, pendingResult, running, haul, bank, mass, integrity, tether, junk, player, station, depositing, cargo }; },
     set scenario(value) {
       if (value.elapsed !== undefined) elapsed = value.elapsed;
@@ -597,7 +597,7 @@ for (const config of vm.runInContext('LevelSystem.campaign', sandbox)) {
   assert.equal(config.player.suitIntegrity, 100);
   assert.deepEqual(Array.from(config.station.returnOffset), config.id === 1 ? [120,180] : [420,620]);
 }
-assert.deepEqual(Array.from(vm.runInContext('LevelSystem.campaign.map(c=>c.objective.target)', sandbox)), [60,150,150,10,350,5,3]);
+assert.deepEqual(Array.from(vm.runInContext('LevelSystem.campaign.slice(0,7).map(c=>c.objective.target)', sandbox)), [60,150,150,10,350,5,3]);
 console.log('Orbital Cleanup v0.11 acceptance checks passed.');
 
 // Contract deposits, type tracking, once-per-run bonuses, and career purchases.
@@ -782,9 +782,8 @@ for (const id of [6, 7]) {
   assert.equal(qa.state.progress.best[id], 3);
   assert.equal(vm.runInContext(`LevelSystem.readProgress().best[${id}]`, sandbox), 3);
 }
-assert.equal(elements.get('next-level').hidden, true);
-assert.equal(elements.get('result-endless').hidden, false);
-assert.match(elements.get('status').textContent, /More World One missions are coming/);
+assert.equal(elements.get('next-level').hidden, false);
+assert.equal(elements.get('result-endless').hidden, true);
 for (const [at, type] of [[150, 'TOOL'], [300, 'ROCKET']]) {
   const config = vm.runInContext(`LevelSystem.phaseFor(LevelSystem.endless, ${at})`, sandbox);
   assert.equal(config.debris.arrival.band.type, type);
@@ -910,3 +909,92 @@ for (const at of [150, 300]) {
   assert.equal(vm.runInContext(`LevelSystem.phaseFor(LevelSystem.endless, ${at}).debris.arrival.band.zones.length`, sandbox), 3);
 }
 console.log('Randomized salvage altitude zones, edge rewards, safe bounds, and shared-mode configuration passed.');
+
+// Mixed missions require every deposited component, and unlock the finale.
+const collectItems = (type, count, value = 70) => {
+  for (let i = 0; i < count; i++) qa.collect({ type, value, mass: 8, size: 12 });
+};
+elements.get('level-8').listeners.click(); qa.start();
+collectItems('TOOL', 3); deposit(qa.state.haul);
+assert.equal(qa.state.pendingResult, false);
+collectItems('ROCKET', 2); deposit(qa.state.haul);
+assert.equal(qa.state.pendingResult, true); qa.finishLevel();
+assert.equal(qa.state.progress.best[8], 1);
+elements.get('next-level').listeners.click();
+assert.equal(qa.state.level.id, 9);
+collectItems('ROCKET', 4, 130); deposit(qa.state.haul);
+assert.equal(qa.state.pendingResult, false, 'rocket quota alone cannot satisfy $900');
+collectItems('PANEL', 1, 380); deposit(qa.state.haul); qa.finishLevel();
+assert.equal(qa.state.progress.best[9], 1);
+elements.get('next-level').listeners.click();
+assert.equal(qa.state.level.id, 10);
+assert.match(qa.state.level.name, /1\/3/);
+collectItems('TOOL', 6); deposit(qa.state.haul);
+assert.equal(qa.state.pendingResult, false, 'equipment does not count as ordinary salvage');
+collectItems('SCRAP', 6, 30); deposit(qa.state.haul);
+assert.equal(qa.state.progress.finale.stage, 1);
+assert.equal(vm.runInContext('LevelSystem.readProgress().finale.stage', sandbox), 1);
+assert.equal(qa.state.progress.best[10], undefined);
+const checkpointBank = qa.state.bank;
+qa.finishLevel();
+assert.match(qa.state.level.name, /2\/3/);
+assert.equal(qa.state.bank, checkpointBank);
+assert.equal(qa.state.bankedObjects, 0);
+collectItems('TOOL', 1); deposit(qa.state.haul);
+qa.end('SUIT'); qa.start();
+assert.equal(qa.state.bank, checkpointBank, 'failed assignment earnings roll back to checkpoint');
+assert.equal(qa.careerState.bankedTypes.TOOL, undefined);
+assert.match(qa.state.level.name, /2\/3/);
+collectItems('TOOL', 3); collectItems('ROCKET', 2); deposit(qa.state.haul);
+assert.equal(qa.state.progress.finale.stage, 2);
+qa.finishLevel();
+assert.match(qa.state.level.name, /3\/3/);
+assert.equal(qa.state.junk.filter(o => o.type === 'CAPSULE').length, 1);
+const finalCheckpointBank = qa.state.bank;
+qa.collect(qa.state.junk.find(o => o.type === 'CAPSULE'));
+qa.end('REENTRY');
+assert.match(elements.get('play-again').textContent, /RETRY ASSIGNMENT 3/);
+qa.start();
+assert.equal(qa.state.bank, finalCheckpointBank);
+assert.equal(qa.state.junk.filter(o => o.type === 'CAPSULE').length, 1);
+qa.collect(qa.state.junk.find(o => o.type === 'CAPSULE')); deposit(qa.state.haul);
+const preReward = careerSystem.career.wallet;
+qa.finishLevel(); qa.finishLevel();
+assert.equal(elements.get('result-title').textContent, 'WORLD ONE COMPLETE');
+assert.equal(careerSystem.career.wallet, preReward + 2000);
+assert.equal(careerSystem.rewardWorldOne(), false);
+assert.equal(qa.state.progress.finale, undefined);
+assert.equal(elements.get('world-one-badge').hidden, false);
+assert.equal(vm.runInContext('LevelSystem.readProgress().finale', sandbox), undefined);
+assert.ok(qa.state.progress.best[10] >= 1);
+qa.start(); assert.match(qa.state.level.name, /1\/3/);
+// A persisted claim prevents another completion payout after reload.
+const savedCareer = storage.get('orbital-cleanup-career-v1');
+const reloadedReward = reloadCareer({getItem: () => savedCareer, setItem() {}});
+assert.equal(reloadedReward.rewardWorldOne(), false);
+assert.equal(reloadCareer({getItem: () => JSON.stringify({wallet: 100, upgrades:{reel:1,thrust:1}}), setItem(){}}).career.upgrades.deposit, 0);
+// Upgrade purchases apply on launch; banking remains item-by-item at the fastest tier.
+elements.get('level-1').listeners.click(); qa.start();
+const priorDuration = qa.depositDuration(18);
+careerSystem.credit(20000);
+for (let i = 0; i < 3; i++) assert.equal(careerSystem.purchase('deposit'), true);
+assert.equal(careerSystem.purchase('deposit'), false);
+assert.equal(qa.depositDuration(18), priorDuration);
+qa.start();
+assert.equal(qa.careerState.runEffects.deposit, 0.55);
+assert.ok(Math.abs(qa.depositDuration(18) - 0.132) < 0.0001);
+qa.collect({type:'PANEL',value:30,mass:18,size:10});
+qa.scenario = { junk: [], depositing: true, player:{y:225,velocityY:0,flash:0}, station:{x:180,y:225,speed:0} };
+qa.update(0.12); assert.equal(qa.state.bank, 0);
+qa.update(0.02); assert.equal(qa.state.bank, 30);
+assert.equal(elements.get('hud-bank').textContent, '$30');
+assert.ok(cachedPaths.includes('./src/art/survey-capsule.png'));
+console.log('v0.13 mixed objectives, finale checkpoints/retries, one-time reward, badge, replay, and deposit upgrade passed.');
+for (const launch of [() => launchContract('first-shift'), () => elements.get('endless').listeners.click()]) {
+  launch();
+  assert.equal(qa.careerState.runEffects.deposit, 0.55, 'Deposit Speed applies across game modes');
+}
+for (const [id, types, target] of [[8, {TOOL:3,ROCKET:2}, 1200], [9, {ROCKET:4}, 1800]]) {
+  assert.equal(vm.runInContext(`LevelSystem.rating(LevelSystem.campaign[${id - 1}], {bank:${target},bankedTypes:${JSON.stringify(types)}})`, sandbox), 3);
+  assert.equal(vm.runInContext(`LevelSystem.rating(LevelSystem.campaign[${id - 1}], {bank:${target},bankedTypes:{}})`, sandbox), 0);
+}

@@ -5,7 +5,7 @@ const GameArt = (() => {
   atlas.src = 'src/art/sprites.png';
   earth.src = 'src/art/earth.png';
   const salvage = {};
-  for (const [type, file] of Object.entries({ TOOL: 'tool-crate', ROCKET: 'rocket-fragment' })) {
+  for (const [type, file] of Object.entries({ TOOL: 'tool-crate', ROCKET: 'rocket-fragment', CAPSULE: 'survey-capsule' })) {
     salvage[type] = new Image();
     salvage[type].src = `src/art/${file}.png`;
   }
