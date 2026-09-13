@@ -28,7 +28,8 @@ const ContractSystem = (() => {
     if (rank === 0) { bands[0].y = [145, 175]; bands[2].y = [265, 300]; bands[2].speed = [45, 65]; }
     if (rank === 2) { bands[0].y = [108, 140]; bands[2].speed = [85, 112]; }
     if (salvageType === 'TOOL' || salvageType === 'ROCKET') {
-      const source = LevelSystem.campaign[salvageType === 'TOOL' ? 5 : 6].debris.bands;
+      const config = LevelSystem.campaign[salvageType === 'TOOL' ? 5 : 6].debris;
+      const source = [config.limited.band, ...config.bands];
       bands.splice(0, bands.length, ...source.map(band => ({ ...band })));
     }
     const objective = { type, target, salvageType };

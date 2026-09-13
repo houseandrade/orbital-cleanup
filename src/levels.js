@@ -43,13 +43,14 @@ const LevelSystem = (() => {
         band(0.25, [108, 135], [22, 34], [150, 200], 10, 14, 'SAT')
       ]
     }),
-    { ...level(6, 'Lost Equipment', 'Recover 5 tool crates. Look for the cream cases with mint latches; bank them across as many trips as needed.', 5, 550, 850, {
-      count: 8, spacing: 90, bands: [toolCrates,
+    { ...level(6, 'Lost Equipment', 'Recover 5 tool crates. Look for the cream cases with mint latches; Seven crates are spread around the orbit; missed crates come around again.', 5, 550, 850, {
+      count: 5, spacing: 110, limited: { count: 7, spacing: 360, speed: 30, band: toolCrates }, bands: [
         band(0.3, [190, 265], [38, 48], [35, 50], 5, 10, 'PANEL'),
         band(0.2, [265, 310], [45, 65], [20, 35], 2, 7, 'SCRAP')]
     }), objective: { type: 'bank_type', salvageType: 'TOOL', target: 5 } },
-    { ...level(7, 'Heavy Metal', 'Bank 3 rocket fragments. Heavy engine sections slow your reel and add cargo mass; shorter trips keep the load manageable.', 3, 750, 1100, {
-      count: 8, spacing: 100, bands: [rocketFragments, { ...toolCrates, weight: 0.25 },
+    { ...level(7, 'Heavy Metal', 'Bank 3 rocket fragments. Heavy engine sections slow your reel and add cargo mass; Five fragments are spread around the orbit; missed fragments return.', 3, 750, 1100, {
+      count: 5, spacing: 110, limited: { count: 5, spacing: 480, speed: 30, band: rocketFragments }, bands: [
+        band(0.2, [260, 310], [45, 65], [20, 35], 2, 7, 'SCRAP'),
         band(0.3, [195, 270], [38, 48], [35, 50], 5, 10, 'PANEL')]
     }), objective: { type: 'bank_type', salvageType: 'ROCKET', target: 3 } }
   ];

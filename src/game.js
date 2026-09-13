@@ -121,7 +121,14 @@
   function fillDebris(initial = false) {
     const config = debrisConfig();
     const limit = config.count - (config.encounter ? 1 : 0);
-    const missing = limit - junk.filter(object => !object.special && !object.encounter).length;
+    const missing = limit - junk.filter(object => !object.special && !object.encounter && !object.limited).length;
+    if (initial && config.limited) {
+      const pool = config.limited;
+      for (let i = 0; i < pool.count; i++) {
+        makeJunk(i * pool.spacing, pool.band);
+        Object.assign(junk.at(-1), { limited: true, speed: pool.speed, orbitLength: pool.count * pool.spacing });
+      }
+    }
     const pocket = config.pocket;
     const livePockets = junk.filter(object => object.pocket).length;
     const pocketCount = pocket && !livePockets && missing >= pocket.count ? pocket.count : 0;
@@ -394,7 +401,7 @@
 
   function stationMessage() {
     if (depositNoticeTime > 0) return depositNotice;
-    if (isNearStation()) return depositing && mass > 0 ? `TRANSFERRING SALVAGE… ${Math.min(100, Math.floor(100 * depositProgress / Math.min(0.3, (cargo[0]?.mass || mass) / 18)))}% · KEEP HOLDING` : 'STATION IN RANGE';
+    if (isNearStation()) return depositing && mass > 0 ? `TRANSFERRING SALVAGE… ${Math.min(100, Math.floor(100 * depositProgress / Math.min(0.24, (cargo[0]?.mass || mass) / 22.5)))}% · KEEP HOLDING` : 'STATION IN RANGE';
     if (station.x >= PLAYER_X + 90) return `STATION PASS IN ${Math.ceil((station.x - PLAYER_X - 90) / station.speed)}s`;
     if (station.x > PLAYER_X - 90) return 'STATION PASS NOW • ALIGN ALTITUDE';
     const seconds = (station.x + 70 + nextStation.x - PLAYER_X - 90) / station.speed;
@@ -489,9 +496,12 @@
     }
     tether = null;
     tetherButton.textContent = "◎ TETHER";
-    if (object.special) specialCollected = true;
-    else if (debrisConfig().pocket || debrisConfig().encounter || level.phases) fillDebris();
-    else makeJunk(random(150, 320));
+    // Collected finite mission targets never replenish during the run.
+    if (!object.limited) {
+      if (object.special) specialCollected = true;
+      else if (debrisConfig().pocket || debrisConfig().encounter || level.phases) fillDebris();
+      else makeJunk(random(150, 320));
+    }
     status.textContent = `+${object.value} • ${orbitZone(player.y)} ORBIT • ${mass}kg`;
   }
 
@@ -540,6 +550,10 @@
     if (player.y < ESCAPE_Y) { end("ESCAPE"); return; }
     if (player.y > REENTRY_Y) { end("REENTRY"); return; }
     junk.forEach(object => {
+      if (object.limited && object.x <= -40 && tether?.object !== object) {
+        object.x += object.orbitLength;
+        object.hit = false;
+      }
       if (object.special && object.x <= -40 && !specialCollected) { object.x = WIDTH + 300; object.hit = false; }
     });
     junk = junk.filter((object) => object.x > -40 || (tether && tether.object === object));
@@ -573,11 +587,11 @@
 
     if (depositing && isNearStation() && mass > 0) {
       depositProgress += deltaTime;
-      while (cargo.length && depositProgress >= Math.min(0.3, cargo[0].mass / 18)) {
+      while (cargo.length && depositProgress >= Math.min(0.24, cargo[0].mass / 22.5)) {
         const previousBank = bank;
         if (depositStartBank === null) depositStartBank = bank;
         const item = cargo.shift();
-        depositProgress -= Math.min(0.3, item.mass / 18);
+        depositProgress -= Math.min(0.24, item.mass / 22.5);
         bank += item.value;
         haul -= item.value;
         mass = Math.max(0, mass - item.mass);

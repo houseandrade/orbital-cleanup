@@ -149,7 +149,7 @@ qa.draw();
 assert.equal(qa.state.bank, 0, 'unfinished transfer does not credit money');
 assert.equal(qa.state.mass, 5, 'unfinished transfer keeps cargo mass');
 assert.equal(qa.state.cargo.length, 1, 'unfinished transfer keeps visible cargo');
-assert.match(elements.get('station-status').textContent, /TRANSFERRING SALVAGE.*36%/);
+assert.match(elements.get('station-status').textContent, /TRANSFERRING SALVAGE.*45%/);
 qa.scenario = { depositing: false };
 qa.update(0);
 assert.equal(qa.state.haul, 30, 'interrupting a transfer preserves its value');
@@ -757,7 +757,7 @@ for (const id of [6, 7]) {
   const config = qa.state.level;
   const type = config.objective.salvageType;
   const wallet = careerSystem.career.wallet;
-  assert.ok(config.debris.bands.some(b => b.type === type && b.weight > 0));
+  assert.equal(config.debris.limited.band.type, type);
   assert.match(elements.get('level-description').textContent, id === 6 ? /tool crates/ : /rocket fragments/);
   for (let i = 0; i < config.objective.target; i++) qa.collect({ type, value: 70, mass: id === 6 ? 8 : 18, size: 12 });
   qa.draw();
@@ -793,3 +793,36 @@ for (const name of ['tool-crate', 'rocket-fragment']) {
   assert.ok(fs.existsSync(new URL(`../src/art/${name}.png`, import.meta.url)));
 }
 console.log('Levels 6–7, targeted stars, save compatibility, new Endless salvage, and offline assets passed.');
+
+// Limited campaign pools circulate without multiplying or replenishing collected targets.
+for (const id of [6, 7]) {
+  elements.get(`level-${id}`).listeners.click();
+  qa.start();
+  const config = qa.state.level;
+  const pool = config.debris.limited;
+  const targets = qa.state.junk.filter(o => o.limited);
+  assert.equal(targets.length, config.objective.target + 2);
+  assert.equal(qa.state.junk.filter(o => !o.limited).length, config.debris.count);
+  assert.ok(config.debris.bands.every(b => !['TOOL', 'ROCKET'].includes(b.type)), 'new types cannot randomly replenish');
+  for (let i = 1; i < targets.length; i++) {
+    assert.equal(targets[i].x - targets[i - 1].x, pool.spacing);
+    assert.equal(targets[i].speed, targets[0].speed, 'equal speeds prevent clustering');
+  }
+  const firstPassEnds = (config.station.startX - (180 - 90)) / config.station.speed;
+  assert.ok(targets.filter(o => (o.x - 180) / o.speed <= firstPassEnds).length < config.objective.target, 'first station pass cannot receive the whole quota');
+  const missed = targets[0];
+  missed.x = -41;
+  qa.scenario = { player: { y: 225, velocityY: 0, flash: 0 } };
+  qa.update(0);
+  assert.ok(qa.state.junk.includes(missed));
+  assert.equal(missed.x, -41 + pool.count * pool.spacing);
+  qa.collect(missed);
+  qa.fillDebris();
+  assert.equal(qa.state.junk.filter(o => o.limited).length, pool.count - 1);
+  for (const item of targets.slice(1)) qa.collect(item);
+  qa.fillDebris();
+  assert.equal(qa.state.junk.filter(o => o.limited).length, 0, 'collected targets never respawn');
+  qa.start();
+  assert.equal(qa.state.junk.filter(o => o.limited).length, pool.count, 'replay restores the finite pool');
+}
+console.log('Finite campaign salvage pools, spacing, missed-item orbits, and replay checks passed.');
