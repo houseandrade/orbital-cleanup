@@ -7,7 +7,7 @@ const GameArt = (() => {
   atlas.src = 'src/art/sprites.png';
   earth.src = 'src/art/earth.png';
   const salvage = {};
-  for (const [type, file] of Object.entries({ TOOL: 'tool-crate', ROCKET: 'rocket-fragment', CAPSULE: 'survey-capsule', WHEEL: 'lunar/rover-wheel', TANK: 'lunar/oxygen-tank', INSTRUMENT: 'lunar/instrument-package', LEG: 'lunar/lander-leg' })) {
+  for (const [type, file] of Object.entries({ TOOL: 'tool-crate', ROCKET: 'rocket-fragment', CAPSULE: 'survey-capsule', WHEEL: 'lunar/rover-wheel', TANK: 'lunar/oxygen-tank', INSTRUMENT: 'lunar/instrument-package', LEG: 'lunar/lander-leg', ROVER: 'lunar/rover-chassis' })) {
     salvage[type] = new Image();
     salvage[type].src = `src/art/${file}.png`;
   }

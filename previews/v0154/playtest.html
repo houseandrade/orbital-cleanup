@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Moon finale playtest</title>
+<style>body{max-width:480px;margin:48px auto;padding:24px;background:#080d13;color:#eef3f8;font:16px/1.6 system-ui}button{display:block;width:100%;margin:16px 0;padding:16px;border:0;border-radius:8px;background:#a7f3b5;color:#0a2315;font:700 16px system-ui;cursor:pointer}p{color:#abb8c6}</style>
+<h1>Moon finale playtest</h1>
+<p>Play Last Rover, the Moon finale, with three checkpointed assignments. All earlier missions are also unlocked.</p>
+<p>This unlocks missions in your local preview only. Your previous local campaign save is backed up; production progress is unaffected.</p>
+<label for="assignment">Start from</label><select id="assignment"><option value="0">Assignment 1 — full mission</option><option value="1">Assignment 2 — equipment</option><option value="2">Assignment 3 — rover</option></select>
+<button id="start">Open review build</button><button id="restore">Restore previous local campaign save</button><p id="status"></p>
+<script>
+const key='orbital-cleanup-progress-v1', backup='moon-finale-playtest-backup';
+function localOnly(){if(location.hostname==='localhost'&&location.port==='8086')return true;document.getElementById('status').textContent='Open this review on localhost:8086.';return false;}
+document.getElementById('start').onclick=()=>{
+ if(!localOnly())return;
+ if(localStorage.getItem(backup)===null)localStorage.setItem(backup,JSON.stringify({progress:localStorage.getItem(key)}));
+ const stage=Number(document.getElementById('assignment').value);
+ localStorage.setItem(key,JSON.stringify({currentLevel:20,selectedWorld:2,best:Object.fromEntries(Array.from({length:19},(_,i)=>[i+1,1])), ...(stage ? {moonFinale:{stage,bank:stage===1?465:1055}} : {})}));
+ location.href='../../';
+};
+document.getElementById('restore').onclick=()=>{
+ if(!localOnly())return;
+ const saved=localStorage.getItem(backup);
+ if(saved===null){document.getElementById('status').textContent='No review backup to restore.';return;}
+ const {progress}=JSON.parse(saved);
+ if(progress===null)localStorage.removeItem(key);else localStorage.setItem(key,progress);
+ localStorage.removeItem(backup);
+ document.getElementById('status').textContent='Previous local campaign save restored.';
+};
+</script></html>

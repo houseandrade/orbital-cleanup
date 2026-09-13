@@ -90,7 +90,7 @@ const LevelSystem = (() => {
           ] } } } }
   ];
   campaign.push({ ...level(10, 'Final Sweep', 'Three assignments, saved checkpoints, and one final recovery. Complete World One for a one-time $2,000 reward.',
-    1, 1200, 1800, assignments[0].debris), objective: assignments[0].objective, assignments });
+    1, 1200, 1800, assignments[0].debris), objective: assignments[0].objective, assignments, checkpointKey: 'finale', completion: { title: 'WORLD ONE COMPLETE', salvage: 'Survey capsule secured' } });
   const varietySatellite = { ...band(0.1, [175, 270], [26, 34], [70, 100], 10, 14, 'SAT'), maxActive: 2, zones: [
     { weight: 0.25, y: [110, 145], value: [90, 100], risky: true },
     { weight: 0.5, y: [175, 270], value: [70, 89] },
@@ -169,6 +169,29 @@ const LevelSystem = (() => {
         { count: 4, spacing: 480, offset: 240, speed: 30, band: rocketFragments }
       ] }), objective: all(typed('LEG', 3), typed('ROCKET', 2)) }, 9)
   );
+  const moonAssignments = [
+    { name: 'Clear the workshop', description: 'Bank 6 oxygen tanks and 3 rover wheels. Missed items return on a later pass.',
+      objective: all(typed('TANK', 6), typed('WHEEL', 3)),
+      debris: { count: 5, spacing: 110, bands: lunarRecoverySupport, pools: [
+        { count: 8, spacing: 360, speed: 30, band: band(1, [185, 260], [30, 30], [35, 45], 4, 10, 'TANK') },
+        { count: 5, spacing: 720, offset: 180, speed: 30, band: roverWheel }
+      ] } },
+    { name: 'Recover the equipment', description: 'Bank 2 lander legs and 2 instrument packages. Missed items return on a later pass.',
+      objective: all(typed('LEG', 2), typed('INSTRUMENT', 2)),
+      debris: { count: 5, spacing: 110, bands: lunarRecoverySupport, pools: [
+        { count: 4, spacing: 480, speed: 30, band: landerLeg },
+        { count: 4, spacing: 480, offset: 240, speed: 30, band: lunarInstrument }
+      ] } },
+    { name: 'Bring the rover home', description: 'Recover and bank the rover chassis. This heavy cargo returns on a later pass if missed.',
+      objective: typed('ROVER', 1), debris: { count: 5, spacing: 110, bands: lunarRecoverySupport,
+        limited: { count: 1, spacing: 900, offset: 840, speed: 30,
+          band: band(1, [190, 260], [30, 30], [450, 450], 22, 20, 'ROVER') } } }
+  ];
+  campaign.push(moon({ ...level(20, 'Last Rover', 'Three assignments, saved checkpoints, and one final recovery. Complete the Moon campaign for a one-time $2,000 reward.',
+    1, 1800, 2400, moonAssignments[0].debris), objective: moonAssignments[0].objective,
+    assignments: moonAssignments, checkpointKey: 'moonFinale',
+    completion: { title: 'WORLD TWO COMPLETE', salvage: 'Lunar rover secured' } }, 10));
+
   const endless = {
     ...defaults, id: 'endless', name: 'Endless Orbit',
     description: 'Bank $150 for your first milestone. Explore changing fields; finish safely after any deposit or keep going.',
@@ -218,7 +241,7 @@ const LevelSystem = (() => {
     if (criterion.type === 'all') return criterion.criteria.map(c => criterionLabel(c)).join(' + ');
     if (criterion.type === 'bank_group') return `${criterion.target} ordinary objects`;
     if (criterion.type === 'complete_objective') return criterionLabel(objective);
-    if (criterion.type === 'bank_type') return `${criterion.target} ${({ SAT: 'satellites', PANEL: 'panels', SCRAP: 'scraps', TOOL: 'tool crates', ROCKET: 'rocket fragments', CAPSULE: 'survey capsule', WHEEL: 'rover wheels', TANK: 'oxygen tanks', INSTRUMENT: 'instrument packages', LEG: 'lander legs' })[criterion.salvageType] || 'items'}`;
+    if (criterion.type === 'bank_type') return `${criterion.target} ${({ SAT: 'satellites', PANEL: 'panels', SCRAP: 'scraps', TOOL: 'tool crates', ROCKET: 'rocket fragments', CAPSULE: 'survey capsule', WHEEL: 'rover wheels', TANK: 'oxygen tanks', INSTRUMENT: 'instrument packages', LEG: 'lander legs', ROVER: 'rover chassis' })[criterion.salvageType] || 'items'}`;
     return criterion.type === 'bank_objects' ? `${criterion.target} objects` : `$${criterion.target}`;
   }
   const key = 'orbital-cleanup-progress-v1';
@@ -232,8 +255,11 @@ const LevelSystem = (() => {
         if (Number.isInteger(stars) && stars >= 1 && stars <= 3 && (config.id === 1 || result.best[config.id - 1])) result.best[config.id] = stars;
       }
       if (campaign.some(config => config.id === saved?.currentLevel) && (saved.currentLevel === 1 || result.best[saved.currentLevel - 1])) result.currentLevel = saved.currentLevel;
-      if (result.best[9] && Number.isInteger(saved?.finale?.stage) && saved.finale.stage >= 1 && saved.finale.stage <= 2 && Number.isSafeInteger(saved.finale.bank) && saved.finale.bank >= 0) {
-        result.finale = { stage: saved.finale.stage, bank: saved.finale.bank };
+      for (const config of campaign.filter(config => config.assignments)) {
+        const checkpoint = saved?.[config.checkpointKey];
+        if (result.best[config.id - 1] && Number.isInteger(checkpoint?.stage) && checkpoint.stage >= 1 && checkpoint.stage < config.assignments.length && Number.isSafeInteger(checkpoint.bank) && checkpoint.bank >= 0) {
+          result[config.checkpointKey] = { stage: checkpoint.stage, bank: checkpoint.bank };
+        }
       }
     } catch (_) {}
     result.selectedWorld ??= campaign.find(config => config.id === result.currentLevel)?.world || 1;
