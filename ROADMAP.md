@@ -8,7 +8,7 @@ For version-by-version changes, see [Release notes](RELEASE-NOTES.md).
 2. **Moon / World Two: complete and deployed.** All ten missions are live, including Last Rover’s three checkpointed assignments, independent Moon checkpoint/reward handling, completion badge, and one-time $2,000 reward. Approved lunar artwork, vertical drift, and station-timed recovery are implemented. See [Moon campaign record](MOON-CAMPAIGN-PLAN.md).
 3. **Moon mode support: complete and deployed in v0.15.5.** Six Moon contracts use Earth/Moon navigation, difficulty sorting, and inline briefings. Starting a Moon campaign mission sets the persistent active world; browsing, contracts, and Earth replays do not reset it. Endless follows that world, labels its destination, and preserves separate Earth/Moon best scores. PR #22 deployed successfully; Brian’s playtest feedback was positive.
 4. **Shared presentation: complete and deployed.** Campaign and contract briefings expand directly below the selected card, with a MISSION BRIEFING heading and objective bullets. Briefings omit exact timing, altitude, and spawn-pattern hints. The responsive flight header reserves its height so changing status messages do not resize the playfield.
-5. **v0.16 / Mars / World Three: first playtest batch implemented, awaiting review.** Brian approved the artwork and requested Mars missions 1–3 plus tether reach, cargo stabilizer, and a one-time $100 recovery scanner. The first batch uses familiar movement; later missions and speed variation remain proposals. Production remains v0.15.5.
+5. **v0.16 / Mars / World Three: first batch approved and deployed.** Brian approved the artwork and requested Mars missions 1–3 plus tether reach, cargo stabilizer, and a one-time $100 recovery scanner. The first batch uses familiar movement; later missions and speed variation remain proposals. PR #24 deployed successfully as v0.16.0 (run 34782069208); live release verified.
 
 ## v0.16 — Mars delivery and remaining proposals
 
@@ -71,12 +71,12 @@ Later missions can introduce solar arrays, habitat frames, mixed objectives, and
 
 1. Complete: Mars salvage lineup and visual direction approved.
 2. Complete: background and five sprites created and approved.
-3. Implemented for review: approved assets, missions 3-1 through 3-3, world navigation, and the selected upgrades.
+3. Complete: approved assets, missions 3-1 through 3-3, world navigation, and selected upgrades deployed in v0.16.0.
 4. Playtest the initial missions and upgrade tuning. Compare a separate drone-speed variant later; keep movement and cargo experiments independent.
 5. Expand the campaign in small review batches, following the Moon’s 4–6, 7–9, and checkpointed-finale approach.
 6. After campaign approval, evaluate Mars Contracts and world-aware Endless support using the established per-world pattern. Their content and tuning remain open.
 
-The first three missions and approved upgrades are implemented for review. Mars unlocks after the Moon finale; completing 3-3 does not award a world-completion badge or reward. Active Mars campaign state persists through earlier-world replays. Until Mars mode support is designed, Contracts remain Earth/Moon and Endless explicitly uses Moon for Mars players. Use the established feature-branch, playtest, and production-approval workflow for each batch.
+The first three missions and approved upgrades are deployed in v0.16.0. Mars unlocks after the Moon finale; completing 3-3 does not award a world-completion badge or reward. Active Mars campaign state persists through earlier-world replays. Until Mars mode support is designed, Contracts remain Earth/Moon and Endless explicitly uses Moon for Mars players. Use the established feature-branch, playtest, and production-approval workflow for each batch.
 
 ## Principles carried forward
 
