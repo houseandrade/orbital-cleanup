@@ -21,7 +21,8 @@ function makeElement(id) {
     classList: {
       add: (...names) => names.forEach((name) => classes.add(name)),
       remove: (...names) => names.forEach((name) => classes.delete(name)),
-      contains: (name) => classes.has(name)
+      contains: (name) => classes.has(name),
+      toggle: (name, force) => force ? classes.add(name) : classes.delete(name)
     },
     focus() {},
     setAttribute() {},
@@ -592,7 +593,7 @@ assert.equal(qa.state.pendingResult, false, 'failure cannot become a successful 
 assert.equal(qa.state.bank, 0);
 
 // Existing timing, movement setup, and all campaign targets are retained.
-for (const config of vm.runInContext('LevelSystem.campaign', sandbox)) {
+for (const config of vm.runInContext('LevelSystem.campaign.filter(c => c.world === 1)', sandbox)) {
   assert.equal(config.station.startX, config.id === 1 ? 450 : 660);
   assert.equal(config.station.speed, 25);
   assert.equal(config.player.startY, 225);
@@ -1019,7 +1020,7 @@ try {
   }
 } finally { sandbox.Math.random = capsuleRandom; }
 console.log('Delayed capsule arrival and upper/lower boundary placement passed.');
-for (const config of vm.runInContext('LevelSystem.campaign.slice(5)', sandbox)) {
+for (const config of vm.runInContext('LevelSystem.campaign.slice(5, 10)', sandbox)) {
   for (const debris of [config.debris, ...(config.assignments || []).map(a => a.debris)]) {
     const satellite = debris.bands.find(b => b.type === 'SAT');
     assert.equal(satellite.maxActive, 2);
@@ -1037,3 +1038,79 @@ try {
   assert.equal(qa.state.junk.filter(o => o.type === 'SAT').length, 2, 'satellites remain available after collection');
 } finally { sandbox.Math.random = savedSatelliteRandom; }
 console.log('Late-campaign satellite altitude variety and active-count cap passed.');
+
+// Moon access requires World One, while both world pages remain browsable.
+qa.scenario = {running: false};
+elements.get('over-menu').listeners.click();
+const earthStars = qa.state.progress.best[10];
+delete qa.state.progress.best[10];
+elements.get('choose-campaign').listeners.click();
+elements.get('next-world').listeners.click();
+assert.match(elements.get('world-name').textContent, /MOON/);
+assert.equal(elements.get('level-1').hidden, true);
+assert.equal(elements.get('level-11').hidden, false);
+assert.equal(elements.get('level-11').disabled, true);
+assert.equal(elements.get('mission-briefing').hidden, true);
+const beforeLockedClick = qa.state.level.id;
+elements.get('level-11').listeners.click();
+assert.equal(qa.state.level.id, beforeLockedClick);
+qa.state.progress.best[10] = earthStars;
+elements.get('previous-world').listeners.click();
+elements.get('next-world').listeners.click();
+assert.equal(elements.get('level-11').disabled, false);
+assert.equal(elements.get('mission-briefing').hidden, false);
+assert.equal(vm.runInContext('LevelSystem.readProgress().selectedWorld', sandbox), 2);
+const walletBeforeMoon = careerSystem.career.wallet;
+elements.get('level-11').listeners.click(); qa.start();
+assert.equal(qa.state.level.world, 2);
+assert.equal(qa.careerState.runEffects.deposit, 0.55);
+qa.collect({type:'PANEL',value:200,mass:5,size:10}); deposit(200);
+assert.equal(qa.state.pendingResult, true);
+qa.finishLevel();
+assert.equal(qa.state.progress.best[11], 1);
+assert.equal(elements.get('level-12').disabled, false);
+elements.get('next-level').listeners.click();
+assert.equal(qa.state.level.id, 12);
+const wheels = qa.state.junk.filter(item => item.type === 'WHEEL');
+assert.equal(wheels.length, 7);
+assert.equal(wheels[1].x - wheels[0].x, 420);
+assert.ok(wheels.every(item => item.y - item.size - 4 > 75 && item.y + item.size + 4 < 360));
+for (let i = 0; i < 5; i++) qa.collect({type:'PANEL',value:70,mass:5,size:10});
+deposit(350);
+assert.equal(qa.state.pendingResult, false, 'ordinary salvage cannot satisfy the wheel quota');
+qa.scenario = {junk: wheels};
+for (const wheel of wheels.slice(0,5)) qa.collect(wheel);
+assert.equal(qa.state.junk.filter(item => item.type === 'WHEEL').length, 2, 'collected wheels do not replenish');
+deposit(350);
+assert.equal(qa.state.pendingResult, true);
+qa.finishLevel();
+assert.ok(qa.state.progress.best[12] >= 1);
+elements.get('next-level').listeners.click();
+assert.equal(qa.state.level.id, 13);
+assert.equal(qa.state.junk.filter(item => item.type === 'TANK').length, 2);
+for (const item of qa.state.junk.filter(item => item.type === 'TANK')) qa.collect(item);
+assert.equal(qa.state.junk.filter(item => item.type === 'TANK').length, 2, 'a cleared tank pocket replenishes');
+qa.start();
+for (let trip = 0; trip < 2; trip++) {
+  for (let i = 0; i < 4; i++) qa.collect({type:'TANK',value:40,mass:4,size:10});
+  deposit(160);
+  assert.equal(qa.state.pendingResult, trip === 1, 'tank quota accumulates across deposits');
+}
+qa.finishLevel();
+assert.equal(elements.get('next-level').hidden, true);
+assert.equal(elements.get('result-title').textContent, 'LEVEL COMPLETE');
+assert.equal(careerSystem.career.wallet, walletBeforeMoon, 'Moon prototype gives no extra World One reward or contract pay');
+qa.start();
+qa.scenario = {player:{y:361,velocityY:0,flash:0}, junk:[]}; qa.update(0.01);
+assert.equal(elements.get('death').textContent, 'SURFACE IMPACT');
+elements.get('over-menu').listeners.click();
+elements.get('choose-campaign').listeners.click();
+elements.get('previous-world').listeners.click();
+assert.equal(elements.get('level-1').hidden, false);
+assert.equal(elements.get('level-11').hidden, true);
+const moonSave = storage.get('orbital-cleanup-progress-v1');
+storage.set('orbital-cleanup-progress-v1', JSON.stringify({currentLevel: 11, best:{1:1,2:1,3:1,4:1,5:1,6:1,7:1,8:1,9:1,10:1}}));
+assert.equal(vm.runInContext('LevelSystem.readProgress().selectedWorld', sandbox), 2, 'older saves infer world from current mission');
+storage.set('orbital-cleanup-progress-v1', moonSave);
+for (const asset of ['moon-background', 'rover-wheel', 'oxygen-tank']) assert.ok(cachedPaths.includes(`./src/art/lunar/${asset}.png`));
+console.log('Moon world navigation, unlocks, saves, objectives, finite wheels, recurring tank pockets, upgrades, rewards, and surface failure passed.');

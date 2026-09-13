@@ -186,3 +186,18 @@ Validation: full acceptance suite and whitespace checks pass; local browser revi
 ## v0.15 — Planned Moon prototype
 
 Brian approved the five lunar salvage sprites and Moon background. Local assets are saved under src/art/lunar/ and previews/lunar-art-v1/ for the next iteration; they are not included in the v0.14 release. Preserve the distant Earth when cropping the Moon background. Next scope: world selector and the first three Moon missions, using the v0.14 inline briefing pattern.
+
+
+## v0.15 — Moon prototype ready for playtest
+
+World navigation displays only the selected world's missions, with per-world completion and stars, a sticky selector, and remembered world selection. World One remains ten missions; World Two targets ten, with only the first three playable in this prototype. Mission labels use world-mission numbering. Complete Final Sweep to unlock Lunar Arrival; existing World One completions unlock it immediately. World One's finale reward and 30-star total remain scoped to Earth. The third Moon mission ends the available prototype without awarding a world completion or another wallet reward.
+
+- **2-1 Lunar Arrival:** bank $200 / $400 / $650 using six familiar panels, scraps, and satellites.
+- **2-2 Spare Parts:** bank five rover wheels; higher stars also require $550 / $800. Seven finite wheels, spaced 14 seconds apart, travel at varied safe altitudes; missed wheels return and collected wheels do not respawn. Wheels weigh 7kg and pay $65–$85.
+- **2-3 Tank Sweep:** bank eight spent oxygen tanks across trips; higher stars also require $550 / $850. Two light 4kg tanks form recurring pockets among ordinary salvage, paying $35–$45 each.
+
+The Moon uses the approved horizon cropped below the flight boundary, with the distant Earth drawn separately above it. Approved wheel and tank sprites are integrated and cached offline. The other approved lunar assets are retained for later missions. Lower-boundary failure reads Surface Impact. Base flight physics and existing gear effects are preserved; the lunar station has a shorter, more predictable return range for these introductory missions. Vertical drift, extra lunar contracts, and missions 2-4 onward remain deferred.
+
+Validation: full acceptance suite covers existing gameplay plus world visibility, locked access, save compatibility, sequential Moon unlocks, multi-deposit tank quotas, finite wheels, recurring tank pockets, shared upgrades, reward isolation, and lunar failure labels. Local browser QA checked locked/unlocked world pages, inline briefings at 375×667 and 320×568, and the lunar flight composition; no warnings or errors were observed. Mission thresholds and spawn pacing are initial playtest settings.
+
+Local playtest helper: previews/v015/playtest.html runs only at localhost:8085 and seeds test campaign progress while preserving a backup. It never changes production progress and is excluded from the production Pages artifact. v0.14 is deployed in production; v0.15 requires playtest approval before merge/deployment.

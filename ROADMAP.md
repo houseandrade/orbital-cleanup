@@ -118,3 +118,8 @@ Implemented for playtest: Lost Equipment and Heavy Metal, approved tool-crate an
 ## v0.13 — World One complete (playtest)
 
 Implemented Levels 8–10, three-assignment Final Sweep with saved checkpoints, survey capsule, completion badge/reward, and Deposit Speed tiers. Next: validate mixed-objective pacing, checkpoint clarity, and upgrade feel. Ending animation remains an undecided concept and is not implemented.
+
+
+## v0.14 / v0.15 update
+
+v0.14 mission briefings and contract sorting are approved and deployed. v0.15 implements the world selector and first three Moon missions for playtesting, with the approved lunar art. Next: validate introductory lunar pacing and background cropping before expanding toward ten missions; drifting salvage remains a later experiment.

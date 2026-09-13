@@ -2,10 +2,12 @@
 const GameArt = (() => {
   const atlas = new Image();
   const earth = new Image();
+  const moon = new Image();
+  moon.src = 'src/art/lunar/moon-background.png';
   atlas.src = 'src/art/sprites.png';
   earth.src = 'src/art/earth.png';
   const salvage = {};
-  for (const [type, file] of Object.entries({ TOOL: 'tool-crate', ROCKET: 'rocket-fragment', CAPSULE: 'survey-capsule' })) {
+  for (const [type, file] of Object.entries({ TOOL: 'tool-crate', ROCKET: 'rocket-fragment', CAPSULE: 'survey-capsule', WHEEL: 'lunar/rover-wheel', TANK: 'lunar/oxygen-tank' })) {
     salvage[type] = new Image();
     salvage[type].src = `src/art/${file}.png`;
   }
@@ -37,7 +39,16 @@ const GameArt = (() => {
     ctx.restore();
     return true;
   }
-  function backdrop(ctx) {
+  function backdrop(ctx, world = 1) {
+    if (world === 2) {
+      if (!moon.complete || !moon.naturalWidth) return false;
+      ctx.save(); ctx.imageSmoothingEnabled = false;
+      // Crop the horizon below the flight boundary; place the distant Earth separately
+      // so the original wide illustration remains readable on a narrow phone canvas.
+      ctx.drawImage(moon, 0, 500, 1536, 524, 0, 368, 360, 152);
+      ctx.drawImage(moon, 1340, 140, 125, 125, 288, 100, 30, 30);
+      ctx.restore(); return true;
+    }
     if (!earth.complete || !earth.naturalWidth) return false;
     // Entire horizon remains below the original reentry boundary (y=360).
     ctx.save(); ctx.imageSmoothingEnabled = false;

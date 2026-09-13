@@ -114,6 +114,34 @@ const LevelSystem = (() => {
   // Reserve one of the eight slots for a target timed to each station pass.
   campaign[4].debris.bands[1].weight = 0;
   campaign[4].debris.encounter = valuablePass;
+  const worlds = [
+    { id: 1, name: 'EARTH ORBIT', planned: 10 },
+    { id: 2, name: 'MOON', planned: 10 }
+  ];
+  campaign.forEach(config => { config.world = 1; config.missionNumber = config.id; });
+  const lunarSupport = [
+    band(0.65, [175, 280], [30, 44], [35, 50], 5, 10, 'PANEL'),
+    band(0.25, [150, 300], [40, 60], [20, 35], 2, 7, 'SCRAP'),
+    band(0.1, [140, 180], [24, 32], [70, 90], 10, 14, 'SAT')
+  ];
+  const roverWheel = { ...band(1, [170, 280], [30, 30], [65, 85], 7, 12, 'WHEEL'), zones: [
+    { weight: 0.2, y: [125, 155], value: [80, 85], risky: true },
+    { weight: 0.6, y: [175, 275], value: [65, 79] },
+    { weight: 0.2, y: [300, 325], value: [80, 85], risky: true }
+  ] };
+  const lunarStation = { ...defaults.station, startX: 520, returnOffset: [280, 380], returnY: [205, 245] };
+  const moon = (config, missionNumber) => ({ ...config, world: 2, missionNumber, station: lunarStation });
+  campaign.push(
+    moon(level(11, 'Lunar Arrival', 'Your first shift above the Moon. Recover familiar panels, scraps, and satellites. Keep clear of the lunar surface and bank your haul at the station.', 200, 400, 650,
+      { count: 6, spacing: 105, bands: lunarSupport }), 1),
+    moon({ ...level(12, 'Spare Parts', 'Recover rover wheels for the lunar workshop. Seven wheels pass one at a time; missed wheels circle back. Higher and lower passes pay more.', 5, 550, 800,
+      { count: 5, spacing: 110, bands: lunarSupport, limited: { count: 7, spacing: 420, speed: 30, band: roverWheel } }),
+      objective: typed('WHEEL', 5) }, 2),
+    moon({ ...level(13, 'Tank Sweep', 'Collect spent oxygen tanks in small pockets among familiar salvage. These empty tanks are safe to recover; bank them over as many trips as you need.', 8, 550, 850,
+      { count: 7, spacing: 105, bands: lunarSupport, pocket: { count: 2, spacing: 40, ySpread: 14,
+        band: band(1, [185, 260], [32, 38], [35, 45], 4, 10, 'TANK') } }),
+      objective: typed('TANK', 8) }, 3)
+  );
   const endless = {
     ...defaults, id: 'endless', name: 'Endless Orbit',
     description: 'Bank $150 for your first milestone. Explore changing fields; finish safely after any deposit or keep going.',
@@ -163,7 +191,7 @@ const LevelSystem = (() => {
     if (criterion.type === 'all') return criterion.criteria.map(c => criterionLabel(c)).join(' + ');
     if (criterion.type === 'bank_group') return `${criterion.target} ordinary objects`;
     if (criterion.type === 'complete_objective') return criterionLabel(objective);
-    if (criterion.type === 'bank_type') return `${criterion.target} ${({ SAT: 'satellites', PANEL: 'panels', SCRAP: 'scraps', TOOL: 'tool crates', ROCKET: 'rocket fragments', CAPSULE: 'survey capsule' })[criterion.salvageType] || 'items'}`;
+    if (criterion.type === 'bank_type') return `${criterion.target} ${({ SAT: 'satellites', PANEL: 'panels', SCRAP: 'scraps', TOOL: 'tool crates', ROCKET: 'rocket fragments', CAPSULE: 'survey capsule', WHEEL: 'rover wheels', TANK: 'oxygen tanks' })[criterion.salvageType] || 'items'}`;
     return criterion.type === 'bank_objects' ? `${criterion.target} objects` : `$${criterion.target}`;
   }
   const key = 'orbital-cleanup-progress-v1';
@@ -171,6 +199,7 @@ const LevelSystem = (() => {
     const result = { currentLevel: 1, best: {} };
     try {
       const saved = JSON.parse(localStorage.getItem(key));
+      if ([1, 2].includes(saved?.selectedWorld)) result.selectedWorld = saved.selectedWorld;
       for (const config of campaign) {
         const stars = saved?.best?.[config.id];
         if (Number.isInteger(stars) && stars >= 1 && stars <= 3 && (config.id === 1 || result.best[config.id - 1])) result.best[config.id] = stars;
@@ -180,10 +209,11 @@ const LevelSystem = (() => {
         result.finale = { stage: saved.finale.stage, bank: saved.finale.bank };
       }
     } catch (_) {}
+    result.selectedWorld ??= campaign.find(config => config.id === result.currentLevel)?.world || 1;
     return result;
   }
   function saveProgress(progress) {
     try { localStorage.setItem(key, JSON.stringify(progress)); return true; } catch (_) { return false; }
   }
-  return { campaign, endless, phaseFor, nextMilestone, criterionLabel, meets, rating, readProgress, saveProgress };
+  return { worlds, campaign, endless, phaseFor, nextMilestone, criterionLabel, meets, rating, readProgress, saveProgress };
 })();
