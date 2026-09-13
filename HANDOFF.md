@@ -163,3 +163,8 @@ Acceptance checks cover mixed objectives, every assignment transition, persisted
 ### v0.13 finale2 — capsule challenge
 
 Brian found the capsule too immediate and safely positioned. Its finite pool now starts with an 840px offset: it enters the visible field after 28s, reaches the astronaut at 34s, and cannot be tethered during the initial station pass. Each attempt chooses upper orbit y98–110 or lower orbit y325–336 with equal probability; both include safe sprite/collision clearance inside y75–360. It receives the existing valuable-target highlight, keeps its $300 value/14kg mass, and loops every 30s when missed. Checkpoint retry preserves completed assignments and resets this delayed approach. Tests cover arrival timing, both altitude ranges, and safe bounds.
+
+
+### v0.13 finale3 — campaign completion indicator
+
+User requested replacing the standalone World One completion banner with a green check beside CAMPAIGN inside its entry card. The check retains an accessible World One complete label and appears only after Level 10 completion.
