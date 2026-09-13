@@ -1,4 +1,4 @@
-# Orbital Cleanup v0.16.0 (in review)
+# Orbital Cleanup v0.16.0
 
 For version-by-version changes, see [Release notes](RELEASE-NOTES.md).
 
@@ -6,9 +6,9 @@ A mobile-first, standalone PWA build of the v0.532 canvas prototype. Collect deb
 
 ## Current release and next work
 
-The local v0.16.0 review build adds Mars missions 1–3 and tether reach, cargo stabilizer, and the $100 recovery scanner. See ROADMAP.md for tuning and RELEASE-NOTES.md for scope.
+v0.16.0 is approved and deployed via PR #24 (commit `989e90f`, deployment 34782069208). Mars missions 1–3, tether reach, cargo stabilizer, and the one-time $100 recovery scanner are live. The scanner is listed first in the workshop. Live release files and production checks were verified. See ROADMAP.md for future work and RELEASE-NOTES.md for release history.
 
-v0.15.5 remains approved and deployed: both ten-mission campaigns, Earth/Moon Contracts, world-aware Endless with separate best scores, shared upgrades, and independent finale checkpoints/rewards are live. The flight-header stability fix and concise inline briefings are also deployed. The later release sections record historical implementation/playtest notes; their pending-review wording does not override this status.
+The v0.15.5 features remain available: both ten-mission campaigns, Earth/Moon Contracts, world-aware Endless with separate best scores, shared upgrades, and independent finale checkpoints/rewards are live. The flight-header stability fix and concise inline briefings are also deployed. The later release sections record historical implementation/playtest notes; their pending-review wording does not override this status.
 
 Next: v0.16 Mars planning. See [the current roadmap](ROADMAP.md) for proposed salvage, mechanics, upgrades, and the artwork-first prototype sequence. Mars proposals are not implemented or individually approved.
 

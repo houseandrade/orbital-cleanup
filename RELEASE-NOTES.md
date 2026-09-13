@@ -1,6 +1,6 @@
 # Orbital Cleanup — Release notes
 
-Player-facing changes, newest first. Current production release: **v0.15.5**.
+Player-facing changes, newest first. Current production release: **v0.16.0**.
 
 The history below was reconstructed from merged changes and project records. Follow-up changes that retained the same displayed version are grouped under that version; no patch numbers or deployment dates have been invented. PR links identify the corresponding merged changes. For future direction, see [ROADMAP.md](ROADMAP.md); proposals are not shipped features.
 
@@ -12,14 +12,18 @@ The history below was reconstructed from merged changes and project records. Fol
 - Updated current documentation to reflect the completed Earth/Moon campaigns and deployed Moon modes.
 - Added this release history and the maintenance workflow below.
 
-### v0.16.0 — Mars arrival and recovery gear (in review)
+## v0.16.0 — Mars arrival and recovery gear
+
+Released · [PR #24](https://github.com/houseandrade/orbital-cleanup/pull/24) · September 13, 2026
+
+Production deployment 34782069208 succeeded at commit `989e90f`. The live release, Mars missions, scanner-first workshop ordering, $100 unlock, and service-worker version were verified.
 
 - Added the approved Mars environment and first three missions: Red Arrival, Sample Return, and Survey Recovery. Mars unlocks after the Moon finale. Sample canisters and drones use spaced finite pools with two spare targets; missed items return.
 - Added three tiers each of tether reach and cargo stabilization. Stabilization reduces cargo penalties without changing unloaded thrust, actual mass, or reeling duration.
 - Added recovery scanner as a one-time $100 unlock, listed first in the workshop. It marks visible salvage still needed for the current objective, including mixed quotas and finale assignments, accounting for cargo already aboard.
 - Preserved older saves, shared upgrades, Earth/Moon checkpoints and rewards. The Moon finale now leads to Mars; completing 3-3 clearly ends this review batch without a Mars finale reward.
 - Mars Contracts, Mars Endless, drone speed variation, later Mars missions, suit reinforcement and upgrade illustrations remain future work. Mars players explicitly continue to Moon Endless for now.
-- Validation: full acceptance suite passes. Initial prices, mission thresholds, and handling effects require hands-on playtesting. Not merged or deployed.
+- Validation: full acceptance suite passed locally and in the production workflow. Brian approved the playtest and requested production deployment; future tuning can follow additional feedback.
 
 ## v0.15.5 — Moon Contracts and Endless Orbit
 
