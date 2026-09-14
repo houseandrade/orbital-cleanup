@@ -321,3 +321,16 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
 #game .hud-controls button { min-height:54px; gap:2px; }
 #game .hud-objective-note { margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 #game .hud-objective-top { margin-bottom:4px; white-space:nowrap; }
+
+/* Phone and installed-app backgrounds fill the display; only content is inset. */
+@media (max-width:600px), (display-mode:standalone) {
+  body { padding:0; height:100%; height:100dvh; }
+  #game {
+    width:100%; max-width:none; max-height:none; border:0;
+    padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+    background:var(--page);
+  }
+  #game > .overlay {
+    padding:calc(16px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) calc(16px + env(safe-area-inset-left,0px));
+  }
+}
