@@ -266,15 +266,37 @@
   }
   document.getElementById('previous-destination').addEventListener('click', () => selectDestination(destinationWorld() - 1));
   document.getElementById('next-destination').addEventListener('click', () => selectDestination(destinationWorld() + 1));
+  function showMenuOptions() {
+    document.getElementById('home-menu-options').hidden = false;
+    document.getElementById('how-to-play').hidden = true;
+    document.getElementById('home-menu-title').textContent = 'MENU';
+  }
   function closeHomeMenu() {
-    document.getElementById('home-menu-panel').hidden = true;
+    const panel = document.getElementById('home-menu-panel');
+    const wasOpen = !panel.hidden;
+    panel.close?.();
+    panel.hidden = true;
     document.getElementById('home-menu').setAttribute('aria-expanded', 'false');
+    if (wasOpen) document.getElementById('home-menu').focus();
   }
   document.getElementById('home-menu').addEventListener('click', () => {
     const panel = document.getElementById('home-menu-panel');
-    panel.hidden = !panel.hidden;
-    document.getElementById('home-menu').setAttribute('aria-expanded', String(!panel.hidden));
+    showMenuOptions();
+    panel.hidden = false;
+    panel.showModal?.();
+    document.getElementById('home-menu').setAttribute('aria-expanded', 'true');
+    document.getElementById('close-home-menu').focus();
   });
+  document.getElementById('close-home-menu').addEventListener('click', closeHomeMenu);
+  document.getElementById('home-menu-panel').addEventListener('cancel', event => { event.preventDefault(); closeHomeMenu(); });
+  document.getElementById('menu-how-to').addEventListener('click', () => {
+    document.getElementById('home-menu-options').hidden = true;
+    document.getElementById('how-to-play').hidden = false;
+    document.getElementById('home-menu-title').textContent = 'HOW TO PLAY';
+    document.getElementById('home-menu-panel').scrollTop = 0;
+    document.getElementById('close-home-menu').focus();
+  });
+  document.getElementById('how-to-back').addEventListener('click', () => { showMenuOptions(); document.getElementById('menu-how-to').focus(); });
   document.getElementById('menu-worlds').addEventListener('click', () => { closeHomeMenu(); openCampaign(); });
   document.getElementById('menu-upgrades').addEventListener('click', () => { closeHomeMenu(); careerPage('upgrades-picker'); });
   function refreshCampaign() {

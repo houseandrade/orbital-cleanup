@@ -132,7 +132,7 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
 /* Destination pages reuse the approved world backgrounds and compact flight palette. */
 .destination-top { display:flex; align-items:center; justify-content:space-between; gap:12px; text-align:left; padding:8px 0 14px; font:700 11px/1.5 ui-monospace,monospace; letter-spacing:1px; }
 .destination-top .button { min-height:44px; }
-.home-menu-panel { background:#0b141f; padding:12px; border:1px solid var(--border); border-radius:8px; display:grid; gap:10px; margin-bottom:12px; }
+.home-menu-panel { background:#0b141f; color:var(--text); padding:20px; border:1px solid var(--border); border-radius:12px; margin:auto; width:calc(100% - 40px); max-width:350px; max-height:calc(100% - 40px); overflow-y:auto; text-align:left; touch-action:pan-y; }
 .home-menu-panel a { padding:12px; color:var(--accent); }
 .destination-hero { min-height:250px; padding:4px 8px 74px; margin-bottom:18px; border-radius:8px; background:#070d16 url('src/art/earth.png') center bottom / cover no-repeat; }
 .destination-hero h1 { font-size:38px; letter-spacing:5px; margin:24px 0 6px; }
@@ -153,3 +153,18 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
 .destination-wallet { margin-left:auto; letter-spacing:0; white-space:nowrap; font-size:12px; }
 #home-menu { display:grid; place-items:center; min-width:44px; padding:10px; }
 .destination-hero h1, .destination-hero p, #destination-position { text-shadow:0 2px 8px #000,0 1px 3px #000; }
+
+.home-menu-panel::backdrop { background:#02050ac9; }
+.modal-heading { position:sticky; top:-20px; background:#0b141f; padding:8px 0; z-index:1; display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; }
+.modal-heading h2 { margin:0; font-size:18px; }
+#close-home-menu { min-width:44px; min-height:44px; display:grid; place-items:center; padding:8px; }
+#home-menu-options { display:grid; gap:10px; }
+#home-menu-options a { text-align:center; font-size:13px; }
+.play-instructions { font-size:13px; line-height:1.6; margin:0 0 18px; }
+.play-instructions dt { color:var(--accent); font-weight:700; margin-top:14px; }
+.play-instructions dd { margin:4px 0 0; color:var(--text); }
+#how-to-back { width:100%; }
+.destination-caption { background:#07101af5; padding:12px 8px; border-radius:8px; margin-top:14px; }
+.destination-hero .destination-caption h1 { margin:0 0 8px; }
+.destination-hero .destination-caption p { margin:0; color:#e2ebf3; }
+.destination-hero .destination-caption #destination-lock { margin-top:8px; }
