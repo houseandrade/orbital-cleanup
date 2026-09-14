@@ -1,3 +1,7 @@
+# v0.21.1 — Edge-to-edge mobile layout (approved for release)
+
+Phone-sized layouts and installed apps now fill the display without the outer blue border or page gutters. Safe-area spacing sits inside the game and overlays to protect controls and menus around the status bar and home indicator. Desktop browser framing is retained. Updated offline asset versions so installed apps receive the new styles after release.
+
 # Orbital Cleanup — Release notes
 
 ## Current status — v0.21.0 gameplay HUD in review

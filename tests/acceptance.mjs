@@ -1956,7 +1956,7 @@ const beforeLockedLaunch=qa.state.level;elements.get('endless').listeners.click(
 assert.equal(elements.get('destination-lock').hidden,false);
 qa.state.progress.best[20]=priorBest20;
 elements.get('result-menu').listeners.click();assert.equal(elements.get('endless').disabled,false);
-assert.match(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),/release-footer[^>]*>ORBITAL CLEANUP · v0.21.0/);
+assert.match(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),/release-footer[^>]*>ORBITAL CLEANUP · v0.21.1/);
 console.log('Explicit destination persistence, independent world launches, locked access, menu and footer passed.');
 // Help stays inside the modal, closes with X or Escape, and resets on reopen.
 elements.get('home-menu').listeners.click();
