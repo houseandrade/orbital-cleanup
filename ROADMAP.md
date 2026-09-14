@@ -1,5 +1,12 @@
 # Orbital Cleanup — Roadmap
 
+## Current status — v0.21.0 gameplay HUD in review
+
+Production v0.20.0 deployed via PR #29 (merge `690717f`, successful deployment 34796281120). The new HUD implements the approved single/mixed objective rows, separate banked/aboard segments, wallet-versus-score labels, suit/cargo/motion status, dedicated station strip, icon-only pause, and two-step exit confirmation. Existing simulation, rewards, saved progress and input protections are retained.
+
+Brian found the first playable HUD too tall. The revision compacts spacing and suppresses repeated explanatory captions on short screens. The canvas displays world y60–380 instead of y60–460, cropping unused space below the lower boundary while leaving physics and both boundaries unchanged. Small-screen checks verified visible controls and no horizontal overflow. The full acceptance suite passes, including new mixed-objective readiness and pause/exit cases. Local playtest: http://127.0.0.1:8095/previews/v021/playtest.html. Not deployed; awaiting playtest approval.
+
+
 ## Current status — v0.20.0 title screen in review
 
 World pages and navigation refinements are deployed as v0.19.0 via PR #28 (merge `c8fdff7`, deployment 34795963647). Unavailable end arrows are invisible while preserving centered headings. The separate v0.20.0 review adds an opening title screen using existing artwork, one Choose World action, and a footer version. It appears on each fresh document load, including Refresh Game Files, and stays dismissed when returning from runs or menus. No extra saved-progress state is introduced. Production remains v0.19.0 pending title-screen approval.

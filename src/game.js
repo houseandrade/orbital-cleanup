@@ -522,7 +522,7 @@
     planNextStation();
     if (level.debris.special) junk.push({ ...level.debris.special, special: true, wobble: 0, hit: false });
     depositButton.disabled = true;
-    tetherButton.textContent = "◎ TETHER";
+    document.getElementById("tether-label").textContent = "TETHER";
     draw();
   }
 
@@ -585,14 +585,64 @@
 
   function stationMessage() {
     if (depositNoticeTime > 0) return depositNotice;
-    if (isNearStation()) return depositing && mass > 0 ? `TRANSFERRING SALVAGE… ${Math.min(100, Math.floor(100 * depositProgress / depositDuration(cargo[0]?.mass || mass)))}% · KEEP HOLDING` : 'STATION IN RANGE';
-    if (station.x >= PLAYER_X + 90) return `STATION PASS IN ${Math.ceil((station.x - PLAYER_X - 90) / station.speed)}s`;
-    if (station.x > PLAYER_X - 90) return 'STATION PASS NOW • ALIGN ALTITUDE';
+    if (isNearStation()) return depositing && mass > 0 ? `TRANSFERRING SALVAGE… ${Math.min(100, Math.floor(100 * depositProgress / depositDuration(cargo[0]?.mass || mass)))}% · KEEP HOLDING` : 'IN RANGE · HOLD DEPOSIT';
+    if (station.x >= PLAYER_X + 90) return `STATION WINDOW IN ${Math.ceil((station.x - PLAYER_X - 90) / station.speed)}s`;
+    if (station.x > PLAYER_X - 90) return 'STATION IN RANGE · ALIGN ALTITUDE';
     const seconds = (station.x + 70 + nextStation.x - PLAYER_X - 90) / station.speed;
-    return `NEXT STATION PASS IN ${Math.ceil(Math.max(0, seconds))}s`;
+    return `STATION RETURNS IN ${Math.ceil(Math.max(0, seconds))}s`;
+  }
+
+  function hudObjectiveRows() {
+    const criteria = level.objective?.type === 'all' ? level.objective.criteria : level.objective ? [level.objective] : [];
+    return criteria.map(c => {
+      const value = c.type === 'bank_value';
+      const count = types => types.reduce((sum, type) => sum + (bankedTypes[type] || 0), 0);
+      const aboard = types => types.reduce((sum, type) => sum + (carriedTypes[type] || 0), 0);
+      const banked = value ? bank : c.type === 'bank_objects' ? bankedObjects : count(c.types || [c.salvageType]);
+      const carried = value ? haul : c.type === 'bank_objects' ? carriedObjects : aboard(c.types || [c.salvageType]);
+      const rawLabel = value ? 'Salvage value' : c.type === 'bank_objects' ? 'Objects' : LevelSystem.criterionLabel(c).replace(/^\d+\s+/, '');
+      return { label: rawLabel.charAt(0).toUpperCase() + rawLabel.slice(1), target:c.target, banked, carried, value,
+        complete:banked >= c.target, ready:banked + carried >= c.target,
+        bankPercent:Math.min(100, banked / c.target * 100), carriedPercent:Math.max(0, Math.min(carried, c.target - banked) / c.target * 100) };
+    });
+  }
+  let lastHudMarkup = '';
+  function updateObjectiveHud() {
+    const rows = hudObjectiveRows();
+    const amount = (row, value) => `${row.value ? '$' : ''}${Math.round(value).toLocaleString()}`;
+    const stars = level.objective && !level.contract ? `★★ $${level.stars[1].target.toLocaleString()} · ★★★ $${level.stars[2].target.toLocaleString()}` : '';
+    const track = row => `<div class="${rows.length > 1 ? 'hud-item-track' : 'hud-track'}" role="img" aria-label="${amount(row,row.banked)} banked, ${amount(row,row.carried)} aboard; ${amount(row,row.target)} required"><span style="width:${row.bankPercent}%"></span><span style="width:${row.carriedPercent}%"></span></div>`;
+    let markup;
+    if (!rows.length) {
+      const target = LevelSystem.nextMilestone(level, bank);
+      markup = `<div class="hud-objective-top"><span>Next milestone</span><span class="hud-target">$${target.toLocaleString()} banked</span></div><div class="hud-track" role="img" aria-label="$${bank} of $${target} banked"><span style="width:${Math.min(100,bank/target*100)}%"></span><span style="width:0"></span></div><div class="hud-objective-note">${phase.name} · Best $${getHighScore().toLocaleString()}</div>`;
+    } else if (rows.length > 1) {
+      markup = `<div class="hud-mixed-heading">${level.assignments ? `ASSIGNMENT ${assignmentIndex+1}` : level.name.toUpperCase()} <span>Bank ${rows.every(row => !row.value) ? 'both item types' : 'both targets'}</span></div>` + rows.map(row => `<div class="hud-item"><div class="hud-item-top"><strong>${row.label}</strong><span>${amount(row,row.target)} required</span></div><div class="hud-item-counts"><span><b>${amount(row,row.banked)}</b> banked</span><span class="hud-aboard"><b>${amount(row,row.carried)}</b> aboard</span><em class="${row.ready ? '' : 'hud-missing'}">${row.complete ? '✓ Complete' : row.ready ? 'Ready to bank' : `Collect ${amount(row,row.target-row.banked-row.carried)} more`}</em></div>${track(row)}</div>`).join('') + `<div class="hud-mixed-stars">${level.assignments ? `Assignment ${assignmentIndex+1} / ${level.assignments.length}` : '★ Both quotas'}<span>★★ $${level.stars[1].target.toLocaleString()}</span><span>★★★ $${level.stars[2].target.toLocaleString()}</span></div>`;
+    } else {
+      const row = rows[0];
+      const reward = level.contract ? contractCompleted ? 'Bonus paid' : `$${level.bonus.toLocaleString()} bonus` : stars;
+      const note = row.complete ? level.contract ? 'Objective complete' : level.assignments ? 'Assignment complete' : 'Objective complete' : row.ready ? 'Bank your cargo to finish' : `Collect ${amount(row,row.target-row.banked-row.carried)} more`;
+      markup = `<div class="hud-objective-top"><span>${row.label}</span><span class="hud-target">${amount(row,row.target)} required</span></div><div class="hud-counts"><span><strong class="banked">${amount(row,row.banked)}</strong> banked</span><span><strong class="aboard">${amount(row,row.carried)}</strong> aboard</span></div>${track(row)}<div class="hud-objective-note">${note} · ${reward}</div>`;
+    }
+    const panel = document.getElementById('hud-objectives');
+    panel.classList.toggle('hud-mixed', rows.length > 1);
+    panel.classList.toggle('hud-objective', rows.length <= 1);
+    if (markup !== lastHudMarkup) { panel.innerHTML = markup; lastHudMarkup = markup; }
   }
 
   function updateHud() {
+    updateObjectiveHud();
+    document.getElementById('flight-mode').textContent = `${['EARTH','MOON','MARS'][level.world-1]} · ${level.contract ? 'CONTRACTS' : level.objective ? 'CAMPAIGN' : 'ENDLESS'}`;
+    document.getElementById('hud-bank-note').textContent = level.contract ? 'Added to your wallet' : 'Run score · Not wallet earnings';
+    const speed = Math.abs(player.velocityY);
+    document.getElementById('hud-direction').textContent = speed < 5 ? '— STEADY' : `${player.velocityY < 0 ? '↑' : '↓'} ${speed >= 45 ? 'FAST' : player.velocityY < 0 ? 'CLIMB' : 'DESCENT'}`;
+    document.getElementById('hud-motion-bars').style.opacity = speed < 5 ? '.3' : '1';
+    document.getElementById('hud-motion-bars').classList.toggle('fast', speed >= 45);
+    const warning = momentumWarning();
+    document.getElementById('hud-brake-warning').hidden = !warning;
+    document.getElementById('hud-brake-warning').textContent = player.velocityY < 0 ? 'RELEASE THRUST TO BRAKE' : 'THRUST TO BRAKE';
+    document.getElementById('station-strip').classList.toggle('ready', running && isNearStation());
+    depositButton.classList.toggle('ready', running && isNearStation() && mass > 0);
     const stars = LevelSystem.rating(level, { bank, bankedObjects, bankedTypes });
     document.getElementById('flight-title').textContent = level.contract ? level.name : level.objective ? `${level.world}-${level.missionNumber}. ${level.name}` : level.name;
     missionDisplay.textContent = level.objective ? `BANK ${LevelSystem.criterionLabel(level.objective).toUpperCase()}` : `PERSONAL BEST $${sessionBests[scoreKey()] || 0}`;
@@ -629,7 +679,7 @@
     });
     document.getElementById('hud-bank').textContent = `$${Math.round(bank)}`;
     document.getElementById('hud-haul').textContent = `$${haul}`;
-    document.getElementById('hud-mass').textContent = `${Math.round(mass)}kg`;
+    document.getElementById('hud-mass').textContent = `${Math.round(mass)} kg`;
     document.getElementById('hud-integrity').textContent = `${Math.round(integrity)}%`;
     const suit = document.getElementById('integrity-progress');
     suit.value = integrity;
@@ -643,7 +693,7 @@
     if (!running) return;
     if (tether) {
       tether = null;
-      tetherButton.textContent = "◎ TETHER";
+      document.getElementById("tether-label").textContent = "TETHER";
       return;
     }
 
@@ -672,7 +722,7 @@
       currentX: target.x,
       currentY: target.y
     };
-    tetherButton.textContent = "✕ RELEASE";
+    document.getElementById("tether-label").textContent = "RELEASE";
   }
 
   function collect(object) {
@@ -687,7 +737,7 @@
       particles.push({ x: PLAYER_X, y: player.y, velocityX: random(-50, 50), velocityY: random(-50, 50), life: random(0.2, 0.6) });
     }
     tether = null;
-    tetherButton.textContent = "◎ TETHER";
+    document.getElementById("tether-label").textContent = "TETHER";
     // Collected finite mission targets never replenish during the run.
     if (!object.limited) {
       if (object.special) specialCollected = true;
@@ -778,7 +828,7 @@
       const object = tether.object;
       if (!junk.includes(object)) {
         tether = null;
-        tetherButton.textContent = "◎ TETHER";
+        document.getElementById("tether-label").textContent = "TETHER";
       } else {
         tether.progress += deltaTime / tether.duration;
         const amount = clamp(tether.progress, 0, 1);
@@ -986,11 +1036,6 @@
   }
 
   function drawWarnings() {
-    const warning = momentumWarning();
-    if (warning) {
-      context.fillStyle = '#f1c76b'; context.font = 'bold 13px monospace'; context.textAlign = 'center';
-      context.fillText(warning.text, PLAYER_X, warning.y); context.textAlign = 'left';
-    }
     const top = clamp((135 - player.y) / 60, 0, 1);
     const bottom = clamp((player.y - 300) / 60, 0, 1);
     const pulse = 0.55 + 0.25 * Math.sin(elapsed * 7);
@@ -1221,10 +1266,12 @@
   document.getElementById('campaign').addEventListener('click', () => {
     if (exitPaused) return;
     if (!running && !pendingResult) { openCampaign(); return; }
-    exitAction = 'leave';
+    exitAction = 'pause';
     document.getElementById('exit-title').textContent = 'Run paused';
-    document.getElementById('leave-run').textContent = 'LEAVE TO MENU';
-    restartButton.hidden = false;
+    document.getElementById('pause-copy').textContent = `Carrying $${haul} · ${Math.round(mass)} kg. Unbanked cargo will be lost if you exit.`;
+    document.getElementById('keep-playing').textContent = 'RESUME';
+    document.getElementById('leave-run').textContent = level.id === 'endless' ? 'EXIT RUN' : 'EXIT LEVEL';
+    restartButton.hidden = true;
     releaseControls();
     resumeAfterExit = running;
     exitPaused = true;
@@ -1251,6 +1298,14 @@
   });
   document.getElementById('leave-run').addEventListener('click', () => {
     if (!exitPaused) return;
+    if (exitAction === 'pause') {
+      exitAction = 'leave';
+      document.getElementById('exit-title').textContent = 'Exit this run?';
+      document.getElementById('pause-copy').textContent = level.contract ? `Your deposited earnings stay in your wallet. The $${haul} aboard will be lost.` : `Your $${haul} of unbanked cargo will be lost.${level.assignments ? ' Completed assignments stay saved.' : ''}`;
+      document.getElementById('keep-playing').textContent = 'KEEP PLAYING';
+      document.getElementById('leave-run').textContent = `EXIT TO ${['EARTH','MOON','MARS'][destinationWorld()-1]}`;
+      return;
+    }
     if (exitAction === 'restart') { exitPaused = false; start(); }
     else openCampaign();
   });

@@ -88,7 +88,7 @@ source = source.replace(/\}\)\(\);\s*$/, `
   globalThis.__qa = {
     ContractSystem, refreshCareer, scannerNeeded, momentumWarning,
     get careerState() { return { carriedTypes, bankedTypes, contractBonus, contractCompleted, runEffects }; },
-    depositDuration, makeJunk, fillDebris, scheduleEncounter, collect, draw, stationMessage, start, end, finishLevel, resumeLevel, update, fireTether, collide, thrustEffectiveness,
+    hudObjectiveRows, updateHud, depositDuration, makeJunk, fillDebris, scheduleEncounter, collect, draw, stationMessage, start, end, finishLevel, resumeLevel, update, fireTether, collide, thrustEffectiveness,
     get state() { return { phase, queuedPhase, nextStation, elapsed, carriedObjects, bankedObjects, level, progress, pendingResult, running, haul, bank, mass, integrity, tether, junk, player, station, depositing, cargo }; },
     set scenario(value) {
       if (value.thrusting !== undefined) thrusting = value.thrusting;
@@ -115,6 +115,12 @@ vm.runInContext(fs.readFileSync(new URL('../src/contracts.js', import.meta.url),
 vm.runInContext(source, sandbox, { filename: "src/game.js" });
 
 const qa = sandbox.__qa;
+function leaveRun() {
+  const confirming = elements.get('exit-title').textContent === 'Run paused';
+  elements.get('leave-run').listeners.click();
+  if (confirming) elements.get('leave-run').listeners.click();
+}
+
 assert.equal(elements.get('title-screen').hidden,false,'fresh launch offers the title screen');
 elements.get('choose-world').listeners.click();
 assert.equal(elements.get('title-screen').hidden,true,'Choose World dismisses the title');
@@ -326,7 +332,7 @@ elements.get('keep-playing').listeners.click();
 assert.equal(qa.state.running, true);
 assert.equal(qa.state.haul, 40, 'cancel preserves cargo');
 elements.get('campaign').listeners.click();
-elements.get('leave-run').listeners.click();
+leaveRun();
 assert.equal(qa.state.running, false);
 assert.equal(qa.state.haul, 0, 'explicit leave discards run');
 assert.equal(elements.get('start-screen').classList.contains('overlay--visible'), true);
@@ -367,15 +373,15 @@ elements.get('keep-playing').listeners.click();
 assert.equal(qa.state.running, true, 'safe exit works in endless');
 qa.start();
 qa.scenario = { player: { y: 225, velocityY: 0, flash: 0 }, station: { x: 660, y: 225, speed: 25 } };
-assert.equal(qa.stationMessage(), 'STATION PASS IN 16s');
+assert.equal(qa.stationMessage(), 'STATION WINDOW IN 16s');
 qa.scenario = { station: { x: 390, y: 225, speed: 25 } };
-assert.equal(qa.stationMessage(), 'STATION PASS IN 5s');
+assert.equal(qa.stationMessage(), 'STATION WINDOW IN 5s');
 qa.scenario = { station: { x: 180, y: 225, speed: 25 } };
-assert.equal(qa.stationMessage(), 'STATION IN RANGE');
+assert.equal(qa.stationMessage(), 'IN RANGE · HOLD DEPOSIT');
 qa.scenario = { station: { x: 40, y: 225, speed: 25 } };
-assert.match(qa.stationMessage(), /^NEXT STATION PASS IN/);
+assert.match(qa.stationMessage(), /^STATION RETURNS IN/);
 qa.scenario = { station: { x: -47, y: 225, speed: 25 } };
-assert.match(qa.stationMessage(), /^NEXT STATION PASS IN/);
+assert.match(qa.stationMessage(), /^STATION RETURNS IN/);
 elements.get('campaign').listeners.click();
 elements.get('restart').listeners.click();
 assert.equal(elements.get('leave-run').textContent, 'CONFIRM RESTART');
@@ -384,10 +390,10 @@ elements.get('keep-playing').listeners.click();
 assert.equal(qa.state.running, true, 'restart can be canceled');
 elements.get('campaign').listeners.click();
 elements.get('restart').listeners.click();
-elements.get('leave-run').listeners.click();
+leaveRun();
 assert.equal(qa.state.running, true, 'confirmed restart resumes a fresh run');
 elements.get('campaign').listeners.click();
-elements.get('leave-run').listeners.click();
+leaveRun();
 elements.get('choose-campaign').listeners.click();
 elements.get('level-1').listeners.click();
 qa.start();
@@ -497,7 +503,7 @@ qa.scenario = { station: { x: -71, y: 225, speed: 25 }, player: { y:225, velocit
 qa.update(0);
 assert.equal(qa.state.station.x, queuedStation.x);
 assert.equal(qa.state.station.y, queuedStation.y);
-assert.equal(qa.stationMessage(), `STATION PASS IN ${Math.ceil((queuedStation.x - 270) / 25)}s`);
+assert.equal(qa.stationMessage(), `STATION WINDOW IN ${Math.ceil((queuedStation.x - 270) / 25)}s`);
 elements.get('campaign').listeners.click();
 const pausedTime = qa.state.elapsed;
 const pausedCountdown = qa.stationMessage();
@@ -506,11 +512,11 @@ assert.equal(qa.state.elapsed, pausedTime);
 assert.equal(qa.stationMessage(), pausedCountdown);
 elements.get('keep-playing').listeners.click();
 qa.scenario = { station: { x:180, y:190, speed:25 }, player:{y:300,velocityY:0,flash:0} };
-assert.equal(qa.stationMessage(), 'STATION PASS NOW • ALIGN ALTITUDE');
+assert.equal(qa.stationMessage(), 'STATION IN RANGE · ALIGN ALTITUDE');
 
 // Recovery pockets stay compact at a shared speed and replenish as a group.
 elements.get('campaign').listeners.click();
-elements.get('leave-run').listeners.click();
+leaveRun();
 elements.get('level-4').listeners.click();
 qa.start();
 const pocket = qa.state.junk.filter(object => object.pocket);
@@ -528,7 +534,7 @@ assert.equal(qa.state.junk.length, 8);
 
 // Each valuable encounter reaches the player four seconds before station range.
 elements.get('campaign').listeners.click();
-elements.get('leave-run').listeners.click();
+leaveRun();
 elements.get('level-5').listeners.click();
 qa.start();
 function checkEncounter() {
@@ -551,7 +557,7 @@ assert.equal(qa.state.junk.filter(o=>o.encounter).length, 0, 'valuable target re
 
 // Banking previews phases; only choosing to continue commits the transition.
 elements.get('campaign').listeners.click();
-elements.get('leave-run').listeners.click();
+leaveRun();
 elements.get('endless').listeners.click();
 qa.start();
 const campaignSave = storage.get('orbital-cleanup-progress-v1');
@@ -1950,7 +1956,7 @@ const beforeLockedLaunch=qa.state.level;elements.get('endless').listeners.click(
 assert.equal(elements.get('destination-lock').hidden,false);
 qa.state.progress.best[20]=priorBest20;
 elements.get('result-menu').listeners.click();assert.equal(elements.get('endless').disabled,false);
-assert.match(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),/release-footer[^>]*>ORBITAL CLEANUP · v0.20.0/);
+assert.match(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),/release-footer[^>]*>ORBITAL CLEANUP · v0.21.0/);
 console.log('Explicit destination persistence, independent world launches, locked access, menu and footer passed.');
 // Help stays inside the modal, closes with X or Escape, and resets on reopen.
 elements.get('home-menu').listeners.click();
@@ -1964,3 +1970,23 @@ elements.get('home-menu-panel').listeners.cancel({preventDefault(){}});assert.eq
 
 elements.get('result-menu').listeners.click();
 assert.equal(elements.get('title-screen').hidden,true,'returning from a run does not reopen the title');
+
+// Approved HUD: each mixed quota accounts for banked and aboard cargo independently.
+elements.get('level-26').listeners.click();qa.start();
+qa.scenario={bank:315,bankedTypes:{SAMPLE:3,DRONE:1},carriedTypes:{SAMPLE:1},haul:65,mass:4};
+// Use the shared per-type counters exposed by the existing harness.
+Object.assign(qa.careerState.bankedTypes,{SAMPLE:3,DRONE:1});
+Object.assign(qa.careerState.carriedTypes,{SAMPLE:1,DRONE:0});
+const mixedRows=qa.hudObjectiveRows();
+assert.equal(mixedRows[0].banked,3);assert.equal(mixedRows[0].carried,1);assert.equal(mixedRows[0].ready,true);assert.equal(mixedRows[0].complete,false);
+assert.equal(mixedRows[1].ready,false);
+qa.updateHud();assert.equal(elements.get('hud-bank-note').textContent,'Run score · Not wallet earnings');
+elements.get('campaign').listeners.click();
+assert.equal(elements.get('keep-playing').textContent,'RESUME');
+elements.get('leave-run').listeners.click();assert.equal(elements.get('exit-title').textContent,'Exit this run?');
+assert.equal(qa.state.haul,65,'first exit action does not discard cargo');
+elements.get('keep-playing').listeners.click();assert.equal(qa.state.running,true);
+launchContract('mars-array-recovery');qa.updateHud();assert.equal(elements.get('hud-bank-note').textContent,'Added to your wallet');
+qa.scenario={player:{y:225,velocityY:0,flash:0},station:{x:180,y:225,speed:25}};qa.updateHud();assert.equal(elements.get('hud-direction').textContent,'— STEADY');
+assert.equal(elements.get('station-status').textContent,'IN RANGE · HOLD DEPOSIT');
+console.log('Mixed HUD counts, banking readiness, earnings labels, motion, station strip and two-step exit passed.');
