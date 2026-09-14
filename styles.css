@@ -295,26 +295,29 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
 /* Compact flight instrument panel: one row per target and two shallow status rows. */
 #game .hud-top { height:46px; padding:2px 12px; }
 #game .hud-objective, #game .hud-mixed { min-height:0; padding:6px 12px; }
-#game .hud-quota-head, #game .hud-quota-values { display:grid; grid-template-columns:minmax(0,1fr) 78px 54px; align-items:center; gap:8px; }
+#game .hud-quota-head, #game .hud-quota-values { display:grid; grid-template-columns:minmax(0,1fr) 104px 46px; align-items:center; gap:8px; }
 #game .hud-quota-head { font-size:9px; color:#aebdca; letter-spacing:.5px; margin-bottom:3px; }
 #game .hud-quota-head>span:not(:first-child), #game .hud-quota-values>span { text-align:right; }
 #game .hud-quota-row { padding:3px 0; }
 #game .hud-quota-values { font-size:12px; margin-bottom:3px; line-height:16px; }
 #game .hud-quota-values strong { font-weight:600; }
+#game .hud-quota-values>span { font-size:11px; white-space:nowrap; font-variant-numeric:tabular-nums; }
 #game .quota-banked { color:#a7f3b5; }
 #game .quota-aboard { color:#f4cc7f; }
 #game .hud-quota-row .hud-track, #game .hud-quota-row .hud-item-track { height:3px; }
-#game .hud-quota-note { display:flex; justify-content:space-between; gap:8px; margin-top:4px; font-size:10px; line-height:14px; color:#b7c7d4; }
+#game .hud-quota-note { display:flex; justify-content:space-between; gap:8px; margin-top:4px; font-size:10px; line-height:14px; color:#b7c7d4; white-space:nowrap; }
 #game .hud-finances { display:flex; justify-content:space-between; padding:4px 12px; gap:12px; }
-#game .hud-finances>div { flex:1; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+#game .hud-finances>div { flex:1; min-width:0; display:flex; align-items:center; justify-content:space-between; gap:8px; white-space:nowrap; }
 #game .hud-finances .hud-small { display:none; }
 #game .hud-money { font-size:18px; margin:0; line-height:22px; }
-#game .hud-condition { grid-template-columns:1fr 78px 90px; padding:4px 12px; gap:8px; }
+#game .hud-condition { grid-template-columns:minmax(0,1fr) 86px 94px; padding:4px 12px; gap:8px; line-height:16px; white-space:nowrap; }
+#game .hud-motion { line-height:16px; }
+#game .hud-bars { flex-shrink:0; }
 #game .hud-condition>div:nth-child(2) { display:flex; gap:5px; align-items:center; }
 #game .hud-condition>div:nth-child(2) br, #game .hud-condition>div:last-child>.hud-kicker { display:none; }
 #game .hud-condition progress { margin-top:2px; height:3px; }
 #game .hud-station { height:28px; font-size:11px; }
 #game .hud-controls { padding:5px 8px; }
 #game .hud-controls button { min-height:54px; gap:2px; }
-#game .hud-objective-note { margin-top:4px; }
-#game .hud-objective-top { margin-bottom:4px; }
+#game .hud-objective-note { margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#game .hud-objective-top { margin-bottom:4px; white-space:nowrap; }
