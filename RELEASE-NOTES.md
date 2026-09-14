@@ -1,3 +1,7 @@
+# v0.21.3 — Completed contract indicators (approved for release)
+
+Completed contracts show a mint checkmark badge and subtle green border on the contract board. Their briefings retain Replay Contract; unfinished jobs retain Accept Contract. Indicators use existing saved completion records across all worlds and refresh when returning from a run. Approved preview styling is implemented without changing payouts, replay rules, or saves.
+
 # v0.21.2 — Briefing before the next mission (approved for release)
 
 Next Mission loads the upcoming level paused and displays a briefing modal over the visible flight scene. Start Mission begins that prepared round; Back to Modes returns to the world’s mode selection without launching. The modal includes the mission name, description, objectives, and star requirements. Cross-world transitions and finale checkpoints are preserved.
