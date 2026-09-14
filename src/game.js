@@ -233,6 +233,50 @@
     }
   }
 
+  const destinationWorld = () => progress.destinationWorld || progress.activeWorld || 1;
+  const worldUnlocked = world => world === 1 || Boolean(progress.best[(world - 1) * 10]);
+  function refreshDestination() {
+    const id = destinationWorld();
+    const name = ['Earth', 'Moon', 'Mars'][id - 1];
+    const missions = LevelSystem.campaign.filter(config => config.world === id);
+    document.getElementById('destination-name').textContent = name.toUpperCase();
+    document.getElementById('destination-position').textContent = `WORLD ${['ONE', 'TWO', 'THREE'][id - 1]}`;
+    document.getElementById('destination-description').textContent = ['Where the cleanup began', 'Recovery above the lunar frontier', 'The abandoned expedition'][id - 1];
+    document.getElementById('destination-progress').textContent = `${missions.filter(config => progress.best[config.id]).length} / 10 missions complete · ${missions.reduce((sum, config) => sum + (progress.best[config.id] || 0), 0)} / 30 stars`;
+    document.getElementById('destination-contracts').textContent = `${ContractSystem.contracts.filter(config => config.world === id).length} jobs · Salvage earnings + bonuses`;
+    document.getElementById('previous-destination').disabled = id === 1;
+    document.getElementById('next-destination').disabled = id === 3;
+    document.getElementById('destination-lock').hidden = worldUnlocked(id);
+    document.getElementById('destination-lock').textContent = `Complete World ${id === 2 ? 'One' : 'Two'} to unlock ${name}.`;
+    for (const [button, label] of [['choose-campaign', 'CHOOSE'], ['choose-contracts', 'BROWSE'], ['endless', 'PLAY']]) {
+      document.getElementById(button).disabled = !worldUnlocked(id);
+      document.getElementById(button).textContent = `${label} ${name.toUpperCase()} ${button === 'choose-campaign' ? 'MISSION' : button === 'choose-contracts' ? 'CONTRACTS' : 'ENDLESS'}`;
+    }
+    document.getElementById('endless-destination').textContent = name.toUpperCase();
+    document.getElementById('endless-menu-best').textContent = `$${readEndlessBest(id)}`;
+    if (!document.getElementById('mode-menu').hidden) {
+      root.classList.toggle('moon-menu', id === 2);
+      root.classList.toggle('mars-menu', id === 3);
+    }
+  }
+  function selectDestination(id) {
+    progress.destinationWorld = Math.max(1, Math.min(3, id));
+    LevelSystem.saveProgress(progress);
+    refreshDestination();
+  }
+  document.getElementById('previous-destination').addEventListener('click', () => selectDestination(destinationWorld() - 1));
+  document.getElementById('next-destination').addEventListener('click', () => selectDestination(destinationWorld() + 1));
+  function closeHomeMenu() {
+    document.getElementById('home-menu-panel').hidden = true;
+    document.getElementById('home-menu').setAttribute('aria-expanded', 'false');
+  }
+  document.getElementById('home-menu').addEventListener('click', () => {
+    const panel = document.getElementById('home-menu-panel');
+    panel.hidden = !panel.hidden;
+    document.getElementById('home-menu').setAttribute('aria-expanded', String(!panel.hidden));
+  });
+  document.getElementById('menu-worlds').addEventListener('click', () => { closeHomeMenu(); openCampaign(); });
+  document.getElementById('menu-upgrades').addEventListener('click', () => { closeHomeMenu(); careerPage('upgrades-picker'); });
   function refreshCampaign() {
     const world = LevelSystem.worlds.find(item => item.id === selectedWorld);
     const missions = LevelSystem.campaign.filter(config => config.world === selectedWorld);
@@ -255,8 +299,7 @@
       if (selected) button.setAttribute('aria-controls', 'mission-briefing');
       else button.removeAttribute('aria-controls');
     });
-    document.getElementById('endless-destination').textContent = progress.activeWorld === 3 ? 'MARS' : progress.activeWorld === 2 ? 'MOON' : 'EARTH';
-    document.getElementById('endless-menu-best').textContent = `$${readEndlessBest()}`;
+    refreshDestination();
     refreshCareer();
     const isEndless = level.id === 'endless';
     document.getElementById('start-score-label').textContent = level.contract ? 'CONTRACT BEST' : isEndless ? 'ENDLESS BEST' : 'CAMPAIGN HIGH SCORE';
@@ -1037,6 +1080,7 @@
   });
 
   function careerPage(id) {
+    closeHomeMenu();
     root.classList.add('picker-open');
     for (const page of ['mode-menu', 'campaign-picker', 'contracts-picker', 'upgrades-picker']) document.getElementById(page).hidden = page !== id;
     refreshCareer();
@@ -1083,7 +1127,7 @@
   }
   document.getElementById('previous-contract-world').addEventListener('click', () => { contractWorld = Math.max(1, contractWorld - 1); refreshContractWorld(); });
   document.getElementById('next-contract-world').addEventListener('click', () => { contractWorld = Math.min(3, contractWorld + 1); refreshContractWorld(); });
-  document.getElementById('choose-contracts').addEventListener('click', () => careerPage('contracts-picker'));
+  document.getElementById('choose-contracts').addEventListener('click', () => { if (!worldUnlocked(destinationWorld())) return; contractWorld = destinationWorld(); careerPage('contracts-picker'); });
   document.getElementById('choose-upgrades').addEventListener('click', () => careerPage('upgrades-picker'));
   document.getElementById('back-contracts').addEventListener('click', openCampaign);
   document.getElementById('back-upgrades').addEventListener('click', openCampaign);
@@ -1103,6 +1147,8 @@
   document.getElementById('previous-world').addEventListener('click', () => { if (selectedWorld > 1) selectWorld(selectedWorld - 1); });
   document.getElementById('next-world').addEventListener('click', () => { if (selectedWorld < LevelSystem.worlds.length) selectWorld(selectedWorld + 1); });
   document.getElementById('choose-campaign').addEventListener('click', () => {
+    if (!worldUnlocked(destinationWorld())) return;
+    selectedWorld = destinationWorld();
     if (!level.objective || level.contract) level = LevelSystem.campaign.find(config => config.id === progress.currentLevel);
     root.classList.add('picker-open');
     document.getElementById('mode-menu').hidden = true;
@@ -1120,11 +1166,13 @@
     document.getElementById('back-contracts').focus();
   });
   document.getElementById('endless').addEventListener('click', () => {
-    level = LevelSystem.endlessFor(progress.activeWorld);
+    if (!worldUnlocked(destinationWorld())) return;
+    level = LevelSystem.endlessFor(destinationWorld());
     start();
   });
   document.getElementById('result-endless').addEventListener('click', () => {
-    level = LevelSystem.endlessFor(progress.activeWorld);
+    if (!worldUnlocked(destinationWorld())) return;
+    level = LevelSystem.endlessFor(destinationWorld());
     start();
   });
   finishButton.addEventListener('click', finishLevel);
@@ -1134,6 +1182,7 @@
     if (level.id < LevelSystem.campaign.length && progress.best[level.id]) { level = LevelSystem.campaign[level.id]; start(); }
   });
   function openCampaign() {
+    closeHomeMenu();
     reset();
     startScreen.classList.add('overlay--visible');
     root.classList.add('menu-open');

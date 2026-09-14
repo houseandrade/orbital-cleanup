@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=0.18.0">
+  <link rel="stylesheet" href="styles.css?v=0.19.0">
   <title>Orbital Cleanup</title>
 </head>
 <body>
@@ -45,15 +45,20 @@
 
       <div id="start-screen" class="overlay overlay--visible">
         <div class="panel menu-panel">
-          <div class="kicker">ORBITAL CLEANUP // v0.18.0</div>
-          <h1>ORBITAL<br>CLEANUP</h1>
-          <p class="tagline">Collect. Risk. Return.</p>
-          <p class="tutorial menu-tutorial"><span>Hold <strong>THRUST</strong> to climb</span><span>Tap <strong>TETHER</strong> to collect</span><span>Hold <strong>DEPOSIT</strong> at the station to bank</span></p>
+          <header class="destination-top"><span>ORBITAL CLEANUP</span><button id="home-menu" class="button button--small" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="home-menu-panel">☰ MENU</button></header>
+          <nav id="home-menu-panel" class="home-menu-panel" aria-label="Game menu" hidden><button id="menu-worlds" class="button" type="button">WORLD PAGES</button><button id="menu-upgrades" class="button" type="button">UPGRADES</button><a href="update.html">Refresh game files</a></nav>
           <p id="save-notice" class="tutorial" hidden>Saving unavailable. Earnings and purchases last only for this session.</p>
           <div id="mode-menu">
-            <article class="mode-card"><span class="menu-sprite astronaut" aria-hidden="true"></span><div><h2>CAMPAIGN</h2><p>3 worlds · Earth, Moon &amp; Mars <span id="world-one-badge" class="mint" role="img" aria-label="World One complete" title="World One complete" hidden>· ✓ Earth complete</span> <span id="world-two-badge" class="mint" role="img" aria-label="World Two complete" title="World Two complete" hidden>· ✓ Moon complete</span> <span id="world-three-badge" class="mint" role="img" aria-label="World Three complete" title="World Three complete" hidden>· ✓ Mars complete</span></p><button id="choose-campaign" class="button button--cta" type="button">CHOOSE LEVEL</button></div></article>
-            <article class="mode-card"><span class="menu-sprite contracts" aria-hidden="true"></span><div><div class="kicker">BUILD YOUR CAREER</div><h2>CONTRACTS</h2><p>Earn salvage + bonuses. Upgrade your gear.</p><button id="choose-contracts" class="button button--cta" type="button">BROWSE CONTRACTS</button></div><div class="career-bar"><span>WALLET <strong id="wallet" class="mint">$0</strong></span><button id="choose-upgrades" class="button button--small" type="button">UPGRADES</button></div></article>
-            <article class="mode-card"><span class="menu-sprite satellite" aria-hidden="true"></span><div><h2>ENDLESS ORBIT</h2><p>Bank more. Beat your best.</p><p class="high-score"><strong id="endless-destination">EARTH</strong> · BEST <span id="endless-menu-best" class="mint">$0</span></p><button id="endless" class="button button--cta" type="button">PLAY ENDLESS</button></div></article>
+            <section class="destination-hero" aria-label="World selection">
+              <nav class="world-selector" aria-label="World pages"><button id="previous-destination" class="button" type="button" aria-label="Previous world">‹</button><span id="destination-position">WORLD ONE</span><button id="next-destination" class="button" type="button" aria-label="Next world">›</button></nav>
+              <h1 id="destination-name" aria-live="polite">EARTH</h1><p id="destination-description">Where the cleanup began</p><p id="destination-lock" class="tutorial" hidden></p>
+            </section>
+            <article class="mode-card"><svg class="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22V3m0 1c5-4 9 4 16 0v11c-7 4-11-4-16 0"/></svg><div><h2>CAMPAIGN</h2><p id="destination-progress"></p><button id="choose-campaign" class="button" type="button">CHOOSE EARTH MISSION</button></div></article>
+            <article class="mode-card"><svg class="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="18" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 11h6m-6 5h6"/></svg><div><h2>CONTRACTS</h2><p id="destination-contracts"></p><button id="choose-contracts" class="button" type="button">BROWSE EARTH CONTRACTS</button></div></article>
+            <article class="mode-card"><svg class="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><ellipse cx="12" cy="12" rx="11" ry="5" transform="rotate(-35 12 12)"/><path d="M5 3c5-2 15 13 13 18"/></svg><div><h2>ENDLESS ORBIT</h2><p class="high-score"><strong id="endless-destination">EARTH</strong> · BEST <span id="endless-menu-best">$0</span></p><button id="endless" class="button button--cta" type="button">PLAY EARTH ENDLESS</button></div></article>
+            <div class="career-bar"><span>WALLET <strong id="wallet" class="mint">$0</strong></span><button id="choose-upgrades" class="button button--small" type="button">UPGRADES · ALL WORLDS</button></div>
+            <div class="world-badges"><span id="world-one-badge" hidden>✓ Earth complete</span><span id="world-two-badge" hidden>✓ Moon complete</span><span id="world-three-badge" hidden>✓ Mars complete</span></div>
+            <p class="tutorial menu-tutorial">Hold THRUST to climb · Tap TETHER to collect<br>Hold DEPOSIT at the station to bank</p>
           </div>
           <div id="contracts-picker" class="career-panel" hidden><button id="back-contracts" class="button result-action" type="button">BACK TO MODES</button><h2>CONTRACT BOARD</h2><nav class="world-selector" aria-label="Contract worlds"><button id="previous-contract-world" class="button" aria-label="Previous contract world" type="button">‹</button><strong id="contract-world-name">EARTH CONTRACTS</strong><button id="next-contract-world" class="button" aria-label="Next contract world" type="button">›</button></nav><p id="contract-world-note" class="tutorial"></p><p class="tutorial">One job per run. Deposits pay immediately; meeting the objective pays the bonus once. Jobs are repeatable.</p><div id="contract-list"></div></div>
           <div id="upgrades-picker" class="career-panel" hidden><button id="back-upgrades" class="button result-action" type="button">BACK TO MODES</button><h2>UPGRADE WORKSHOP</h2><p class="workshop-wallet">WALLET <strong id="workshop-wallet" class="mint">$0</strong></p><p class="tutorial">Active in every game mode. Later tiers require 3 / 6 different completed jobs. Purchases apply on your next launch.</p><div id="upgrade-list"></div><p id="purchase-status" class="tutorial" aria-live="polite"></p></div>
@@ -109,7 +114,7 @@
             <div class="high-score"><span id="start-score-label">CAMPAIGN HIGH SCORE</span> <span id="start-high-score">0</span></div>
             <button id="back-modes" type="button" class="button result-action">BACK TO MODES</button>
           </div>
-          <a class="refresh-link" href="update.html">Refresh game files</a>
+          <footer class="release-footer">ORBITAL CLEANUP · v0.19.0</footer>
         </div>
       </div>
 
@@ -160,10 +165,10 @@
       <button id="thrust" type="button" class="button button--primary">▲ HOLD<br>THRUST</button>
     </section>
   </main>
-  <script src="src/levels.js?v=0.18.0" defer></script>
-  <script src="src/contracts.js?v=0.18.0" defer></script>
-  <script src="src/art.js?v=0.18.0" defer></script>
-  <script src="src/input.js?v=0.18.0" defer></script>
-  <script src="src/game.js?v=0.18.0" defer></script>
+  <script src="src/levels.js?v=0.19.0" defer></script>
+  <script src="src/contracts.js?v=0.19.0" defer></script>
+  <script src="src/art.js?v=0.19.0" defer></script>
+  <script src="src/input.js?v=0.19.0" defer></script>
+  <script src="src/game.js?v=0.19.0" defer></script>
 </body>
 </html>

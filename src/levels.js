@@ -381,6 +381,7 @@ const LevelSystem = (() => {
     const result = { currentLevel: 1, best: {} };
     try {
       const saved = JSON.parse(localStorage.getItem(key));
+      if (worlds.some(world => world.id === saved?.destinationWorld)) result.destinationWorld = saved.destinationWorld;
       if (worlds.some(world => world.id === saved?.selectedWorld)) result.selectedWorld = saved.selectedWorld;
       for (const config of campaign) {
         const stars = saved?.best?.[config.id];
