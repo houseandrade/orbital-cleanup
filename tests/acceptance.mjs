@@ -115,6 +115,11 @@ vm.runInContext(fs.readFileSync(new URL('../src/contracts.js', import.meta.url),
 vm.runInContext(source, sandbox, { filename: "src/game.js" });
 
 const qa = sandbox.__qa;
+assert.equal(elements.get('title-screen').hidden,false,'fresh launch offers the title screen');
+elements.get('choose-world').listeners.click();
+assert.equal(elements.get('title-screen').hidden,true,'Choose World dismisses the title');
+assert.equal(elements.get('mode-menu').hidden,false);
+
 assert.equal(elements.get('endless').disabled, false, 'endless is available on a fresh save');
 assert.equal(elements.get('level-2').disabled, true, 'campaign unlocks remain separate');
 elements.get('choose-contracts').listeners.click();
@@ -1945,7 +1950,7 @@ const beforeLockedLaunch=qa.state.level;elements.get('endless').listeners.click(
 assert.equal(elements.get('destination-lock').hidden,false);
 qa.state.progress.best[20]=priorBest20;
 elements.get('result-menu').listeners.click();assert.equal(elements.get('endless').disabled,false);
-assert.match(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),/release-footer[^>]*>ORBITAL CLEANUP · v0.19.0/);
+assert.match(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),/release-footer[^>]*>ORBITAL CLEANUP · v0.20.0/);
 console.log('Explicit destination persistence, independent world launches, locked access, menu and footer passed.');
 // Help stays inside the modal, closes with X or Escape, and resets on reopen.
 elements.get('home-menu').listeners.click();
@@ -1956,3 +1961,6 @@ elements.get('how-to-back').listeners.click();assert.equal(elements.get('home-me
 elements.get('close-home-menu').listeners.click();assert.equal(elements.get('home-menu-panel').hidden,true);
 elements.get('home-menu').listeners.click();assert.equal(elements.get('how-to-play').hidden,true);
 elements.get('home-menu-panel').listeners.cancel({preventDefault(){}});assert.equal(elements.get('home-menu-panel').hidden,true);
+
+elements.get('result-menu').listeners.click();
+assert.equal(elements.get('title-screen').hidden,true,'returning from a run does not reopen the title');
