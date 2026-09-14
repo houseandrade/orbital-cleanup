@@ -12,36 +12,20 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=0.20.0">
+  <link rel="stylesheet" href="styles.css?v=0.21.0">
   <title>Orbital Cleanup</title>
 </head>
 <body>
   <main id="game" class="game menu-open title-open" aria-label="Orbital Cleanup">
-    <header class="topbar">
-      <div>
-        <div id="flight-title" class="title">ORBITAL CLEANUP</div>
-        <div id="status" class="status" aria-live="polite">Collect debris. Bank your haul. Stay alive.</div>
-      </div>
-      <button id="campaign" type="button" class="button button--small">MENU</button>
-    </header>
-
+    <header class="topbar hud-top"><div><div id="flight-mode" class="hud-kicker"></div><div id="flight-title" class="hud-title">ORBITAL CLEANUP</div><div id="status" class="status" aria-live="polite"></div></div><button id="campaign" class="hud-pause button" type="button" aria-label="Pause"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg></button></header>
     <section class="flight-hud" aria-label="Flight dashboard">
-      <div id="mission" class="mission"></div>
-      <progress id="goal-progress" max="100" value="0" aria-label="Banked mission progress"></progress>
-      <div id="object-progress" class="object-progress" hidden></div>
-      <div id="star-goals" class="star-goals" aria-label="Star targets">
-        <span id="star-1"></span><span id="star-2"></span><span id="star-3"></span>
-      </div>
-      <div class="flight-stats">
-        <div><span class="stat-label">BANKED</span><strong id="hud-bank" class="mint">$0</strong></div>
-        <div><span class="stat-label">CARRYING</span><strong id="hud-haul">$0</strong></div>
-      </div>
-      <div class="suit-row"><div><span class="stat-label">INTEGRITY</span> <span id="hud-integrity">100%</span><progress id="integrity-progress" max="100" value="100" aria-label="Suit integrity"></progress></div><div><span class="stat-label">CARGO</span><strong id="hud-mass">0kg</strong></div></div>
+      <div class="legacy-objective" aria-hidden="true"><div id="mission"></div><progress id="goal-progress" max="100" value="0"></progress><div id="object-progress"></div><div id="star-goals"><span id="star-1"></span><span id="star-2"></span><span id="star-3"></span></div></div>
+      <section id="hud-objectives" class="hud-objective" aria-label="Objective progress"></section>
+      <section class="hud-finances" aria-label="Run earnings"><div><div class="hud-kicker">BANKED</div><div id="hud-bank" class="hud-money">$0</div><div id="hud-bank-note" class="hud-small"></div></div><div><div class="hud-kicker">CARRYING</div><div id="hud-haul" class="hud-money">$0</div><div class="hud-small">Lost if you don’t bank it</div></div></section>
+      <section class="hud-condition" aria-label="Suit and movement"><div><strong>Suit <span id="hud-integrity">100%</span></strong><progress id="integrity-progress" max="100" value="100" aria-label="Suit integrity"></progress></div><div><span class="hud-kicker">CARGO</span><br><strong id="hud-mass">0 kg</strong></div><div><span class="hud-kicker">MOTION</span><div class="hud-motion"><span id="hud-direction">— STEADY</span><span id="hud-motion-bars" class="hud-bars" aria-hidden="true"><b></b><b></b><b></b></span></div></div></section>
     </section>
-    <section class="gamezone" aria-label="Game area">
-      <canvas id="canvas" width="360" height="400" aria-label="Orbital Cleanup game"></canvas>
-      <div id="station-status" class="station-status" aria-live="polite"></div>
-    </section>
+    <section class="gamezone hud-field" aria-label="Game area"><canvas id="canvas" width="360" height="360" aria-label="Orbital Cleanup game"></canvas><div id="hud-brake-warning" class="hud-warning" hidden></div></section>
+    <div class="hud-station" id="station-strip"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12v9m-4 0h8M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14M8 8a6 6 0 0 0 0 8m8-8a6 6 0 0 1 0 8"/></svg><span id="station-status" aria-live="polite"></span></div>
 
       <div id="start-screen" class="overlay overlay--visible">
         <div class="panel menu-panel">
@@ -125,7 +109,7 @@
             <div class="high-score"><span id="start-score-label">CAMPAIGN HIGH SCORE</span> <span id="start-high-score">0</span></div>
             <button id="back-modes" type="button" class="button result-action">BACK TO MODES</button>
           </div>
-          <footer class="release-footer">ORBITAL CLEANUP · v0.20.0</footer>
+          <footer class="release-footer">ORBITAL CLEANUP · v0.21.0</footer>
         </div>
       </div>
 
@@ -146,11 +130,11 @@
       </div>
       <div id="exit-confirm" class="overlay" role="dialog" aria-modal="true" aria-labelledby="exit-title" aria-hidden="true">
         <div class="panel">
-          <div class="kicker">RUN PAUSED</div>
+
           <h2 id="exit-title">Leave this run?</h2>
-          <p class="tutorial">This attempt ends and its carried haul is lost. Unfinished assignment progress is discarded. Completed finale assignments are saved as checkpoints. Banked contract earnings, upgrades, saved best scores, completed levels, and stars remain.</p>
+          <p id="pause-copy" class="tutorial"></p>
           <button id="keep-playing" type="button" class="button button--cta">KEEP PLAYING</button>
-          <button id="restart" class="button result-action" type="button">RESTART RUN…</button>
+          <button id="restart" hidden class="button result-action" type="button">RESTART RUN…</button>
           <button id="leave-run" type="button" class="button result-action">LEAVE TO MENU</button>
         </div>
       </div>
@@ -170,16 +154,16 @@
           <button id="result-menu" type="button" class="button result-action" hidden>MAIN MENU</button>
         </div>
       </div>
-    <section id="flight-controls" class="controls" aria-label="Game controls">
-      <button id="tether" type="button" class="button">◎ TETHER</button>
-      <button id="deposit" type="button" class="button">▣ HOLD<br>DEPOSIT</button>
-      <button id="thrust" type="button" class="button button--primary">▲ HOLD<br>THRUST</button>
+    <section id="flight-controls" class="controls hud-controls" aria-label="Game controls">
+      <button id="tether" type="button" class="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg><span id="tether-label">TETHER</span><small>TAP</small></button>
+      <button id="deposit" type="button" class="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5"/></svg><span>DEPOSIT</span><small>HOLD</small></button>
+      <button id="thrust" type="button" class="button button--primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V4m-6 6 6-6 6 6"/></svg><span>THRUST</span><small>HOLD</small></button>
     </section>
   </main>
-  <script src="src/levels.js?v=0.20.0" defer></script>
-  <script src="src/contracts.js?v=0.20.0" defer></script>
-  <script src="src/art.js?v=0.20.0" defer></script>
-  <script src="src/input.js?v=0.20.0" defer></script>
-  <script src="src/game.js?v=0.20.0" defer></script>
+  <script src="src/levels.js?v=0.21.0" defer></script>
+  <script src="src/contracts.js?v=0.21.0" defer></script>
+  <script src="src/art.js?v=0.21.0" defer></script>
+  <script src="src/input.js?v=0.21.0" defer></script>
+  <script src="src/game.js?v=0.21.0" defer></script>
 </body>
 </html>

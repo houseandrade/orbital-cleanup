@@ -196,3 +196,128 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
 #choose-world { display:flex; justify-content:center; align-items:center; gap:20px; min-height:52px; font-size:14px; letter-spacing:.04em; }
 .title-open .release-footer { padding-top:22px; }
 @media(max-width:340px), (max-height:600px) { .menu-panel .title-screen h1 { font-size:38px; } .title-art { height:170px; } .title-intro { padding-top:4px; } }
+
+/* Approved gameplay HUD component styling. */
+
+#game{max-width:420px;margin:0 auto;font:13px/1.4 system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#eef3f8}
+#game *{box-sizing:border-box}
+#game button{font:600 12px/1.3 system-ui;cursor:pointer}
+#game .hud-top{height:62px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #293746;background:#0b131d}
+#game .hud-kicker{font-size:10px;font-weight:600;letter-spacing:1.2px;color:#aebdca}
+#game .hud-title{font-size:16px;font-weight:650;margin-top:2px}
+#game .hud-pause{display:flex;align-items:center;gap:5px;background:#15212d;border:1px solid #415163;color:#edf3f7;border-radius:7px;padding:10px;min-height:44px}
+#game .hud-objective{padding:12px;border-bottom:1px solid #293746;min-height:106px}
+#game .hud-objective-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:600}
+#game .hud-target{color:#bdcbd7;font-size:12px;font-weight:400}
+#game .hud-counts{display:flex;gap:16px;margin:8px 0 6px;font-size:12px}
+#game .hud-counts strong{font-size:15px;color:#eef3f8}
+#game .hud-counts .banked{color:#a7f3b5}
+#game .hud-counts .aboard{color:#f4cc7f}
+#game .hud-track{height:5px;background:#22303f;border-radius:4px;display:flex;overflow:hidden}
+#game .hud-track span:first-child{width:50%;background:#a7f3b5}
+#game .hud-track span:last-child{width:50%;background:repeating-linear-gradient(135deg,#f4cc7f 0 3px,#a08040 3px 5px)}
+#game .hud-objective-note{margin-top:7px;font-size:11px;color:#f4cc7f;min-height:16px}
+#game .hud-finances{display:grid;grid-template-columns:1fr 1fr;padding:10px 12px;border-bottom:1px solid #293746;gap:12px}
+#game .hud-finances>div+div{border-left:1px solid #293746;padding-left:12px}
+#game .hud-money{font-size:23px;line-height:1.15;font-weight:650;font-variant-numeric:tabular-nums;margin-top:3px}
+#game .hud-finances>div:first-child .hud-money{color:#a7f3b5}
+#game .hud-small{font-size:10px;color:#aebdca;margin-top:3px}
+#game .hud-condition{display:grid;grid-template-columns:1fr 76px 95px;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid #293746}
+#game .hud-condition strong{font-size:13px;font-weight:600}
+#game .hud-integrity{height:4px;background:#233442;border-radius:3px;margin-top:5px;overflow:hidden}
+#game .hud-integrity span{display:block;width:86%;height:100%;background:#a7f3b5}
+#game .hud-motion{color:#d6e3ee;display:flex;gap:5px;align-items:center;font-size:11px;font-weight:600}
+#game .hud-bars{display:flex;align-items:end;gap:2px;height:13px}
+#game .hud-bars b{width:3px;background:#a7f3b5;height:5px}
+#game .hud-bars b:nth-child(2){height:9px}
+#game .hud-bars b:nth-child(3){height:13px;background:#344756}
+#game .hud-field{position:relative;background:#02050a}
+#game canvas{display:block;width:100%;height:auto;aspect-ratio:360/320;image-rendering:pixelated}
+#game .hud-warning{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);white-space:nowrap;color:#ffcf8c;background:#241b12;padding:5px 9px;border-radius:4px;font-size:11px;font-weight:600}
+#game .hud-station{height:39px;display:flex;align-items:center;justify-content:center;gap:8px;background:#0e1c24;color:#c6d8e4;border-top:1px solid #304354;font-size:12px;font-weight:500}
+#game .hud-station.ready{background:#12271e;color:#b8f4c3;border-top-color:#47765a}
+#game .hud-controls{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding:8px;background:#080d13;border-top:1px solid #293746}
+#game .hud-controls button{min-height:62px;border-radius:7px;border:1px solid #465362;background:#111a23;color:#eef3f8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:default}
+#game .hud-controls button:last-child{background:#ecf2f7;color:#0a1520;border-color:#fff}
+#game .hud-controls small{font-size:9px;letter-spacing:.6px;font-weight:500}
+#game [hidden]{display:none!important}@media(max-width:350px){#game .hud-condition{grid-template-columns:1fr 60px 82px;gap:8px}
+#game .hud-title{font-size:15px}
+#game .hud-counts{gap:12px}}
+#game .hud-pause{min-width:44px;justify-content:center}
+#game .hud-mixed{padding:10px 12px 8px;border-bottom:1px solid #293746}
+#game .hud-mixed-heading{display:flex;justify-content:space-between;gap:6px;font-size:10px;letter-spacing:.4px;color:#b4c4d2}
+#game .hud-mixed-heading span{letter-spacing:0}
+#game .hud-item{padding:9px 0}
+#game .hud-item+.hud-item{border-top:1px solid #23313f}
+#game .hud-item-top{display:flex;justify-content:space-between;font-size:12px;gap:8px}
+#game .hud-item-top span{color:#b7c5d2}
+#game .hud-item-counts{display:flex;align-items:center;gap:12px;font-size:11px;margin:5px 0}
+#game .hud-item-counts b{color:#a7f3b5;font-size:13px}
+#game .hud-item-counts .hud-aboard b{color:#f4cc7f}
+#game .hud-item-counts em{font-style:normal;color:#f4cc7f;margin-left:auto;font-size:10px}
+#game .hud-item-counts .hud-missing{color:#d1dce6}
+#game .hud-item-track{height:4px;display:flex;overflow:hidden;background:#22303f;border-radius:3px}
+#game .hud-item-track span:first-child{background:#a7f3b5}
+#game .hud-item-track span:last-child{background:repeating-linear-gradient(135deg,#f4cc7f 0 3px,#a08040 3px 5px)}
+#game .hud-mixed-stars{display:flex;justify-content:space-between;gap:8px;color:#b3c2cf;font-size:10px;padding-top:5px}
+#game .hud-mixed-stars span{white-space:nowrap}
+
+/* Integration with the existing responsive simulation surface. */
+#game { max-width:440px; margin:0; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+#game .legacy-objective { display:none; }
+#game .hud-top { flex:none; }
+#game .hud-top .status { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+#game .hud-top .hud-pause { min-width:44px; min-height:44px; padding:10px; }
+#game .hud-title { font-family:system-ui,sans-serif; letter-spacing:0; line-height:1.4; }
+#game .hud-field { flex:1; min-height:0; }
+#game canvas { width:100%; height:100%; aspect-ratio:auto; object-fit:contain; }
+#game .hud-station { flex:none; }
+#game #station-status { position:static; transform:none; padding:0; margin:0; border:0; background:transparent; color:inherit; font:inherit; white-space:normal; text-align:center; }
+#game .hud-condition progress { display:block; width:100%; height:4px; border:0; margin-top:5px; }
+#game .hud-condition { padding:10px 12px; }
+#game .hud-condition progress::-webkit-progress-bar { background:#233442; }
+#game .hud-controls { flex:none; }
+#game .hud-controls .button:disabled { opacity:1; }
+#game .hud-controls #deposit:disabled { color:#aebdca; }
+#game .hud-controls .button { touch-action:none; }
+#game .hud-controls #deposit.ready { border-color:#a7f3b5; }
+#game #exit-confirm .panel { width:100%; max-width:350px; background:#0b141f; border:1px solid #465362; border-radius:12px; padding:24px; text-align:center; font-family:system-ui,sans-serif; }
+#game #exit-confirm h2 { font:650 22px/1.4 system-ui; letter-spacing:0; margin:0 0 8px; }
+#game #exit-confirm p { color:#b6c6d4; font-size:13px; }
+#game #exit-confirm .button { min-height:46px; margin-top:12px; }
+#game.menu-open > .hud-station { visibility:hidden; }
+@media(max-width:460px) { #game { margin:0; max-width:none; } }
+
+#hud-motion-bars.fast b { background:#f4cc7f; }
+#game #exit-confirm .button--cta { font-weight:600; }
+
+
+/* Compact flight instrument panel: one row per target and two shallow status rows. */
+#game .hud-top { height:46px; padding:2px 12px; }
+#game .hud-objective, #game .hud-mixed { min-height:0; padding:6px 12px; }
+#game .hud-quota-head, #game .hud-quota-values { display:grid; grid-template-columns:minmax(0,1fr) 104px 46px; align-items:center; gap:8px; }
+#game .hud-quota-head { font-size:9px; color:#aebdca; letter-spacing:.5px; margin-bottom:3px; }
+#game .hud-quota-head>span:not(:first-child), #game .hud-quota-values>span { text-align:right; }
+#game .hud-quota-row { padding:3px 0; }
+#game .hud-quota-values { font-size:12px; margin-bottom:3px; line-height:16px; }
+#game .hud-quota-values strong { font-weight:600; }
+#game .hud-quota-values>span { font-size:11px; white-space:nowrap; font-variant-numeric:tabular-nums; }
+#game .quota-banked { color:#a7f3b5; }
+#game .quota-aboard { color:#f4cc7f; }
+#game .hud-quota-row .hud-track, #game .hud-quota-row .hud-item-track { height:3px; }
+#game .hud-quota-note { display:flex; justify-content:space-between; gap:8px; margin-top:4px; font-size:10px; line-height:14px; color:#b7c7d4; white-space:nowrap; }
+#game .hud-finances { display:flex; justify-content:space-between; padding:4px 12px; gap:12px; }
+#game .hud-finances>div { flex:1; min-width:0; display:flex; align-items:center; justify-content:space-between; gap:8px; white-space:nowrap; }
+#game .hud-finances .hud-small { display:none; }
+#game .hud-money { font-size:18px; margin:0; line-height:22px; }
+#game .hud-condition { grid-template-columns:minmax(0,1fr) 86px 94px; padding:4px 12px; gap:8px; line-height:16px; white-space:nowrap; }
+#game .hud-motion { line-height:16px; }
+#game .hud-bars { flex-shrink:0; }
+#game .hud-condition>div:nth-child(2) { display:flex; gap:5px; align-items:center; }
+#game .hud-condition>div:nth-child(2) br, #game .hud-condition>div:last-child>.hud-kicker { display:none; }
+#game .hud-condition progress { margin-top:2px; height:3px; }
+#game .hud-station { height:28px; font-size:11px; }
+#game .hud-controls { padding:5px 8px; }
+#game .hud-controls button { min-height:54px; gap:2px; }
+#game .hud-objective-note { margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#game .hud-objective-top { margin-bottom:4px; white-space:nowrap; }
