@@ -56,7 +56,7 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
 .game-over-summary { color:var(--muted); font-size:12px; margin-top:10px; }
 #exit-confirm { z-index:5; }
 .menu-panel { max-width:none; border:0; border-radius:0; padding:20px 8px 120px; background:transparent; }
-#start-screen { background:var(--space) url('src/art/earth.png') center bottom / 100% auto no-repeat; }
+#start-screen { background:#090f19; }
 .tagline { color:var(--muted); font:14px monospace; margin:6px 0 8px; }
 .mode-card { display:grid; grid-template-columns:64px minmax(0,1fr); gap:14px; align-items:center; text-align:left; border:1px solid var(--border); border-radius:9px; padding:18px 14px; margin-bottom:12px; background:#0b131de8; }
 .mode-card h2 { font-size:19px; }
@@ -104,8 +104,8 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
 .world-selector p { margin:4px 0 0; font-size:11px; color:var(--muted); }
 #world-note { margin:8px 0 0; }
 #world-note:empty { display:none; }
-.moon-menu #start-screen { background-image:url('src/art/lunar/moon-background.png'); }
-.mars-menu #start-screen { background-image:url('src/art/mars/mars-background.png'); }
+.moon-menu .destination-hero { background-image:url('src/art/lunar/moon-background.png'); }
+.mars-menu .destination-hero { background-image:url('src/art/mars/mars-background.png'); }
 .campaign-levels [aria-expanded="true"] { scroll-margin-top:155px; }
 .picker-open .menu-panel { padding-bottom:12px; }
 
@@ -134,18 +134,22 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
 .destination-top .button { min-height:44px; }
 .home-menu-panel { background:#0b141f; padding:12px; border:1px solid var(--border); border-radius:8px; display:grid; gap:10px; margin-bottom:12px; }
 .home-menu-panel a { padding:12px; color:var(--accent); }
-.destination-hero { min-height:200px; padding:4px 8px 24px; }
+.destination-hero { min-height:250px; padding:4px 8px 74px; margin-bottom:18px; border-radius:8px; background:#070d16 url('src/art/earth.png') center bottom / cover no-repeat; }
 .destination-hero h1 { font-size:38px; letter-spacing:5px; margin:24px 0 6px; }
 .destination-hero p { color:#d0dae4; font-size:13px; }
 #destination-position { color:var(--accent); font:700 11px/1.5 ui-monospace,monospace; letter-spacing:2px; }
-#mode-menu .mode-card { grid-template-columns:26px minmax(0,1fr); align-items:start; padding:16px; gap:12px; background:#0b131df5; }
+#mode-menu .mode-card { grid-template-columns:26px minmax(0,1fr); align-items:start; padding:16px; gap:12px; background:#0b131d; }
 .mode-icon { width:24px; height:24px; color:var(--accent); margin-top:2px; }
 #mode-menu .mode-card .button { width:100%; margin-top:8px; min-height:44px; font-size:12px; }
 #mode-menu .mode-card h2 { font-size:17px; }
-#mode-menu .career-bar { background:#0b131df5; padding:12px; border-radius:8px; flex-wrap:wrap; }
+#mode-menu .career-bar { background:transparent; padding:12px; border:0; justify-content:center; flex-wrap:wrap; }
 .world-badges { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; font-size:11px; color:var(--accent); margin-top:12px; }
 .release-footer { color:var(--muted); font:11px/1.5 ui-monospace,monospace; padding:20px 0 8px; text-align:center; }
 @media(max-width:340px) { .destination-top { letter-spacing:0; } .destination-hero h1 { font-size:32px; } }
 /* World changes live on the destination page; subpages retain their world heading. */
 #previous-world, #next-world, #previous-contract-world, #next-contract-world { display:none; }
 #campaign-picker .world-selector, #contracts-picker .world-selector { grid-template-columns:minmax(0,1fr); }
+
+.destination-wallet { margin-left:auto; letter-spacing:0; white-space:nowrap; font-size:12px; }
+#home-menu { display:grid; place-items:center; min-width:44px; padding:10px; }
+.destination-hero h1, .destination-hero p, #destination-position { text-shadow:0 2px 8px #000,0 1px 3px #000; }

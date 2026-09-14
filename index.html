@@ -45,7 +45,7 @@
 
       <div id="start-screen" class="overlay overlay--visible">
         <div class="panel menu-panel">
-          <header class="destination-top"><span>ORBITAL CLEANUP</span><button id="home-menu" class="button button--small" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="home-menu-panel">☰ MENU</button></header>
+          <header class="destination-top"><span>ORBITAL CLEANUP</span><span class="destination-wallet" aria-label="Wallet"><strong id="wallet" class="mint">$0</strong></span><button id="home-menu" class="button button--small" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="home-menu-panel"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button></header>
           <nav id="home-menu-panel" class="home-menu-panel" aria-label="Game menu" hidden><button id="menu-worlds" class="button" type="button">WORLD PAGES</button><button id="menu-upgrades" class="button" type="button">UPGRADES</button><a href="update.html">Refresh game files</a></nav>
           <p id="save-notice" class="tutorial" hidden>Saving unavailable. Earnings and purchases last only for this session.</p>
           <div id="mode-menu">
@@ -56,7 +56,7 @@
             <article class="mode-card"><svg class="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22V3m0 1c5-4 9 4 16 0v11c-7 4-11-4-16 0"/></svg><div><h2>CAMPAIGN</h2><p id="destination-progress"></p><button id="choose-campaign" class="button" type="button">CHOOSE EARTH MISSION</button></div></article>
             <article class="mode-card"><svg class="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="18" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 11h6m-6 5h6"/></svg><div><h2>CONTRACTS</h2><p id="destination-contracts"></p><button id="choose-contracts" class="button" type="button">BROWSE EARTH CONTRACTS</button></div></article>
             <article class="mode-card"><svg class="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><ellipse cx="12" cy="12" rx="11" ry="5" transform="rotate(-35 12 12)"/><path d="M5 3c5-2 15 13 13 18"/></svg><div><h2>ENDLESS ORBIT</h2><p class="high-score"><strong id="endless-destination">EARTH</strong> · BEST <span id="endless-menu-best">$0</span></p><button id="endless" class="button button--cta" type="button">PLAY EARTH ENDLESS</button></div></article>
-            <div class="career-bar"><span>WALLET <strong id="wallet" class="mint">$0</strong></span><button id="choose-upgrades" class="button button--small" type="button">UPGRADES · ALL WORLDS</button></div>
+            <div class="career-bar"><button id="choose-upgrades" class="button button--small" type="button">UPGRADES · ALL WORLDS</button></div>
             <div class="world-badges"><span id="world-one-badge" hidden>✓ Earth complete</span><span id="world-two-badge" hidden>✓ Moon complete</span><span id="world-three-badge" hidden>✓ Mars complete</span></div>
             <p class="tutorial menu-tutorial">Hold THRUST to climb · Tap TETHER to collect<br>Hold DEPOSIT at the station to bank</p>
           </div>
