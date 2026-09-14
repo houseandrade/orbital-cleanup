@@ -1,5 +1,14 @@
 # Orbital Cleanup — Roadmap
 
+## Current status — v0.19.0 world pages in review
+
+Production is v0.18.0, deployed via PR #27 (merge `363065a`, deployment 34791992193). Mars Contracts and Endless are live. The new review replaces implicit Endless routing with saved, explicit world pages. Each world has Campaign, Contracts, Endless, its own progress/best, approved world scenery, and flag/clipboard/orbit icons. An upper-right menu exposes World Pages, Upgrades, and Refresh Game Files; the footer retains the release version. Existing progression, scores, and unlocks remain intact.
+
+Next priorities: HUD clarity before expanding Contracts to 12 per world (4 Easy, 4 Medium, 4 Hard). Queue a settings menu and sounds/music, upgrade illustrations, suit reinforcement, save backup, mobile control comfort, collection/mastery ideas, and future-world prototypes. Analytics remains high in the backlog but deferred by Brian. These are future work, not part of the world-page batch.
+
+Review at http://127.0.0.1:8091/previews/v019/playtest.html. Earlier release status statements below are historical. Do not deploy v0.19.0 until playtest approval.
+
+
 ## Current status — v0.18.0 review
 
 Production v0.17.0 deployed via PR #26 (merge `0105841`, successful deployment 34789600069). The full Mars campaign and shared boundary/momentum changes are live. v0.18.0 adds Mars Contracts and Endless locally for review; it is not deployed.
