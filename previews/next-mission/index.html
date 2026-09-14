@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Next mission briefing preview</title>
+<style>*{box-sizing:border-box}html,body{height:100%;margin:0;background:#161b22;color:#abb8c6;font:13px system-ui}body{display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px}p{margin:0}iframe{width:430px;max-width:100%;height:932px;max-height:calc(100dvh - 48px);border:0;background:#080d13}@media(max-width:600px){body{padding:0;gap:0}p{display:none}iframe{width:100%;height:100dvh;max-height:none}}</style></head>
+<body><p id="note">Next mission preview · Temporary progress</p><iframe title="Paused mission with briefing" sandbox="allow-scripts"></iframe>
+<script>
+(async () => {
+  const base = new URL('../../', location.href);
+  const [htmlResponse, gameResponse] = await Promise.all([fetch(new URL('index.html?modal-preview=' + Date.now(), base), {cache:'no-store'}), fetch(new URL('src/game.js?modal-preview=' + Date.now(), base), {cache:'no-store'})]);
+  if (!htmlResponse.ok || !gameResponse.ok) throw new Error('Unable to load preview');
+  let html = await htmlResponse.text();
+  let game = await gameResponse.text();
+  const end = game.lastIndexOf('})();');
+  if (end < 0) throw new Error('Preview setup changed');
+  game = game.slice(0, end) + "\nprogress.best[1] = 1; level = LevelSystem.campaign[0]; nextButton.click();\n" + game.slice(end);
+  html = html.replace('<head>', '<head><base href="' + base.href + '">').replaceAll(' defer', '');
+  html = html.replace(/<script src="src\/game\.js[^"\n]*"><\/script>/, () => '<script>' + game.replaceAll('<' + '/script', '<\\/script') + '<' + '/script>');
+  document.querySelector('iframe').srcdoc = html;
+})().catch(error => { document.getElementById('note').textContent = error.message; });
+</script></body></html>

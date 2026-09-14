@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=0.21.1">
+  <link rel="stylesheet" href="styles.css?v=0.21.2">
   <title>Orbital Cleanup</title>
 </head>
 <body>
@@ -109,9 +109,19 @@
             <div class="high-score"><span id="start-score-label">CAMPAIGN HIGH SCORE</span> <span id="start-high-score">0</span></div>
             <button id="back-modes" type="button" class="button result-action">BACK TO MODES</button>
           </div>
-          <footer class="release-footer">ORBITAL CLEANUP · v0.21.1</footer>
+          <footer class="release-footer">ORBITAL CLEANUP · v0.21.2</footer>
         </div>
       </div>
+
+      <dialog id="next-mission-briefing" class="panel next-mission-briefing" aria-labelledby="next-briefing-title" hidden>
+        <p class="kicker">MISSION BRIEFING</p>
+        <h2 id="next-briefing-title"></h2>
+        <p id="next-briefing-description" class="tutorial"></p>
+        <ul id="next-briefing-objectives"></ul>
+        <p id="next-briefing-stars" class="tutorial"></p>
+        <button id="next-briefing-start" class="button button--cta" type="button">START MISSION</button>
+        <button id="next-briefing-exit" class="button result-action" type="button">BACK TO MODES</button>
+      </dialog>
 
       <div id="game-over" class="overlay" aria-hidden="true">
         <div class="panel">
@@ -160,10 +170,10 @@
       <button id="thrust" type="button" class="button button--primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V4m-6 6 6-6 6 6"/></svg><span>THRUST</span><small>HOLD</small></button>
     </section>
   </main>
-  <script src="src/levels.js?v=0.21.1" defer></script>
-  <script src="src/contracts.js?v=0.21.1" defer></script>
-  <script src="src/art.js?v=0.21.1" defer></script>
-  <script src="src/input.js?v=0.21.1" defer></script>
-  <script src="src/game.js?v=0.21.1" defer></script>
+  <script src="src/levels.js?v=0.21.2" defer></script>
+  <script src="src/contracts.js?v=0.21.2" defer></script>
+  <script src="src/art.js?v=0.21.2" defer></script>
+  <script src="src/input.js?v=0.21.2" defer></script>
+  <script src="src/game.js?v=0.21.2" defer></script>
 </body>
 </html>

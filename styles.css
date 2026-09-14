@@ -334,3 +334,11 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
     padding:calc(16px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) calc(16px + env(safe-area-inset-left,0px));
   }
 }
+
+/* A native modal keeps the loaded flight visible and blocks controls until launch. */
+.next-mission-briefing { margin:auto; width:calc(100% - 32px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)); max-width:360px; max-height:calc(100% - 32px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)); max-height:calc(100dvh - 32px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)); text-align:left; }
+.next-mission-briefing::backdrop { background:#02050a99; }
+.next-mission-briefing h2 { font-family:system-ui,sans-serif; line-height:1.35; letter-spacing:0; }
+.next-mission-briefing ul { padding-left:20px; font-size:13px; line-height:1.6; }
+.next-mission-briefing li + li { margin-top:6px; }
+#next-briefing-stars { border-top:1px solid var(--border); padding-top:12px; }
