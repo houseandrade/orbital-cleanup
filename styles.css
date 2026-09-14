@@ -179,3 +179,5 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
 .destination-hero h1 { font-weight:700; letter-spacing:.08em; }
 #mode-menu .mode-card h2 { font-weight:600; letter-spacing:.04em; }
 #destination-position { font-weight:600; }
+/* Reserve the arrow slot so the world heading stays centered at either end. */
+#previous-destination:disabled, #next-destination:disabled { visibility:hidden; }
