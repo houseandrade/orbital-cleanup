@@ -169,3 +169,13 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
 .destination-hero .destination-caption h1 { margin:0 0 8px; }
 .destination-hero .destination-caption p { margin:0; color:#e2ebf3; }
 .destination-hero .destination-caption #destination-lock { margin-top:8px; }
+
+/* Keep destination navigation clean and distinct from the in-flight HUD. */
+.menu-panel { font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+.menu-panel h1, .menu-panel h2, .menu-panel h3,
+.destination-top, #destination-position, .release-footer,
+#campaign-picker .world-selector strong, #contract-world-name { font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+.destination-top { border-bottom:1px solid #293746; margin-bottom:14px; font-weight:600; letter-spacing:.06em; }
+.destination-hero h1 { font-weight:700; letter-spacing:.08em; }
+#mode-menu .mode-card h2 { font-weight:600; letter-spacing:.04em; }
+#destination-position { font-weight:600; }
