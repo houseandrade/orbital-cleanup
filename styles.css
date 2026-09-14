@@ -291,36 +291,30 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
 #hud-motion-bars.fast b { background:#f4cc7f; }
 #game #exit-confirm .button--cta { font-weight:600; }
 
-/* Preserve the flight area on shorter phones; compact spacing rather than scale the game down. */
-#game .hud-top { height:50px; padding:5px 12px; }
-#game .hud-objective { min-height:86px; padding:8px 12px; }
-#game .hud-counts { margin:5px 0; }
-#game .hud-finances { padding:6px 12px; }
-#game .hud-money { font-size:20px; margin-top:1px; }
-#game .hud-small { margin-top:1px; }
-#game .hud-condition { padding:5px 12px; }
-#game .hud-mixed { padding:6px 12px; }
-#game .hud-item { padding:5px 0; }
-#game .hud-item-counts { margin:3px 0; }
-#game .hud-mixed-stars { padding-top:3px; }
-#game .hud-station { height:30px; font-size:11px; }
-#game .hud-controls { padding:6px 8px; }
-#game .hud-controls button { min-height:56px; gap:3px; }
-@media(max-height:740px) {
-  #game .hud-mixed-heading { display:none; }
-  #game .hud-finances { display:flex; justify-content:space-between; gap:16px; }
-  #game .hud-finances>div { flex:1; display:grid; grid-template-columns:1fr auto; align-items:center; gap:0 8px; }
-  #game .hud-finances .hud-small { grid-column:1 / -1; font-size:9px; }
-  #game .hud-finances .hud-money { font-size:18px; }
-  #game .hud-condition>div:nth-child(2) { display:flex; gap:5px; align-items:center; }
-  #game .hud-condition>div:nth-child(2) br { display:none; }
-  #game .hud-condition { grid-template-columns:1fr 80px 88px; gap:8px; }
-  #game .hud-condition>div:last-child>.hud-kicker { display:none; }
-}
-@media(max-height:740px) {
-  #game .hud-finances .hud-small { display:none; }
-  #game .hud-mixed { padding:4px 12px; }
-  #game .hud-item { padding:3px 0; }
-  #game .hud-item-counts { margin:1px 0; }
-  #game .hud-condition { padding:4px 12px; }
-}
+
+/* Compact flight instrument panel: one row per target and two shallow status rows. */
+#game .hud-top { height:46px; padding:2px 12px; }
+#game .hud-objective, #game .hud-mixed { min-height:0; padding:6px 12px; }
+#game .hud-quota-head, #game .hud-quota-values { display:grid; grid-template-columns:minmax(0,1fr) 78px 54px; align-items:center; gap:8px; }
+#game .hud-quota-head { font-size:9px; color:#aebdca; letter-spacing:.5px; margin-bottom:3px; }
+#game .hud-quota-head>span:not(:first-child), #game .hud-quota-values>span { text-align:right; }
+#game .hud-quota-row { padding:3px 0; }
+#game .hud-quota-values { font-size:12px; margin-bottom:3px; line-height:16px; }
+#game .hud-quota-values strong { font-weight:600; }
+#game .quota-banked { color:#a7f3b5; }
+#game .quota-aboard { color:#f4cc7f; }
+#game .hud-quota-row .hud-track, #game .hud-quota-row .hud-item-track { height:3px; }
+#game .hud-quota-note { display:flex; justify-content:space-between; gap:8px; margin-top:4px; font-size:10px; line-height:14px; color:#b7c7d4; }
+#game .hud-finances { display:flex; justify-content:space-between; padding:4px 12px; gap:12px; }
+#game .hud-finances>div { flex:1; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+#game .hud-finances .hud-small { display:none; }
+#game .hud-money { font-size:18px; margin:0; line-height:22px; }
+#game .hud-condition { grid-template-columns:1fr 78px 90px; padding:4px 12px; gap:8px; }
+#game .hud-condition>div:nth-child(2) { display:flex; gap:5px; align-items:center; }
+#game .hud-condition>div:nth-child(2) br, #game .hud-condition>div:last-child>.hud-kicker { display:none; }
+#game .hud-condition progress { margin-top:2px; height:3px; }
+#game .hud-station { height:28px; font-size:11px; }
+#game .hud-controls { padding:5px 8px; }
+#game .hud-controls button { min-height:54px; gap:2px; }
+#game .hud-objective-note { margin-top:4px; }
+#game .hud-objective-top { margin-bottom:4px; }

@@ -4,7 +4,7 @@
 
 Production v0.20.0 deployed via PR #29 (merge `690717f`, successful deployment 34796281120). The new HUD implements the approved single/mixed objective rows, separate banked/aboard segments, wallet-versus-score labels, suit/cargo/motion status, dedicated station strip, icon-only pause, and two-step exit confirmation. Existing simulation, rewards, saved progress and input protections are retained.
 
-Brian found the first playable HUD too tall. The revision compacts spacing and suppresses repeated explanatory captions on short screens. The canvas displays world y60–380 instead of y60–460, cropping unused space below the lower boundary while leaving physics and both boundaries unchanged. Small-screen checks verified visible controls and no horizontal overflow. The full acceptance suite passes, including new mixed-objective readiness and pause/exit cases. Local playtest: http://127.0.0.1:8095/previews/v021/playtest.html. Not deployed; awaiting playtest approval.
+Brian found the first playable HUD too tall. The revised HUD uses compact per-item Banked/Aboard columns and shallow money/condition rows. The canvas displays world y60–420, retaining a visible planet surface below the lower boundary without changing physics. Browser checks measured a 386px playfield at a 720px viewport and 306px at 320×640; the planet and all controls remain visible with no horizontal overflow. The full acceptance suite passes, including new mixed-objective readiness and pause/exit cases. Local playtest: http://127.0.0.1:8095/previews/v021/playtest.html. Not deployed; awaiting playtest approval.
 
 
 ## Current status — v0.20.0 title screen in review

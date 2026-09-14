@@ -616,13 +616,12 @@
     if (!rows.length) {
       const target = LevelSystem.nextMilestone(level, bank);
       markup = `<div class="hud-objective-top"><span>Next milestone</span><span class="hud-target">$${target.toLocaleString()} banked</span></div><div class="hud-track" role="img" aria-label="$${bank} of $${target} banked"><span style="width:${Math.min(100,bank/target*100)}%"></span><span style="width:0"></span></div><div class="hud-objective-note">${phase.name} · Best $${getHighScore().toLocaleString()}</div>`;
-    } else if (rows.length > 1) {
-      markup = `<div class="hud-mixed-heading">${level.assignments ? `ASSIGNMENT ${assignmentIndex+1}` : level.name.toUpperCase()} <span>Bank ${rows.every(row => !row.value) ? 'both item types' : 'both targets'}</span></div>` + rows.map(row => `<div class="hud-item"><div class="hud-item-top"><strong>${row.label}</strong><span>${amount(row,row.target)} required</span></div><div class="hud-item-counts"><span><b>${amount(row,row.banked)}</b> banked</span><span class="hud-aboard"><b>${amount(row,row.carried)}</b> aboard</span><em class="${row.ready ? '' : 'hud-missing'}">${row.complete ? '✓ Complete' : row.ready ? 'Ready to bank' : `Collect ${amount(row,row.target-row.banked-row.carried)} more`}</em></div>${track(row)}</div>`).join('') + `<div class="hud-mixed-stars">${level.assignments ? `Assignment ${assignmentIndex+1} / ${level.assignments.length}` : '★ Both quotas'}<span>★★ $${level.stars[1].target.toLocaleString()}</span><span>★★★ $${level.stars[2].target.toLocaleString()}</span></div>`;
     } else {
-      const row = rows[0];
+      const ready = rows.every(row => row.ready);
+      const complete = rows.every(row => row.complete);
       const reward = level.contract ? contractCompleted ? 'Bonus paid' : `$${level.bonus.toLocaleString()} bonus` : stars;
-      const note = row.complete ? level.contract ? 'Objective complete' : level.assignments ? 'Assignment complete' : 'Objective complete' : row.ready ? 'Bank your cargo to finish' : `Collect ${amount(row,row.target-row.banked-row.carried)} more`;
-      markup = `<div class="hud-objective-top"><span>${row.label}</span><span class="hud-target">${amount(row,row.target)} required</span></div><div class="hud-counts"><span><strong class="banked">${amount(row,row.banked)}</strong> banked</span><span><strong class="aboard">${amount(row,row.carried)}</strong> aboard</span></div>${track(row)}<div class="hud-objective-note">${note} · ${reward}</div>`;
+      const note = complete ? 'Objective banked' : ready ? 'Return to bank' : level.assignments ? `Assignment ${assignmentIndex + 1}/${level.assignments.length}` : 'Bank every target';
+      markup = `<div class="hud-quota-head"><span>RECOVERY</span><span>BANKED</span><span>ABOARD</span></div>` + rows.map(row => `<div class="hud-quota-row"><div class="hud-quota-values"><strong>${row.label}</strong><span class="quota-banked">${amount(row,row.banked)} / ${amount(row,row.target)}</span><span class="quota-aboard">${amount(row,row.carried)}</span></div>${track(row)}</div>`).join('') + `<div class="hud-quota-note"><span>${note}</span><span>${reward}</span></div>`;
     }
     const panel = document.getElementById('hud-objectives');
     panel.classList.toggle('hud-mixed', rows.length > 1);
