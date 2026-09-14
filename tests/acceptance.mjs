@@ -1523,8 +1523,8 @@ assert.equal(vm.runInContext('LevelSystem.readProgress().selectedWorld',sandbox)
 elements.get('level-11').listeners.click(); qa.start();
 assert.equal(qa.state.progress.activeWorld,3,'Moon replay does not reset active Mars world');
 elements.get('endless').listeners.click();
-assert.equal(qa.state.level.world,2,'Mars Endless remains explicitly deferred');
-assert.match(elements.get('endless-destination').textContent,/MARS ENDLESS COMING LATER/);
+assert.equal(qa.state.level.world,3,'Mars Endless follows the active campaign world');
+assert.equal(elements.get('endless-destination').textContent,'MARS');
 assert.equal(qa.scannerNeeded({type:'PANEL'}),false,'no objectives in Endless');
 for(const name of ['mars-background','sample-canister','survey-drone','solar-array-section','habitat-support-frame','ascent-engine']) {
   assert.ok(fs.existsSync(new URL(`../src/art/mars/${name}.png`,import.meta.url)));
@@ -1854,3 +1854,62 @@ assert.equal(modeBrake(()=>{elements.get('level-15').listeners.click();qa.start(
 assert.equal(modeBrake(()=>launchContract('engine-recovery')),earthMomentum);
 assert.equal(modeBrake(()=>{qa.state.progress.activeWorld=2;elements.get('endless').listeners.click();}),earthMomentum);
 console.log('Earth/Moon boundary coverage across campaigns, Contracts and all Endless phases, safe drift, alternating pockets/arrivals and shared momentum passed.');
+
+// Mars modes: locked access, all payouts, repeatability, save isolation and phase safety.
+const marsJobs=careerSystem.contracts.filter(c=>c.world===3);
+assert.equal(marsJobs.length,6);
+elements.get('choose-contracts').listeners.click();
+elements.get('next-contract-world').listeners.click();
+elements.get('next-contract-world').listeners.click();
+assert.equal(elements.get('contract-world-name').textContent,'MARS CONTRACTS');
+assert.equal(elements.get('next-contract-world').disabled,true);
+const completedMoon=qa.state.progress.best[20];delete qa.state.progress.best[20];
+elements.get('choose-contracts').listeners.click();
+assert.equal(elements.get(`contract-${marsJobs[0].id}`).disabled,true);
+const priorLevel=qa.state.level;
+elements.get(`contract-${marsJobs[0].id}`).listeners.click();assert.equal(qa.state.level,priorLevel);
+qa.state.progress.best[20]=completedMoon;
+elements.get('choose-contracts').listeners.click();
+const priorCampaign=JSON.stringify(qa.state.progress);
+for(const job of marsJobs){
+  assert.equal(elements.get(`contract-${job.id}`).disabled,false);
+  launchContract(job.id);
+  assert.equal(qa.state.level.world,3);
+  assert.ok(qa.state.junk.every(o=>o.type!=='ENGINE'));
+  if(job.debris.limited){
+    const targets=qa.state.junk.filter(o=>o.type===job.objective.salvageType);
+    assert.equal(targets.length,job.objective.target+2);
+    assert.ok(targets.some(o=>o.y<=120)&&targets.some(o=>o.y>=322));
+    assert.equal(targets[1].x-targets[0].x,job.debris.limited.spacing);
+  }
+  const wallet=careerSystem.career.wallet;
+  collectItems(job.objective.salvageType||'SAMPLE',job.objective.type==='bank_value'?1:job.objective.target,job.objective.type==='bank_value'?job.objective.target:60);
+  const haul=qa.state.haul;deposit(haul);
+  assert.equal(careerSystem.career.wallet,wallet+haul+job.bonus);
+  qa.resumeLevel();collectItems('PANEL',1,40);deposit(40);
+  assert.equal(careerSystem.career.wallet,wallet+haul+job.bonus+40);
+  if(qa.state.pendingResult) qa.resumeLevel();
+  qa.end('REENTRY');assert.equal(elements.get('death').textContent,'SURFACE IMPACT');
+}
+assert.equal(JSON.stringify(qa.state.progress),priorCampaign);
+assert.equal(reloadCareer(sandbox.localStorage).career.completed.filter(id=>id.startsWith('mars-')).length,6);
+const earlierBests=[storage.get('orbital-cleanup-endless-best-v1'),storage.get('orbital-cleanup-moon-endless-best-v1')];
+const endlessWallet=careerSystem.career.wallet;
+qa.state.progress.activeWorld=3;elements.get('endless').listeners.click();
+assert.equal(qa.state.level.world,3);
+for(const [at,type] of [[0,'SAMPLE'],[150,'DRONE'],[300,'ARRAY'],[500,'FRAME']]){
+  if(at){deposit(at-qa.state.bank);qa.resumeLevel();}
+  qa.scenario={junk:[],elapsed:100+at};qa.fillDebris();
+  const rare=qa.state.junk.filter(o=>o.scheduledSalvage);
+  assert.equal(rare.length,1);assert.equal(rare[0].type,type);
+  qa.fillDebris();assert.equal(qa.state.junk.filter(o=>o.scheduledSalvage).length,1);
+  assert.ok(qa.state.junk.length<=5);
+  assert.ok(qa.state.junk.some(o=>o.y<=120)&&qa.state.junk.some(o=>o.y>=322));
+  assert.ok(!qa.state.junk.some(o=>['ROVER','CAPSULE','ENGINE'].includes(o.type)));
+  assert.equal(qa.scannerNeeded(rare[0]),false);
+}
+deposit(250);assert.equal(qa.state.queuedPhase.name,'Sample field');qa.finishLevel();
+assert.equal(Number(storage.get('orbital-cleanup-mars-endless-best-v1')),750);
+assert.deepEqual([storage.get('orbital-cleanup-endless-best-v1'),storage.get('orbital-cleanup-moon-endless-best-v1')],earlierBests);
+assert.equal(careerSystem.career.wallet,endlessWallet);
+console.log('Mars contracts, access locks, payouts, persistence, boundary targets, Endless phases and isolated scores passed.');

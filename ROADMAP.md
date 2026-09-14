@@ -1,5 +1,12 @@
 # Orbital Cleanup — Roadmap
 
+## Current status — v0.18.0 review
+
+Production v0.17.0 deployed via PR #26 (merge `0105841`, successful deployment 34789600069). The full Mars campaign and shared boundary/momentum changes are live. v0.18.0 adds Mars Contracts and Endless locally for review; it is not deployed.
+
+See [Mars modes](MARS-MODES-PLAN.md) for the new jobs and phase tuning. Earlier review/deployment statements below are historical.
+
+
 For version-by-version changes, see [Release notes](RELEASE-NOTES.md).
 
 ## Current roadmap — September 13, 2026

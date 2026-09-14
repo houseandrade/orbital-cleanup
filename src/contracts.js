@@ -63,6 +63,24 @@ const ContractSystem = (() => {
     return { ...base, id, name, difficulty, bonus, contract: true, objective, stars: [], debris,
       description: `Bank ${LevelSystem.criterionLabel(objective)} for a $${bonus} bonus. Only deposited salvage counts.` };
   }));
+  const marsDefinitions = [
+    ['mars-sample-order', 'Sample Order', 'Easy', 'bank_type', 5, 300, 'SAMPLE', 21],
+    ['mars-survey-return', 'Survey Return', 'Easy', 'bank_type', 3, 400, 'DRONE', 22],
+    ['mars-array-recovery', 'Array Recovery', 'Medium', 'bank_type', 4, 800, 'ARRAY', 23],
+    ['mars-cleanup-shift', 'Expedition Cleanup', 'Medium', 'bank_objects', 12, 650],
+    ['mars-habitat-recovery', 'Habitat Recovery', 'Hard', 'bank_type', 4, 1200, 'FRAME', 24],
+    ['mars-big-haul', 'Expedition Payday', 'Hard', 'bank_value', 2000, 1600]
+  ];
+  contracts.push(...marsDefinitions.map(([id, name, difficulty, type, target, bonus, salvageType, sourceIndex]) => {
+    const base = LevelSystem.campaign[23];
+    const objective = { type, target, salvageType };
+    const targetBand = sourceIndex === undefined ? null : LevelSystem.campaign[sourceIndex].debris.limited.band;
+    const debris = { count: 5, spacing: 115, bands: base.debris.bands,
+      ...(targetBand ? { limited: { count: target + 2, spacing: salvageType === 'SAMPLE' ? 420 : 480, speed: 30, band: targetBand } }
+        : { arrival: { band: LevelSystem.campaign[type === 'bank_value' ? 24 : 21].debris.limited.band, interval: type === 'bank_value' ? 24 : 16, speed: 30 } }) };
+    return { ...base, id, name, difficulty, bonus, contract: true, objective, stars: [], debris,
+      description: `Bank ${LevelSystem.criterionLabel(objective)} for a $${bonus} bonus. Only deposited salvage counts.` };
+  }));
   for (const contract of contracts) contract.debris = LevelSystem.withBoundaryTargets(contract.debris, false, contract.objective.salvageType);
   let career = { wallet: 0, completed: [], upgrades: Object.fromEntries(Object.keys(upgrades).map(id => [id, 0])), worldOneReward: false, worldTwoReward: false, worldThreeReward: false };
   let persistent = true;

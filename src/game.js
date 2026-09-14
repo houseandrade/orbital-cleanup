@@ -31,7 +31,7 @@
   const replayButton = document.getElementById("replay-level");
   const progress = LevelSystem.readProgress();
   let level = LevelSystem.campaign.find(config => config.id === progress.currentLevel);
-  let contractWorld = Math.min(progress.activeWorld || 1, 2);
+  let contractWorld = progress.activeWorld || 1;
   let selectedWorld = progress.selectedWorld || level.world || 1;
   let pendingResult = false;
   let exitPaused = false;
@@ -90,7 +90,7 @@
   const thrustEffectiveness = (cargoMass, penaltyFactor = 1) => Math.max(0.75, 1 - Math.min(cargoMass / 100, 1) * 0.25 * penaltyFactor);
 
   const sessionBests = {};
-  const endlessScoreKey = world => world === 2 ? 'orbital-cleanup-moon-endless-best-v1' : 'orbital-cleanup-endless-best-v1';
+  const endlessScoreKey = world => world === 3 ? 'orbital-cleanup-mars-endless-best-v1' : world === 2 ? 'orbital-cleanup-moon-endless-best-v1' : 'orbital-cleanup-endless-best-v1';
   const scoreKey = () => level.contract ? 'orbital-cleanup-contract-best-v1' : level.id === 'endless' ? endlessScoreKey(level.world) : HIGH_SCORE_KEY;
   function readEndlessBest(world = progress.activeWorld) {
     const key = endlessScoreKey(LevelSystem.endlessFor(world).world);
@@ -241,7 +241,7 @@
     document.getElementById('previous-world').disabled = selectedWorld === 1;
     document.getElementById('next-world').disabled = selectedWorld === LevelSystem.worlds.length;
     document.getElementById('world-note').textContent = selectedWorld === 2
-      ? progress.best[10] ? 'Ten Moon missions available.' : 'Complete World One to unlock the Moon.' : selectedWorld === 3 ? progress.best[20] ? 'Ten Mars missions available. Mars Contracts and Mars Endless are coming later.' : 'Complete World Two to unlock Mars.' : '';
+      ? progress.best[10] ? 'Ten Moon missions available.' : 'Complete World One to unlock the Moon.' : selectedWorld === 3 ? progress.best[20] ? 'Ten Mars missions available.' : 'Complete World Two to unlock Mars.' : '';
     root.classList.toggle('moon-menu', selectedWorld === 2);
     root.classList.toggle('mars-menu', selectedWorld === 3);
     LevelSystem.campaign.forEach(config => {
@@ -255,7 +255,7 @@
       if (selected) button.setAttribute('aria-controls', 'mission-briefing');
       else button.removeAttribute('aria-controls');
     });
-    document.getElementById('endless-destination').textContent = progress.activeWorld === 3 ? 'MOON · MARS ENDLESS COMING LATER' : progress.activeWorld === 2 ? 'MOON' : 'EARTH';
+    document.getElementById('endless-destination').textContent = progress.activeWorld === 3 ? 'MARS' : progress.activeWorld === 2 ? 'MOON' : 'EARTH';
     document.getElementById('endless-menu-best').textContent = `$${readEndlessBest()}`;
     refreshCareer();
     const isEndless = level.id === 'endless';
@@ -382,7 +382,7 @@
     nextButton.hidden = level.id === LevelSystem.campaign.length;
     document.getElementById('result-endless').hidden = !nextButton.hidden;
     nextButton.textContent = level.id === 10 ? 'CONTINUE TO THE MOON' : level.id === 20 ? 'CONTINUE TO MARS' : 'NEXT LEVEL';
-    status.textContent = nextButton.hidden ? 'Mars campaign complete. Ascent engine recovered! Replay for stars or try Moon Endless.' : level.id === 10 ? 'World One complete. The Moon is unlocked!' : level.id === 20 ? 'World Two complete. Mars is unlocked!' : 'Level complete. Next level unlocked.';
+    status.textContent = nextButton.hidden ? 'Mars campaign complete. Ascent engine recovered! Replay for stars or try Mars Endless.' : level.id === 10 ? 'World One complete. The Moon is unlocked!' : level.id === 20 ? 'World Two complete. Mars is unlocked!' : 'Level complete. Next level unlocked.';
     refreshCampaign();
   }
 
@@ -1049,7 +1049,7 @@
   document.getElementById('contract-list').innerHTML = boardContracts.map(c => `<article id="contract-card-${c.id}" class="career-card contract-card"><button id="select-contract-${c.id}" type="button" class="button contract-selector" aria-expanded="false" aria-controls="contract-briefing-${c.id}"><span class="kicker">${c.difficulty} · ${c.objective.type === 'bank_type' ? 'TARGETED RECOVERY' : c.objective.type === 'bank_value' ? 'VALUE TARGET' : 'COLLECTION'}</span><span class="contract-name">${c.name}</span><span class="contract-prompt">VIEW BRIEFING</span></button><section id="contract-briefing-${c.id}" class="mission-briefing contract-briefing" aria-labelledby="contract-briefing-title-${c.id}" hidden><h3 id="contract-briefing-title-${c.id}">MISSION BRIEFING</h3><ul aria-label="Contract objectives"><li>Bank ${LevelSystem.criterionLabel(c.objective)}.</li></ul>${c.debris.limited ? '<p>Missed items return on a later pass.</p>' : ''}<p class="reward">Salvage value + $${c.bonus} bonus</p><p>Deposits pay immediately. Meet the objective to earn the bonus once this run. Unbanked cargo is lost if the run ends in failure.</p><button id="contract-${c.id}" type="button" class="button button--cta">ACCEPT CONTRACT</button></section></article>`).join('');
   for (const contract of ContractSystem.contracts) {
     document.getElementById(`select-contract-${contract.id}`).addEventListener('click', () => {
-      if (contract.world === 2 && !progress.best[10]) return;
+      if (contract.world > 1 && !progress.best[(contract.world - 1) * 10]) return;
       for (const item of ContractSystem.contracts) {
         const selected = item.id === contract.id;
         document.getElementById(`contract-briefing-${item.id}`).hidden = !selected;
@@ -1059,21 +1059,21 @@
     });
   }
   document.getElementById('upgrade-list').innerHTML = Object.entries(ContractSystem.upgrades).map(([id, item]) => `<article class="career-card"><h3>${item.name}</h3><p id="tier-${id}" class="reward"></p><p>${item.description}</p><p id="next-${id}"></p><button id="buy-${id}" type="button" class="button button--cta"></button></article>`).join('');
-  for (const contract of ContractSystem.contracts) document.getElementById(`contract-${contract.id}`).addEventListener('click', () => { if (contract.world === 2 && !progress.best[10]) return; level = contract; start(); });
+  for (const contract of ContractSystem.contracts) document.getElementById(`contract-${contract.id}`).addEventListener('click', () => { if (contract.world > 1 && !progress.best[(contract.world - 1) * 10]) return; level = contract; start(); });
   for (const [id, item] of Object.entries(ContractSystem.upgrades)) document.getElementById(`buy-${id}`).addEventListener('click', () => {
     if (running || pendingResult || exitPaused) return;
     document.getElementById('purchase-status').textContent = ContractSystem.purchase(id) ? `${item.name} ${item.prices.length === 1 ? 'unlocked' : 'upgraded'}. Ready for your next launch.` : 'Purchase unavailable.';
     refreshCareer();
   });
   function refreshContractWorld() {
-    document.getElementById('contract-world-name').textContent = contractWorld === 2 ? 'MOON CONTRACTS' : 'EARTH CONTRACTS';
+    document.getElementById('contract-world-name').textContent = contractWorld === 3 ? 'MARS CONTRACTS' : contractWorld === 2 ? 'MOON CONTRACTS' : 'EARTH CONTRACTS';
     document.getElementById('previous-contract-world').disabled = contractWorld === 1;
-    document.getElementById('next-contract-world').disabled = contractWorld === 2;
-    document.getElementById('contract-world-note').textContent = contractWorld === 2 && !progress.best[10] ? 'Complete World One to unlock Moon contracts.' : '';
+    document.getElementById('next-contract-world').disabled = contractWorld === 3;
+    document.getElementById('contract-world-note').textContent = contractWorld === 3 && !progress.best[20] ? 'Complete World Two to unlock Mars contracts.' : contractWorld === 2 && !progress.best[10] ? 'Complete World One to unlock Moon contracts.' : '';
     root.classList.toggle('moon-menu', contractWorld === 2);
-    root.classList.remove('mars-menu');
+    root.classList.toggle('mars-menu', contractWorld === 3);
     for (const contract of ContractSystem.contracts) {
-      const locked = contract.world === 2 && !progress.best[10];
+      const locked = contract.world > 1 && !progress.best[(contract.world - 1) * 10];
       document.getElementById(`contract-card-${contract.id}`).hidden = contract.world !== contractWorld;
       document.getElementById(`select-contract-${contract.id}`).disabled = locked;
       document.getElementById(`contract-${contract.id}`).disabled = locked;
@@ -1081,8 +1081,8 @@
       document.getElementById(`select-contract-${contract.id}`).setAttribute('aria-expanded', 'false');
     }
   }
-  document.getElementById('previous-contract-world').addEventListener('click', () => { contractWorld = 1; refreshContractWorld(); });
-  document.getElementById('next-contract-world').addEventListener('click', () => { contractWorld = 2; refreshContractWorld(); });
+  document.getElementById('previous-contract-world').addEventListener('click', () => { contractWorld = Math.max(1, contractWorld - 1); refreshContractWorld(); });
+  document.getElementById('next-contract-world').addEventListener('click', () => { contractWorld = Math.min(3, contractWorld + 1); refreshContractWorld(); });
   document.getElementById('choose-contracts').addEventListener('click', () => careerPage('contracts-picker'));
   document.getElementById('choose-upgrades').addEventListener('click', () => careerPage('upgrades-picker'));
   document.getElementById('back-contracts').addEventListener('click', openCampaign);
