@@ -11,6 +11,7 @@
   const thrustButton = document.getElementById("thrust");
   const startScreen = document.getElementById("start-screen");
   const startButton = document.getElementById("start");
+  const nextBriefing = document.getElementById("next-mission-briefing");
   const gameOver = document.getElementById("game-over");
   const playAgainButton = document.getElementById("play-again");
   const death = document.getElementById("death");
@@ -446,7 +447,7 @@
     document.getElementById('result-menu').hidden = false;
     nextButton.hidden = level.id === LevelSystem.campaign.length;
     document.getElementById('result-endless').hidden = !nextButton.hidden;
-    nextButton.textContent = level.id === 10 ? 'CONTINUE TO THE MOON' : level.id === 20 ? 'CONTINUE TO MARS' : 'NEXT LEVEL';
+    nextButton.textContent = level.id === 10 ? 'CONTINUE TO THE MOON' : level.id === 20 ? 'CONTINUE TO MARS' : 'NEXT MISSION';
     status.textContent = nextButton.hidden ? 'Mars campaign complete. Ascent engine recovered! Replay for stars or try Mars Endless.' : level.id === 10 ? 'World One complete. The Moon is unlocked!' : level.id === 20 ? 'World Two complete. Mars is unlocked!' : 'Level complete. Next level unlocked.';
     refreshCampaign();
   }
@@ -466,6 +467,8 @@
   }
 
   function reset() {
+    nextBriefing.close?.();
+    nextBriefing.hidden = true;
     if (level.assignments) {
       const base = LevelSystem.campaign.find(config => config.id === level.id);
       assignmentIndex = progress[level.checkpointKey]?.stage || 0;
@@ -529,6 +532,12 @@
   function start() {
     if (exitPaused) return;
     reset();
+    launchPreparedMission();
+  }
+
+  function launchPreparedMission() {
+    nextBriefing.close?.();
+    nextBriefing.hidden = true;
     startScreen.classList.remove("overlay--visible");
     running = true;
     lastFrame = performance.now();
@@ -1246,8 +1255,38 @@
   continueButton.addEventListener('click', resumeLevel);
   replayButton.addEventListener('click', start);
   nextButton.addEventListener('click', () => {
-    if (level.id < LevelSystem.campaign.length && progress.best[level.id]) { level = LevelSystem.campaign[level.id]; start(); }
+    if (!(level.id < LevelSystem.campaign.length && progress.best[level.id])) return;
+    level = LevelSystem.campaign[level.id];
+    selectedWorld = level.world;
+    progress.currentLevel = level.id;
+    progress.selectedWorld = level.world;
+    progress.destinationWorld = level.world;
+    LevelSystem.saveProgress(progress);
+    reset();
+    root.classList.remove('menu-open', 'picker-open', 'title-open');
+    startScreen.classList.remove('overlay--visible');
+    refreshCampaign();
+    draw();
+    document.getElementById('next-briefing-title').textContent = `${level.world}-${level.missionNumber}. ${level.name}`;
+    document.getElementById('next-briefing-description').textContent = document.getElementById('level-description').textContent;
+    document.getElementById('next-briefing-objectives').innerHTML = document.getElementById('briefing-objectives').innerHTML;
+    document.getElementById('next-briefing-stars').textContent = document.getElementById('briefing-stars').textContent;
+    document.getElementById('next-briefing-start').textContent = startButton.textContent;
+    nextBriefing.hidden = false;
+    nextBriefing.showModal?.();
+    document.getElementById('next-briefing-start').focus();
   });
+  document.getElementById('next-briefing-start').addEventListener('click', () => {
+    if (nextBriefing.hidden) return;
+    launchPreparedMission();
+    document.getElementById('campaign').focus();
+  });
+  function exitNextBriefing() {
+    openCampaign();
+    document.getElementById('choose-campaign').focus();
+  }
+  document.getElementById('next-briefing-exit').addEventListener('click', exitNextBriefing);
+  nextBriefing.addEventListener('cancel', event => { event.preventDefault(); exitNextBriefing(); });
   function openCampaign() {
     document.getElementById('title-screen').hidden = true;
     root.classList.remove('title-open');

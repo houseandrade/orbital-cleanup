@@ -15,7 +15,9 @@ function makeElement(id) {
     hidden: false,
     style: { setProperty() {} },
     listeners: {},
+    get innerHTML() { return this.html || ""; },
     set innerHTML(value) {
+      this.html = value;
       for (const match of value.matchAll(/id="([^"]+)"/g)) elements.set(match[1], makeElement(match[1]));
     },
     classList: {
@@ -275,13 +277,13 @@ deposit(60);
 qa.finishLevel();
 assert.equal(qa.state.progress.best[1], 2, 'lower replay preserves best');
 assert.match(elements.get('result-stats').textContent, /Previous best: 2/);
-elements.get('next-level').listeners.click();
+advanceThroughBriefing();
 assert.equal(qa.state.level.id, 2);
 assert.equal(qa.state.junk.length, 8);
 deposit(150);
 qa.finishLevel();
 assert.equal(qa.state.progress.best[2], 1, 'one star unlocks next level');
-elements.get('next-level').listeners.click();
+advanceThroughBriefing();
 assert.equal(qa.state.level.id, 3);
 const special = qa.state.junk.find(object => object.special);
 assert.equal(special.value, 300);
@@ -470,7 +472,7 @@ qa.scenario = { carriedObjects:10 };
 deposit(200);
 qa.finishLevel();
 assert.equal(qa.state.progress.best[4], 3, 'replay cannot reduce best');
-elements.get('next-level').listeners.click();
+advanceThroughBriefing();
 assert.equal(qa.state.level.id, 5);
 assert.equal(qa.state.level.debris.special, undefined, 'valuable targets replenish normally');
 const bands = qa.state.level.debris.bands;
@@ -943,13 +945,13 @@ assert.equal(qa.state.pendingResult, false);
 collectItems('ROCKET', 2); deposit(qa.state.haul);
 assert.equal(qa.state.pendingResult, true); qa.finishLevel();
 assert.equal(qa.state.progress.best[8], 1);
-elements.get('next-level').listeners.click();
+advanceThroughBriefing();
 assert.equal(qa.state.level.id, 9);
 collectItems('ROCKET', 4, 130); deposit(qa.state.haul);
 assert.equal(qa.state.pendingResult, false, 'rocket quota alone cannot satisfy $900');
 collectItems('PANEL', 1, 380); deposit(qa.state.haul); qa.finishLevel();
 assert.equal(qa.state.progress.best[9], 1);
-elements.get('next-level').listeners.click();
+advanceThroughBriefing();
 assert.equal(qa.state.level.id, 10);
 assert.match(qa.state.level.name, /1\/3/);
 collectItems('TOOL', 6); deposit(qa.state.haul);
@@ -1089,7 +1091,7 @@ assert.equal(qa.state.pendingResult, true);
 qa.finishLevel();
 assert.equal(qa.state.progress.best[11], 1);
 assert.equal(elements.get('level-12').disabled, false);
-elements.get('next-level').listeners.click();
+advanceThroughBriefing();
 assert.equal(qa.state.level.id, 12);
 const wheels = qa.state.junk.filter(item => item.type === 'WHEEL');
 assert.equal(wheels.length, 7);
@@ -1105,7 +1107,7 @@ deposit(350);
 assert.equal(qa.state.pendingResult, true);
 qa.finishLevel();
 assert.ok(qa.state.progress.best[12] >= 1);
-elements.get('next-level').listeners.click();
+advanceThroughBriefing();
 assert.equal(qa.state.level.id, 13);
 assert.equal(qa.state.junk.filter(item => item.type === 'TANK').length, 2);
 for (const item of qa.state.junk.filter(item => item.type === 'TANK')) qa.collect(item);
@@ -1209,7 +1211,7 @@ for (const type of ['instrument-package','lander-leg']) assert.ok(cachedPaths.in
 console.log('Moon 4–6 density, spaced finite pools, missed targets, failure/retry, multi-trip quotas, mixed delivery, save progression, and star gating passed.');
 
 // Off Course: gentle bounded motion, with the same target position in the tether.
-elements.get('next-level').listeners.click();
+advanceThroughBriefing();
 assert.equal(qa.state.level.id, 17);
 assert.equal(qa.state.junk.filter(item => item.drift).length, 5);
 assert.equal(qa.state.level.debris.count, 5);
@@ -1246,7 +1248,7 @@ assert.equal(qa.state.progress.best[17], 1);
 assert.equal(elements.get('level-18').disabled, false);
 
 // Catch the Window: one recurring pass-aligned target, six recoveries maximum.
-elements.get('next-level').listeners.click();
+advanceThroughBriefing();
 assert.equal(qa.state.level.id, 18);
 assert.equal(qa.state.junk.filter(item => item.encounter).length, 1);
 assert.equal(qa.state.junk.filter(item => !item.encounter).length, 5);
@@ -1277,7 +1279,7 @@ assert.equal(qa.state.progress.best[18], 1);
 assert.equal(elements.get('level-19').disabled, false);
 
 // Heavy Recovery keeps staggered finite pools and both quotas behind completion.
-elements.get('next-level').listeners.click();
+advanceThroughBriefing();
 assert.equal(qa.state.level.id, 19);
 const heavyLegs = qa.state.junk.filter(item => item.type === 'LEG');
 const heavyRockets = qa.state.junk.filter(item => item.type === 'ROCKET');
@@ -1392,7 +1394,7 @@ assert.ok(fs.readFileSync(new URL('../service-worker.js', import.meta.url),'utf8
 console.log('Moon finale mixed quotas, density, world-isolated checkpoints, rover tether/retry, badge, and one-time reward passed.');
 
 // Moon contract board retains sorted difficulty, world filtering, and isolated campaign progress.
-qa.state.progress.activeWorld=1;
+qa.state.progress.activeWorld=1; delete qa.state.progress.destinationWorld;
 const lunarJobs = careerSystem.contracts.filter(c => c.world === 2);
 assert.equal(lunarJobs.length, 6);
 const earthScoresBeforeModes = JSON.stringify(qa.state.progress.best);
@@ -1447,7 +1449,7 @@ assert.equal(migratedWorld({currentLevel:11,best:earthComplete,activeWorld:1}),1
 assert.equal(migratedWorld({currentLevel:1,best:{...earthComplete,11:1}}),2,'legacy Earth replay keeps established Moon progression');
 assert.equal(migratedWorld({currentLevel:1,best:{},activeWorld:2}),1,'locked world cannot become active');
 storage.set('orbital-cleanup-progress-v1', modeSave);
-qa.state.progress.activeWorld=1;
+qa.state.progress.activeWorld=1; delete qa.state.progress.destinationWorld;
 elements.get('level-11').listeners.click();
 assert.equal(qa.state.progress.activeWorld,1);
 qa.start(); assert.equal(qa.state.progress.activeWorld,2);
@@ -1502,7 +1504,7 @@ assert.ok(qa.state.junk.every(o => ['PANEL', 'TOOL'].includes(o.type)));
 assert.ok(qa.state.junk.filter(o => o.type === 'TOOL').length <= 2);
 collectItems('PANEL', 5, 50); deposit(250); qa.finishLevel();
 assert.equal(qa.state.progress.best[21], 1);
-elements.get('next-level').listeners.click();
+advanceThroughBriefing();
 assert.equal(qa.state.level.id, 22);
 for (const [id,type,count] of [[22,'SAMPLE',5],[23,'DRONE',3]]) {
   elements.get(`level-${id}`).listeners.click(); qa.start();
@@ -1846,7 +1848,7 @@ qa.scenario={elapsed:20};qa.fillDebris();
 crate=qa.state.junk.find(o=>o.scheduledSalvage);assert.ok(crate.y>=322);
 // All Endless phases retain their density and produce both edges on refill.
 for(const world of [1,2]) {
-  qa.state.progress.activeWorld=world;elements.get('endless').listeners.click();
+  qa.state.progress.activeWorld=world; delete qa.state.progress.destinationWorld;elements.get('endless').listeners.click();
   for(const at of [0,150,300,500]) {
     if(at){deposit(at-qa.state.bank);qa.resumeLevel();}
     qa.scenario={junk:[]};qa.fillDebris();
@@ -1863,7 +1865,7 @@ function modeBrake(startMode) {
 const earthMomentum=modeBrake(()=>{elements.get('level-7').listeners.click();qa.start();});
 assert.equal(modeBrake(()=>{elements.get('level-15').listeners.click();qa.start();}),earthMomentum);
 assert.equal(modeBrake(()=>launchContract('engine-recovery')),earthMomentum);
-assert.equal(modeBrake(()=>{qa.state.progress.activeWorld=2;elements.get('endless').listeners.click();}),earthMomentum);
+assert.equal(modeBrake(()=>{qa.state.progress.activeWorld=2; delete qa.state.progress.destinationWorld;elements.get('endless').listeners.click();}),earthMomentum);
 console.log('Earth/Moon boundary coverage across campaigns, Contracts and all Endless phases, safe drift, alternating pockets/arrivals and shared momentum passed.');
 
 // Mars modes: locked access, all payouts, repeatability, save isolation and phase safety.
@@ -1906,7 +1908,7 @@ assert.equal(JSON.stringify(qa.state.progress),priorCampaign);
 assert.equal(reloadCareer(sandbox.localStorage).career.completed.filter(id=>id.startsWith('mars-')).length,6);
 const earlierBests=[storage.get('orbital-cleanup-endless-best-v1'),storage.get('orbital-cleanup-moon-endless-best-v1')];
 const endlessWallet=careerSystem.career.wallet;
-qa.state.progress.activeWorld=3;elements.get('endless').listeners.click();
+qa.state.progress.activeWorld=3; delete qa.state.progress.destinationWorld;elements.get('endless').listeners.click();
 assert.equal(qa.state.level.world,3);
 for(const [at,type] of [[0,'SAMPLE'],[150,'DRONE'],[300,'ARRAY'],[500,'FRAME']]){
   if(at){deposit(at-qa.state.bank);qa.resumeLevel();}
@@ -1956,7 +1958,7 @@ const beforeLockedLaunch=qa.state.level;elements.get('endless').listeners.click(
 assert.equal(elements.get('destination-lock').hidden,false);
 qa.state.progress.best[20]=priorBest20;
 elements.get('result-menu').listeners.click();assert.equal(elements.get('endless').disabled,false);
-assert.match(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),/release-footer[^>]*>ORBITAL CLEANUP · v0.21.1/);
+assert.match(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),/release-footer[^>]*>ORBITAL CLEANUP · v0.21.2/);
 console.log('Explicit destination persistence, independent world launches, locked access, menu and footer passed.');
 // Help stays inside the modal, closes with X or Escape, and resets on reopen.
 elements.get('home-menu').listeners.click();
@@ -1990,3 +1992,47 @@ launchContract('mars-array-recovery');qa.updateHud();assert.equal(elements.get('
 qa.scenario={player:{y:225,velocityY:0,flash:0},station:{x:180,y:225,speed:25}};qa.updateHud();assert.equal(elements.get('hud-direction').textContent,'— STEADY');
 assert.equal(elements.get('station-status').textContent,'IN RANGE · HOLD DEPOSIT');
 console.log('Mixed HUD counts, banking readiness, earnings labels, motion, station strip and two-step exit passed.');
+
+// Continuing a campaign always allows time to read before an explicit launch.
+function advanceThroughBriefing() {
+  const previous = qa.state.level.id;
+  elements.get('next-level').listeners.click();
+  assert.equal(qa.state.level.id, previous + 1);
+  assert.equal(qa.state.running, false, 'next mission must wait for Start Mission');
+  assert.equal(qa.state.pendingResult, false);
+  assert.equal(elements.get('start-screen').classList.contains('overlay--visible'), false);
+  assert.equal(elements.get('game').classList.contains('menu-open'), false);
+  assert.equal(elements.get('next-mission-briefing').hidden, false);
+  assert.equal(elements.get('next-briefing-description').textContent, elements.get('level-description').textContent);
+  assert.equal(elements.get('next-briefing-objectives').innerHTML, elements.get('briefing-objectives').innerHTML);
+  assert.ok(elements.get('next-briefing-objectives').innerHTML.includes('<li>'));
+  assert.equal(qa.state.progress.destinationWorld, qa.state.level.world);
+  assert.equal(qa.state.progress.currentLevel, previous + 1);
+  const elapsed = qa.state.elapsed;
+  qa.update(10);
+  assert.equal(qa.state.elapsed, elapsed, 'reading the briefing does not run the mission clock');
+  const loadedJunk = qa.state.junk;
+  elements.get('next-briefing-start').listeners.click();
+  assert.equal(elements.get('next-mission-briefing').hidden, true);
+  assert.equal(qa.state.junk, loadedJunk, 'launch uses the already-loaded scene');
+  assert.equal(qa.state.running, true, 'explicit start launches the upcoming mission');
+}
+
+// Both exit actions return to modes without launching or losing completion progress.
+for (const action of ['button', 'escape']) {
+  elements.get('level-1').listeners.click();
+  qa.state.progress.best[1] = 3;
+  elements.get('next-level').listeners.click();
+  const savedBest = JSON.stringify(qa.state.progress.best);
+  if (action === 'button') elements.get('next-briefing-exit').listeners.click();
+  else elements.get('next-mission-briefing').listeners.cancel({preventDefault(){}});
+  assert.equal(qa.state.running, false);
+  assert.equal(elements.get('next-mission-briefing').hidden, true);
+  assert.equal(elements.get('start-screen').classList.contains('overlay--visible'), true);
+  assert.equal(elements.get('mode-menu').hidden, false);
+  assert.equal(elements.get('campaign-picker').hidden, true);
+  assert.equal(JSON.stringify(qa.state.progress.best), savedBest);
+  elements.get('next-briefing-start').listeners.click();
+  assert.equal(qa.state.running, false, 'a closed briefing cannot launch a mission');
+}
+console.log('Paused next-mission briefing, prepared-scene launch, and exits to modes passed.');

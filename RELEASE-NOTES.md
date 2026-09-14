@@ -1,3 +1,7 @@
+# v0.21.2 — Briefing before the next mission (approved for release)
+
+Next Mission loads the upcoming level paused and displays a briefing modal over the visible flight scene. Start Mission begins that prepared round; Back to Modes returns to the world’s mode selection without launching. The modal includes the mission name, description, objectives, and star requirements. Cross-world transitions and finale checkpoints are preserved.
+
 # v0.21.1 — Edge-to-edge mobile layout (approved for release)
 
 Phone-sized layouts and installed apps now fill the display without the outer blue border or page gutters. Safe-area spacing sits inside the game and overlays to protect controls and menus around the status bar and home indicator. Desktop browser framing is retained. Updated offline asset versions so installed apps receive the new styles after release.
