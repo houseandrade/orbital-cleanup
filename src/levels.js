@@ -305,6 +305,19 @@ const LevelSystem = (() => {
           arrival: { band: landerLeg, interval: 20, speed: 30 } } }
     ]
   };
+  const marsEndless = { ...endless, world: 3, name: 'Endless Orbit · Mars', station: marsStation,
+    debris: marsField({}),
+    phases: [
+      { name: 'Sample field', at: 0, description: 'Recover geological samples above the expedition site.',
+        debris: marsField({ arrival: { band: sampleCanister, interval: 16, speed: 30 } }) },
+      { name: 'Survey equipment', at: 150, description: 'Recover survey drones and bank your research haul.',
+        debris: marsField({ arrival: { band: surveyDrone, interval: 18, speed: 30 } }) },
+      { name: 'Power salvage', at: 300, description: 'Recover solar arrays. Brake early with a loaded suit.',
+        debris: marsField({ arrival: { band: solarArray, interval: 20, speed: 30 } }) },
+      { name: 'Habitat recovery', at: 500, description: 'Recover heavy habitat frames. Shorter trips keep cargo manageable.',
+        debris: marsField({ arrival: { band: habitatFrame, interval: 24, speed: 30 } }) }
+    ]
+  };
   // Shared movement layout: cycle ordinary fields and recurring targets across altitude bands.
   // Clone configurations so contracts and phase variants never mutate their source missions.
   const recoveryHigh = [105, 120], recoveryLow = [322, 334], recoveryMiddle = [195, 250];
@@ -328,12 +341,11 @@ const LevelSystem = (() => {
     if (config.assignments) config.assignments = config.assignments.map(assignment => ({ ...assignment,
       debris: withBoundaryTargets(assignment.debris) }));
   }
-  for (const mode of [endless, moonEndless]) {
+  for (const mode of [endless, moonEndless, marsEndless]) {
     mode.debris = withBoundaryTargets(mode.debris);
     mode.phases = mode.phases.map(phase => ({ ...phase, debris: withBoundaryTargets(phase.debris) }));
   }
-  // Mars Endless is deferred; its active campaign uses the existing Moon destination.
-  const endlessFor = world => world >= 2 ? moonEndless : endless;
+  const endlessFor = world => world === 3 ? marsEndless : world === 2 ? moonEndless : endless;
   function phaseFor(config, bank) {
     if (!config.phases) return null;
     const value = bank % config.phaseCycleValue;
