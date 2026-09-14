@@ -342,3 +342,10 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
 .next-mission-briefing ul { padding-left:20px; font-size:13px; line-height:1.6; }
 .next-mission-briefing li + li { margin-top:6px; }
 #next-briefing-stars { border-top:1px solid var(--border); padding-top:12px; }
+
+/* Completed jobs stay available for replay. */
+.contract-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.contract-heading .kicker{font-size:9px;letter-spacing:.06em}
+.completed-badge{display:inline-flex;align-items:center;gap:4px;border:1px solid #41634d;border-radius:4px;padding:4px 6px;background:#14251d;color:#a7f3b5;font:750 9px/1 system-ui,sans-serif;letter-spacing:.04em;white-space:nowrap}
+.contract-selector.contract-completed{border-color:#4c6957}
+.contract-selector.contract-completed[aria-expanded="true"]{border-color:var(--accent)}

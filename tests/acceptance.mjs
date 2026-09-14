@@ -117,6 +117,8 @@ vm.runInContext(fs.readFileSync(new URL('../src/contracts.js', import.meta.url),
 vm.runInContext(source, sandbox, { filename: "src/game.js" });
 
 const qa = sandbox.__qa;
+assert.equal(elements.get('completed-contract-first-shift').hidden, true, 'unfinished jobs have no completion badge');
+assert.equal(elements.get('select-contract-first-shift').classList.contains('contract-completed'), false);
 function leaveRun() {
   const confirming = elements.get('exit-title').textContent === 'Run paused';
   elements.get('leave-run').listeners.click();
@@ -736,6 +738,8 @@ for (const contract of careerSystem.contracts.filter(c => c.world === 1)) {
   assert.equal(elements.get('contracts-picker').hidden, false);
   assert.equal(elements.get('mode-menu').hidden, true);
   assert.equal(elements.get(`contract-${contract.id}`).textContent, 'REPLAY CONTRACT');
+  assert.equal(elements.get(`completed-contract-${contract.id}`).hidden, false);
+  assert.equal(elements.get(`select-contract-${contract.id}`).classList.contains('contract-completed'), true);
   assert.equal(qa.state.running, false);
   assert.equal(qa.state.pendingResult, false);
   assert.equal(careerSystem.career.wallet, balance + salvage + contract.bonus, 'returning to the board preserves earnings');
@@ -1958,7 +1962,7 @@ const beforeLockedLaunch=qa.state.level;elements.get('endless').listeners.click(
 assert.equal(elements.get('destination-lock').hidden,false);
 qa.state.progress.best[20]=priorBest20;
 elements.get('result-menu').listeners.click();assert.equal(elements.get('endless').disabled,false);
-assert.match(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),/release-footer[^>]*>ORBITAL CLEANUP · v0.21.2/);
+assert.match(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),/release-footer[^>]*>ORBITAL CLEANUP · v0.21.3/);
 console.log('Explicit destination persistence, independent world launches, locked access, menu and footer passed.');
 // Help stays inside the modal, closes with X or Escape, and resets on reopen.
 elements.get('home-menu').listeners.click();
@@ -2036,3 +2040,12 @@ for (const action of ['button', 'escape']) {
   assert.equal(qa.state.running, false, 'a closed briefing cannot launch a mission');
 }
 console.log('Paused next-mission briefing, prepared-scene launch, and exits to modes passed.');
+
+// Completion indicators agree with saved records across every world's board.
+elements.get('result-menu').listeners.click();
+for (const contract of careerSystem.contracts) {
+  const completed = careerSystem.career.completed.includes(contract.id);
+  assert.equal(elements.get(`completed-contract-${contract.id}`).hidden, !completed);
+  assert.equal(elements.get(`select-contract-${contract.id}`).classList.contains('contract-completed'), completed);
+}
+console.log('Completed contract badges, first-time updates, and all-world records passed.');
