@@ -1179,6 +1179,7 @@
     document.getElementById('upgrades-picker').hidden = true;
     selectWorld(selectedWorld);
   });
+  document.getElementById('choose-world').addEventListener('click', () => { openCampaign(); document.getElementById('home-menu').focus(); });
   document.getElementById('back-modes').addEventListener('click', openCampaign);
   document.getElementById('over-menu').addEventListener('click', openCampaign);
   document.getElementById('result-menu').addEventListener('click', openCampaign);
@@ -1204,6 +1205,8 @@
     if (level.id < LevelSystem.campaign.length && progress.best[level.id]) { level = LevelSystem.campaign[level.id]; start(); }
   });
   function openCampaign() {
+    document.getElementById('title-screen').hidden = true;
+    root.classList.remove('title-open');
     closeHomeMenu();
     reset();
     startScreen.classList.add('overlay--visible');

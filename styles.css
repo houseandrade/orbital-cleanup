@@ -181,3 +181,18 @@ canvas { display:block; width:100%; height:100%; object-fit:contain; image-rende
 #destination-position { font-weight:600; }
 /* Reserve the arrow slot so the world heading stays centered at either end. */
 #previous-destination:disabled, #next-destination:disabled { visibility:hidden; }
+
+/* The launch screen appears once per document load, not when returning from a run. */
+.title-open .menu-panel > :not(.title-screen):not(.release-footer) { display:none; }
+.title-open #start-screen { background:#070d16; }
+.title-open .menu-panel { padding:24px 8px 12px; }
+.title-screen { text-align:center; }
+.title-intro { padding:18px 0 0; position:relative; z-index:1; }
+.title-kicker { font-size:10px; letter-spacing:.2em; color:var(--accent); margin:0 0 18px; }
+.menu-panel .title-screen h1 { font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-size:48px; line-height:1.05; font-weight:750; letter-spacing:.02em; margin:0 0 18px; }
+.title-subtitle { font-size:14px; line-height:1.6; color:#bdcbd8; margin:0; }
+.title-art { height:225px; position:relative; background:url('src/art/earth.png') center bottom / 100% auto no-repeat; margin:0 -8px 18px; overflow:hidden; }
+.title-art .astronaut { position:absolute; left:calc(50% - 32px); top:28px; transform:rotate(15deg); }
+#choose-world { display:flex; justify-content:center; align-items:center; gap:20px; min-height:52px; font-size:14px; letter-spacing:.04em; }
+.title-open .release-footer { padding-top:22px; }
+@media(max-width:340px), (max-height:600px) { .menu-panel .title-screen h1 { font-size:38px; } .title-art { height:170px; } .title-intro { padding-top:4px; } }

@@ -1,5 +1,10 @@
 # Orbital Cleanup v0.17.0 (in review)
 
+## Current status — v0.20.0 title screen in review
+
+World pages and navigation refinements are deployed as v0.19.0 via PR #28 (merge `c8fdff7`, deployment 34795963647). Unavailable end arrows are invisible while preserving centered headings. The separate v0.20.0 review adds an opening title screen using existing artwork, one Choose World action, and a footer version. It appears on each fresh document load, including Refresh Game Files, and stays dismissed when returning from runs or menus. No extra saved-progress state is introduced. Production remains v0.19.0 pending title-screen approval.
+
+
 ## Current status — v0.19.0 world pages in review
 
 Production is v0.18.0, deployed via PR #27 (merge `363065a`, deployment 34791992193). Mars Contracts and Endless are live. The new review replaces implicit Endless routing with saved, explicit world pages. Each world has Campaign, Contracts, Endless, its own progress/best, approved world scenery, and flag/clipboard/orbit icons. An upper-right menu exposes World Pages, Upgrades, and Refresh Game Files; the footer retains the release version. Existing progression, scores, and unlocks remain intact.
